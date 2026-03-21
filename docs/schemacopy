@@ -1,0 +1,394 @@
+-- Crystal Harbor Trading Company Database Schema
+-- Supabase PostgreSQL Schema
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Customers Table
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Categories Table
+CREATE TABLE categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    description TEXT,
+    display_order INTEGER DEFAULT 0,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Products Table
+CREATE TABLE products (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(200) UNIQUE NOT NULL,
+    description TEXT,
+    material VARCHAR(100),
+    base_price DECIMAL(10,2) NOT NULL,
+    active BOOLEAN DEFAULT true,
+    image_url TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Product Options (sizes, colors)
+CREATE TABLE product_options (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    option_type VARCHAR(20) NOT NULL, -- 'size' or 'color'
+    option_value VARCHAR(50) NOT NULL, -- 'Medium', 'Red', etc.
+    display_order INTEGER DEFAULT 0,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Pricing Tiers
+CREATE TABLE pricing_tiers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    product_id UUID REFERENCES products(id) ON DELETE CASCADE,
+    tier_name VARCHAR(50) NOT NULL, -- 'Tier 1', 'Tier 2', etc.
+    min_quantity INTEGER NOT NULL,
+    max_quantity INTEGER, -- NULL for unlimited
+    price_per_unit DECIMAL(10,2) NOT NULL,
+    discount_percentage DECIMAL(5,2) DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Orders Table
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL, -- NULL for guest orders
+    guest_email VARCHAR(255), -- For guest orders
+    status VARCHAR(20) DEFAULT 'pending', -- pending, processing, shipped, delivered, cancelled
+    subtotal DECIMAL(10,2) NOT NULL,
+    shipping_cost DECIMAL(10,2) DEFAULT 0,
+    total_amount DECIMAL(10,2) NOT NULL,
+    stripe_payment_intent_id VARCHAR(255),
+    shipping_address JSONB NOT NULL,
+    special_instructions TEXT,
+    large_order_alert_sent BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Order Items Table
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID REFERENCES products(id) ON DELETE SET NULL,
+    product_name VARCHAR(200) NOT NULL, -- Snapshot for order history
+    selected_size VARCHAR(50),
+    selected_color VARCHAR(50),
+    quantity INTEGER NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    line_total DECIMAL(10,2) NOT NULL,
+    uploaded_image_url TEXT,
+    custom_text TEXT,
+    custom_text_options JSONB, -- font, size, color, position
+    tier_applied VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Uploaded Images Table
+CREATE TABLE uploaded_images (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_item_id UUID REFERENCES order_items(id) ON DELETE CASCADE,
+    original_filename VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size INTEGER,
+    file_type VARCHAR(50),
+    upload_timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Design Catalog (Phase 2 framework)
+CREATE TABLE design_catalog (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(200) NOT NULL,
+    description TEXT,
+    image_url TEXT NOT NULL,
+    category VARCHAR(100),
+    tags TEXT[],
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Admin Users Table
+CREATE TABLE admin_users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    role VARCHAR(50) DEFAULT 'admin',
+    active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Site Settings Table
+CREATE TABLE site_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key VARCHAR(100) UNIQUE NOT NULL,
+    value TEXT,
+    description TEXT,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Shipping Rates Table
+CREATE TABLE shipping_rates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    category_id UUID REFERENCES categories(id) ON DELETE CASCADE,
+    rate DECIMAL(10,2) NOT NULL,
+    description VARCHAR(200),
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_customers_email ON customers(email);
+CREATE INDEX idx_products_category ON products(category_id);
+CREATE INDEX idx_products_slug ON products(slug);
+CREATE INDEX idx_product_options_product ON product_options(product_id);
+CREATE INDEX idx_pricing_tiers_product ON pricing_tiers(product_id);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_number ON orders(order_number);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_uploaded_images_order_item ON uploaded_images(order_item_id);
+
+-- Row Level Security (RLS) policies
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Customers can only see their own data
+CREATE POLICY "Customers can view own profile" ON customers
+    FOR ALL USING (auth.uid()::text = id::text);
+
+-- RLS Policy: Customers can only see their own orders
+CREATE POLICY "Customers can view own orders" ON orders
+    FOR ALL USING (auth.uid()::text = customer_id::text);
+
+-- Initial Data: Insert default categories
+INSERT INTO categories (name, slug, description, display_order) VALUES
+('T-Shirts', 't-shirts', 'Custom printed t-shirts in various sizes and colors', 1),
+('Blankets', 'blankets', 'Cozy custom blankets and throws', 2),
+('Banners', 'banners', 'Custom banners and signs for any occasion', 3),
+('Flags', 'flags', 'Custom flags for home, garden, or commercial use', 4);
+
+-- Initial Data: Insert default products (1 per category)
+INSERT INTO products (category_id, name, slug, description, material, base_price, image_url) VALUES
+(
+    (SELECT id FROM categories WHERE slug = 't-shirts'),
+    'Custom T-Shirt',
+    'custom-t-shirt',
+    'High-quality custom printed t-shirt. Upload your design or add custom text.',
+    'Cotton/Polyester Blend',
+    18.99,
+    '/images/products/t-shirt-placeholder.jpg'
+),
+(
+    (SELECT id FROM categories WHERE slug = 'blankets'),
+    'Custom Fleece Blanket',
+    'custom-fleece-blanket',
+    'Soft and cozy custom printed fleece blanket. Perfect for home or gifts.',
+    'Fleece',
+    34.99,
+    '/images/products/blanket-placeholder.jpg'
+),
+(
+    (SELECT id FROM categories WHERE slug = 'banners'),
+    'Custom Vinyl Banner',
+    'custom-vinyl-banner',
+    'Durable vinyl banner for indoor or outdoor use. Weather-resistant printing.',
+    'Vinyl',
+    29.99,
+    '/images/products/banner-placeholder.jpg'
+),
+(
+    (SELECT id FROM categories WHERE slug = 'flags'),
+    'Custom Polyester Flag',
+    'custom-polyester-flag',
+    'High-quality polyester flag with vibrant custom printing.',
+    'Polyester',
+    24.99,
+    '/images/products/flag-placeholder.jpg'
+);
+
+-- Initial Data: Insert product options
+-- T-Shirt sizes
+INSERT INTO product_options (product_id, option_type, option_value, display_order) VALUES
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', 'S', 1),
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', 'M', 2),
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', 'L', 3),
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', 'XL', 4),
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', '2XL', 5),
+((SELECT id FROM products WHERE slug = 'custom-t-shirt'), 'size', '3XL', 6);
+
+-- Blanket sizes
+INSERT INTO product_options (product_id, option_type, option_value, display_order) VALUES
+((SELECT id FROM products WHERE slug = 'custom-fleece-blanket'), 'size', 'Throw (50"x60")', 1),
+((SELECT id FROM products WHERE slug = 'custom-fleece-blanket'), 'size', 'Queen (60"x80")', 2),
+((SELECT id FROM products WHERE slug = 'custom-fleece-blanket'), 'size', 'King (68"x88")', 3);
+
+-- Banner sizes
+INSERT INTO product_options (product_id, option_type, option_value, display_order) VALUES
+((SELECT id FROM products WHERE slug = 'custom-vinyl-banner'), 'size', 'Small (2\'x4\')', 1),
+((SELECT id FROM products WHERE slug = 'custom-vinyl-banner'), 'size', 'Medium (3\'x6\')', 2),
+((SELECT id FROM products WHERE slug = 'custom-vinyl-banner'), 'size', 'Large (4\'x8\')', 3),
+((SELECT id FROM products WHERE slug = 'custom-vinyl-banner'), 'size', 'XL (5\'x10\')', 4);
+
+-- Flag sizes
+INSERT INTO product_options (product_id, option_type, option_value, display_order) VALUES
+((SELECT id FROM products WHERE slug = 'custom-polyester-flag'), 'size', 'Garden (12"x18")', 1),
+((SELECT id FROM products WHERE slug = 'custom-polyester-flag'), 'size', 'House (28"x40")', 2),
+((SELECT id FROM products WHERE slug = 'custom-polyester-flag'), 'size', 'Commercial (3\'x5\')', 3);
+
+-- Default color options for all products
+DO $$
+DECLARE
+    prod_id UUID;
+    color_names TEXT[] := ARRAY['Black', 'White', 'Navy Blue', 'Red', 'Heather Gray', 'Royal Blue', 'Forest Green', 'Maroon', 'Purple', 'Orange'];
+    color_name TEXT;
+    color_order INTEGER := 1;
+BEGIN
+    FOR prod_id IN SELECT id FROM products LOOP
+        color_order := 1;
+        FOREACH color_name IN ARRAY color_names LOOP
+            INSERT INTO product_options (product_id, option_type, option_value, display_order) 
+            VALUES (prod_id, 'color', color_name, color_order);
+            color_order := color_order + 1;
+        END LOOP;
+    END LOOP;
+END $$;
+
+-- Insert pricing tiers for all products
+DO $$
+DECLARE
+    prod_record RECORD;
+BEGIN
+    FOR prod_record IN SELECT id, base_price FROM products LOOP
+        -- Tier 1: 1-49 units (base price)
+        INSERT INTO pricing_tiers (product_id, tier_name, min_quantity, max_quantity, price_per_unit, discount_percentage) 
+        VALUES (prod_record.id, 'Tier 1', 1, 49, prod_record.base_price, 0);
+        
+        -- Tier 2: 50-249 units (18% discount)
+        INSERT INTO pricing_tiers (product_id, tier_name, min_quantity, max_quantity, price_per_unit, discount_percentage) 
+        VALUES (prod_record.id, 'Tier 2', 50, 249, prod_record.base_price * 0.82, 18);
+        
+        -- Tier 3: 250+ units (32% discount)
+        INSERT INTO pricing_tiers (product_id, tier_name, min_quantity, max_quantity, price_per_unit, discount_percentage) 
+        VALUES (prod_record.id, 'Tier 3', 250, NULL, prod_record.base_price * 0.68, 32);
+    END LOOP;
+END $$;
+
+-- Insert default admin user
+INSERT INTO admin_users (email, password_hash, first_name, last_name) VALUES
+('admin@crystalharbor.com', '$2b$10$7YgYWO7XZ9Z4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4Q4', 'Admin', 'User');
+
+-- Insert default site settings
+INSERT INTO site_settings (key, value, description) VALUES
+('site_name', 'Crystal Harbor Trading Company', 'Website name'),
+('contact_email', 'support@crystalharbortc.com', 'Customer support email'),
+('contact_phone', '(555) 123-4567', 'Customer support phone'),
+('business_hours', 'Monday - Friday, 9 AM - 5 PM EST', 'Business hours'),
+('fulfillment_time', '2-3 weeks for custom printed items', 'Standard fulfillment time'),
+('default_shipping_rate', '9.99', 'Default shipping rate in USD');
+
+-- Insert default shipping rates
+INSERT INTO shipping_rates (category_id, rate, description) VALUES
+((SELECT id FROM categories WHERE slug = 't-shirts'), 9.99, 'Standard shipping for t-shirts'),
+((SELECT id FROM categories WHERE slug = 'blankets'), 9.99, 'Standard shipping for blankets'),
+((SELECT id FROM categories WHERE slug = 'banners'), 9.99, 'Standard shipping for banners'),
+((SELECT id FROM categories WHERE slug = 'flags'), 9.99, 'Standard shipping for flags');
+
+-- Create function to generate order numbers
+CREATE OR REPLACE FUNCTION generate_order_number()
+RETURNS TEXT AS $$
+DECLARE
+    year_part TEXT;
+    sequence_num INTEGER;
+    order_num TEXT;
+BEGIN
+    year_part := EXTRACT(YEAR FROM NOW())::TEXT;
+    
+    SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM 'CH-\d{4}-(\d+)') AS INTEGER)), 0) + 1
+    INTO sequence_num
+    FROM orders 
+    WHERE order_number LIKE 'CH-' || year_part || '-%';
+    
+    order_num := 'CH-' || year_part || '-' || LPAD(sequence_num::TEXT, 3, '0');
+    RETURN order_num;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-generate order numbers
+CREATE OR REPLACE FUNCTION set_order_number()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.order_number IS NULL OR NEW.order_number = '' THEN
+        NEW.order_number := generate_order_number();
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_order_number
+    BEFORE INSERT ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION set_order_number();
+
+-- Trigger to update updated_at timestamps
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_customers_updated_at
+    BEFORE UPDATE ON customers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trigger_update_products_updated_at
+    BEFORE UPDATE ON products
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+CREATE TRIGGER trigger_update_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at();
+
+-- Comments for documentation
+COMMENT ON TABLE customers IS 'Customer accounts for registered users';
+COMMENT ON TABLE categories IS 'Product categories (T-Shirts, Blankets, etc.)';
+COMMENT ON TABLE products IS 'Individual products within categories';
+COMMENT ON TABLE product_options IS 'Available options for products (sizes, colors)';
+COMMENT ON TABLE pricing_tiers IS 'Tiered pricing based on quantity';
+COMMENT ON TABLE orders IS 'Customer orders with payment and shipping info';
+COMMENT ON TABLE order_items IS 'Individual items within an order';
+COMMENT ON TABLE uploaded_images IS 'Customer uploaded images for customization';
+COMMENT ON TABLE design_catalog IS 'Stock designs available for selection (Phase 2)';
+COMMENT ON TABLE admin_users IS 'Administrative users for backend management';
+COMMENT ON TABLE site_settings IS 'Configurable site settings';
+COMMENT ON TABLE shipping_rates IS 'Shipping rates per product category';

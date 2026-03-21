@@ -1,0 +1,54 @@
+4.0K	ADMIN-LOGIN-STATUS.md
+4.0K	BACKUP-RESTORE-GUIDE.md
+4.0K	EMAIL-SETUP-GUIDE.md
+4.0K	ISSUE-1-FIX.md
+4.0K	ISSUE-4-COMPLETE.md
+4.0K	ISSUES-2-3-COMPLETE.md
+4.0K	MOBILE-OPTIMIZATION-REPORT.md
+4.0K	PRODUCT-PHOTO-MANAGEMENT-GUIDE.md
+4.0K	QUICK-COMPLETE-REMAINING-FEATURES.md
+4.0K	SETUP-FIXES.md
+4.0K	THREE-CRITICAL-FIXES.md
+4.0K	URGENT-DATABASE-FIXES.md
+4.0K	create-icons.html
+4.0K	email-capture-schema.sql
+4.0K	email-troubleshooting.md
+4.0K	netlify.toml
+4.0K	next-env.d.ts
+4.0K	next.config.js
+4.0K	package.json
+4.0K	postcss.config.js
+4.0K	refund-system-schema.sql
+4.0K	sendgrid-setup-instructions.md
+4.0K	tailwind.config.ts
+4.0K	test-seo-table.sql
+4.0K	tsconfig.json
+8.0K	ISSUE-6-COMPLETE.md
+8.0K	MOBILE-OPTIMIZATION-ENHANCEMENT-COMPLETE.md
+8.0K	PROGRESS-REPORT-ISSUES-1-6.md
+8.0K	README.md
+8.0K	REQUIREMENT-10-VERIFIED.md
+8.0K	TESTING.md
+8.0K	netlify-deploy.md
+8.0K	prepare-netlify.js
+ 12K	FINAL-COMPLETION-SUCCESS.md
+ 12K	FINAL-PROJECT-COMPLETION-REPORT.md
+ 12K	NETLIFY-DEPLOYMENT-GUIDE.md
+ 12K	PACKAGE-CONTENTS.md
+ 12K	PROJECT-COMPLETE-FINAL-REPORT.md
+ 12K	REQUIREMENT-11-MOBILE-OPTIMIZATION-COMPLETE.md
+ 12K	brand-variation-a.html
+ 12K	brand-variation-b.html
+ 16K	CRYSTAL-HARBOR-PROJECT-COMPLETE-FINAL.md
+ 16K	brand-variation-c.html
+ 16K	test-results
+ 20K	NETLIFY-DEPLOYMENT-GUIDE.html
+ 24K	CRYSTAL-HARBOR-VISUAL-SHOWCASE.md
+ 40K	brand-mockups
+ 56K	scripts
+ 64K	docs
+ 76K	public
+216K	package-lock.json
+968K	tsconfig.tsbuildinfo
+1.0M	src
+396M	node_modules

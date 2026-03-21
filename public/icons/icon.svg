@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="64" fill="#1E3A8A"/>
+  
+  <!-- Main Symbol -->
+  <g transform="translate(128, 128)">
+    <!-- Anchor shape representing harbor/trading -->
+    <path d="M128 48 L128 80 L144 80 L144 112 L128 112 L128 240 L160 240 Q192 240 192 208 Q192 176 160 176 L144 176 L144 144 L160 144 Q224 144 224 208 Q224 272 160 272 L96 272 Q32 272 32 208 Q32 144 96 144 L112 144 L112 176 L96 176 Q64 176 64 208 Q64 240 96 240 L128 240 L128 112 L112 112 L112 80 L128 80 L128 48 Z" fill="#84CC16"/>
+  </g>
+  
+  <!-- Decorative elements -->
+  <circle cx="128" cy="384" r="16" fill="#FF6B6B"/>
+  <circle cx="384" cy="384" r="16" fill="#FF6B6B"/>
+  <circle cx="128" cy="128" r="12" fill="#94A3B8"/>
+  <circle cx="384" cy="128" r="12" fill="#94A3B8"/>
+  
+  <!-- Text representation -->
+  <text x="256" y="400" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="32" font-weight="bold">CH</text>
+  <text x="256" y="440" text-anchor="middle" fill="#94A3B8" font-family="Arial, sans-serif" font-size="18">TRADING</text>
+</svg>

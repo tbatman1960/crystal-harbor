@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+    <style>
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        .icon-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    </style>
+</head>
+<body>
+    <h1>PWA Icon Generator</h1>
+    <p>This will generate icons for the Crystal Harbor PWA. Right-click on each canvas and "Save image as..." to save the icons to public/icons/</p>
+    
+    <div class="icon-grid" id="iconGrid"></div>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        
+        function createIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            const radius = size * 0.125; // 12.5% border radius
+            ctx.fillStyle = '#1E3A8A';
+            roundRect(ctx, 0, 0, size, size, radius);
+            ctx.fill();
+            
+            // Main symbol (simplified anchor/harbor symbol)
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const symbolSize = size * 0.4;
+            
+            ctx.fillStyle = '#84CC16';
+            ctx.fillRect(centerX - symbolSize/8, centerY - symbolSize/2, symbolSize/4, symbolSize);
+            ctx.fillRect(centerX - symbolSize/2, centerY - symbolSize/8, symbolSize, symbolSize/4);
+            
+            // Decorative circles
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.arc(size * 0.25, size * 0.75, size * 0.03, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.75, size * 0.75, size * 0.03, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.fillStyle = '#94A3B8';
+            ctx.beginPath();
+            ctx.arc(size * 0.25, size * 0.25, size * 0.025, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(size * 0.75, size * 0.25, size * 0.025, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Text
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.08}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('CH', centerX, size * 0.8);
+            
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = `${size * 0.04}px Arial`;
+            ctx.fillText('TRADING', centerX, size * 0.9);
+            
+            return canvas;
+        }
+        
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+        }
+        
+        // Generate all icons
+        const grid = document.getElementById('iconGrid');
+        sizes.forEach(size => {
+            const canvas = createIcon(size);
+            const container = document.createElement('div');
+            container.innerHTML = `<h3>icon-${size}x${size}.png</h3>`;
+            container.appendChild(canvas);
+            grid.appendChild(container);
+        });
+    </script>
+</body>
+</html>

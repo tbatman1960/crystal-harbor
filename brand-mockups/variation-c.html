@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Variation C - Dual Accent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #1E3A8A;
+            --silver: #94A3B8;
+            --lime: #84CC16;
+            --coral: #FF6B6B;
+            --charcoal: #374151;
+            --off-white: #F8FAFC;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--off-white);
+            color: var(--charcoal);
+        }
+
+        .brand-showcase {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .variation-title {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            color: var(--navy);
+            margin-bottom: 3rem;
+        }
+
+        .color-palette {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 3rem;
+        }
+
+        .palette-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            color: var(--navy);
+            margin-bottom: 1.5rem;
+        }
+
+        .color-swatches {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1rem;
+        }
+
+        .swatch {
+            text-align: center;
+        }
+
+        .swatch-color {
+            width: 100%;
+            height: 80px;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border: 2px solid #E5E7EB;
+        }
+
+        .swatch-navy { background: var(--navy); }
+        .swatch-silver { background: var(--silver); }
+        .swatch-lime { background: var(--lime); }
+        .swatch-coral { background: var(--coral); }
+        .swatch-charcoal { background: var(--charcoal); }
+        .swatch-off-white { background: var(--off-white); }
+
+        .swatch-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .swatch-hex {
+            font-size: 0.8rem;
+            color: var(--silver);
+            font-family: 'Monaco', monospace;
+        }
+
+        .logo-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .logo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--navy);
+            margin-bottom: 1rem;
+        }
+
+        .logo-accent1 {
+            color: var(--lime);
+        }
+
+        .logo-accent2 {
+            color: var(--coral);
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--silver);
+            font-weight: 500;
+        }
+
+        .homepage-mockup {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .mock-header {
+            background: var(--navy);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mock-logo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .mock-nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .mock-nav a {
+            color: var(--silver);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .mock-nav a:hover {
+            color: var(--lime);
+        }
+
+        .mock-hero {
+            background: linear-gradient(135deg, var(--navy) 0%, #2563EB 100%);
+            padding: 4rem 2rem;
+            text-align: center;
+            color: white;
+        }
+
+        .mock-hero h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .mock-hero p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .mock-cta {
+            background: linear-gradient(45deg, var(--lime), var(--coral));
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .mock-cta:hover {
+            transform: translateY(-2px);
+        }
+
+        .mock-categories {
+            padding: 3rem 2rem;
+            background: var(--off-white);
+        }
+
+        .mock-categories h2 {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            color: var(--navy);
+            margin-bottom: 2rem;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .category-card {
+            background: white;
+            padding: 2rem 1rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .category-card:nth-child(1) .category-icon { background: var(--lime); }
+        .category-card:nth-child(2) .category-icon { background: var(--coral); }
+        .category-card:nth-child(3) .category-icon { background: var(--lime); }
+        .category-card:nth-child(4) .category-icon { background: var(--coral); }
+
+        .category-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: var(--navy);
+        }
+
+        @media (max-width: 768px) {
+            .color-swatches {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .mock-hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="brand-showcase">
+        <h1 class="variation-title">Brand Variation C - Dual Accent</h1>
+        
+        <!-- Color Palette -->
+        <div class="color-palette">
+            <h2 class="palette-title">Color Palette</h2>
+            <div class="color-swatches">
+                <div class="swatch">
+                    <div class="swatch-color swatch-navy"></div>
+                    <div class="swatch-name">Navy Blue</div>
+                    <div class="swatch-hex">#1E3A8A</div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color swatch-silver"></div>
+                    <div class="swatch-name">Silver</div>
+                    <div class="swatch-hex">#94A3B8</div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color swatch-lime"></div>
+                    <div class="swatch-name">Lime Green</div>
+                    <div class="swatch-hex">#84CC16</div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color swatch-coral"></div>
+                    <div class="swatch-name">Coral</div>
+                    <div class="swatch-hex">#FF6B6B</div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color swatch-charcoal"></div>
+                    <div class="swatch-name">Charcoal</div>
+                    <div class="swatch-hex">#374151</div>
+                </div>
+                <div class="swatch">
+                    <div class="swatch-color swatch-off-white"></div>
+                    <div class="swatch-name">Off-White</div>
+                    <div class="swatch-hex">#F8FAFC</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo Concept -->
+        <div class="logo-section">
+            <div class="logo">Crys<span class="logo-accent1">tal</span> Har<span class="logo-accent2">bor</span></div>
+            <div class="tagline">Custom Printed Products Made Simple</div>
+        </div>
+
+        <!-- Homepage Mockup -->
+        <div class="homepage-mockup">
+            <header class="mock-header">
+                <div class="mock-logo">Crystal Harbor</div>
+                <nav class="mock-nav">
+                    <a href="#">Products</a>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                </nav>
+            </header>
+            
+            <section class="mock-hero">
+                <h1>Custom Products,<br>Made Your Way</h1>
+                <p>Upload your design, choose your product, and we'll handle the rest.<br>Quality custom printing with no minimums.</p>
+                <button class="mock-cta">Start Creating</button>
+            </section>
+            
+            <section class="mock-categories">
+                <h2>Choose Your Canvas</h2>
+                <div class="category-grid">
+                    <div class="category-card">
+                        <div class="category-icon">👕</div>
+                        <div class="category-name">T-Shirts</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🏠</div>
+                        <div class="category-name">Blankets</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🏴</div>
+                        <div class="category-name">Flags</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">📋</div>
+                        <div class="category-name">Banners</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</body>
+</html>

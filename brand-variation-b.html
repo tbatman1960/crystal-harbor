@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brand Variation B - Electric Energy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #374151; }
+        
+        .brand-showcase {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8fafc;
+        }
+        
+        h1, h2, h3 { font-family: 'Poppins', sans-serif; }
+        
+        /* Color Palette Section */
+        .palette-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        
+        .color-swatches {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .color-swatch {
+            text-align: center;
+        }
+        
+        .color-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 0.5rem;
+            border: 3px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .primary { background: #1E3A8A; }
+        .secondary { background: #94A3B8; color: #374151; text-shadow: none; }
+        .accent { background: #FF8C00; }
+        .neutral1 { background: #374151; }
+        .neutral2 { background: #F8FAFC; color: #374151; text-shadow: none; }
+        
+        /* Logo Section */
+        .logo-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        
+        .logo-options {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        
+        .logo-option {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .logo-1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1E3A8A;
+            position: relative;
+        }
+        
+        .logo-1::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #FF8C00, #94A3B8);
+            border-radius: 2px;
+        }
+        
+        .logo-2 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1E3A8A;
+            letter-spacing: 2px;
+            position: relative;
+        }
+        
+        .logo-2 .accent-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #FF8C00;
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+        
+        .logo-3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 500;
+            color: #1E3A8A;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .harbor-icon {
+            width: 24px;
+            height: 24px;
+            background: #FF8C00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        /* Homepage Mockup */
+        .mockup-section {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+        }
+        
+        .mockup-header {
+            background: #1E3A8A;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .mockup-logo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .mockup-nav {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .mockup-nav a {
+            color: #94A3B8;
+            text-decoration: none;
+        }
+        
+        .mockup-nav a:hover {
+            color: white;
+        }
+        
+        .mockup-hero {
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+        
+        .mockup-hero h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+        
+        .mockup-hero p {
+            font-size: 1.1rem;
+            color: #94A3B8;
+            margin-bottom: 2rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .cta-button {
+            background: #FF8C00;
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .mockup-categories {
+            padding: 3rem 2rem;
+            background: #f8fafc;
+        }
+        
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .category-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-4px);
+        }
+        
+        .category-icon {
+            width: 60px;
+            height: 60px;
+            background: #FF8C00;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .category-card h3 {
+            color: #1E3A8A;
+            margin-bottom: 0.5rem;
+        }
+        
+        .category-card p {
+            color: #94A3B8;
+            font-size: 0.9rem;
+        }
+
+        .energy-highlight {
+            background: linear-gradient(90deg, #FF8C00, #FFB84D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="brand-showcase">
+        <h1 style="text-align: center; margin-bottom: 2rem; color: #1E3A8A; font-size: 2.5rem;">Brand Variation B - <span class="energy-highlight">Electric Energy</span></h1>
+        
+        <!-- Color Palette -->
+        <div class="palette-section">
+            <h2 style="color: #1E3A8A; margin-bottom: 1rem;">Color Palette</h2>
+            <div class="color-swatches">
+                <div class="color-swatch">
+                    <div class="color-circle primary">Navy</div>
+                    <strong>Primary</strong><br>
+                    <small>#1E3A8A</small>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-circle secondary">Silver</div>
+                    <strong>Secondary</strong><br>
+                    <small>#94A3B8</small>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-circle accent">Orange</div>
+                    <strong>Accent</strong><br>
+                    <small>#FF8C00</small>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-circle neutral1">Dark</div>
+                    <strong>Charcoal</strong><br>
+                    <small>#374151</small>
+                </div>
+                <div class="color-swatch">
+                    <div class="color-circle neutral2">Light</div>
+                    <strong>Off-White</strong><br>
+                    <small>#F8FAFC</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logo Concepts -->
+        <div class="logo-section">
+            <h2 style="color: #1E3A8A; margin-bottom: 1rem;">Logo Concepts</h2>
+            <div class="logo-options">
+                <div class="logo-option">
+                    <div class="logo-1">Crystal Harbor</div>
+                    <small style="color: #94A3B8;">Wave underline</small>
+                </div>
+                <div class="logo-option">
+                    <div class="logo-2">CRYSTAL HARBOR<span class="accent-dot"></span></div>
+                    <small style="color: #94A3B8;">Bold caps + orange dot</small>
+                </div>
+                <div class="logo-option">
+                    <div class="logo-3">
+                        <div class="harbor-icon">⚓</div>
+                        Crystal Harbor
+                    </div>
+                    <small style="color: #94A3B8;">Harbor icon</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Homepage Mockup -->
+        <div class="mockup-section">
+            <h2 style="color: #1E3A8A; margin: 2rem 0 1rem 0; padding: 0 2rem;">Homepage Mockup</h2>
+            
+            <div class="mockup-header">
+                <div class="mockup-logo">Crystal Harbor</div>
+                <nav class="mockup-nav">
+                    <a href="#">Products</a>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                </nav>
+            </div>
+            
+            <div class="mockup-hero">
+                <h1>Custom Printed Goods Made Easy</h1>
+                <p>Upload your design, choose your product, and we'll handle the rest. Quality custom printing for T-shirts, blankets, banners, and flags.</p>
+                <button class="cta-button">Start Creating</button>
+            </div>
+            
+            <div class="mockup-categories">
+                <h2 style="text-align: center; color: #1E3A8A; margin-bottom: 2rem;">Shop by Category</h2>
+                <div class="categories-grid">
+                    <div class="category-card">
+                        <div class="category-icon">👕</div>
+                        <h3>T-Shirts</h3>
+                        <p>Custom printed apparel</p>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🧥</div>
+                        <h3>Blankets</h3>
+                        <p>Cozy custom throws</p>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🏴</div>
+                        <h3>Banners</h3>
+                        <p>Professional signage</p>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🚩</div>
+                        <h3>Flags</h3>
+                        <p>Custom flag printing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
