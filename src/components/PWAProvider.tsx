@@ -93,19 +93,19 @@ export default function PWAProvider({ children }: PWAProviderProps) {
   }
 
   const handleInstallApp = async () => {
-    // If Safari/iOS, show instructions instead
-    if (isSafari) {
-      setShowSafariInstructions(true)
-      pwaMetrics.trackPWAEvent('safari_install_instructions_shown')
-      return
+    // Try the native install prompt first (works on Chrome/Edge Android)
+    if (!isSafari) {
+      const installed = await showInstallPrompt()
+      if (installed) {
+        setShowInstallBanner(false)
+        pwaMetrics.trackPWAEvent('app_installed_from_banner')
+        return
+      }
     }
 
-    // For Chrome/Edge, use the native install prompt
-    const installed = await showInstallPrompt()
-    if (installed) {
-      setShowInstallBanner(false)
-      pwaMetrics.trackPWAEvent('app_installed_from_banner')
-    }
+    // If native prompt didn't work or this is Safari/iOS, show manual instructions
+    setShowSafariInstructions(true)
+    pwaMetrics.trackPWAEvent('manual_install_instructions_shown')
   }
 
   const dismissInstallBanner = () => {
