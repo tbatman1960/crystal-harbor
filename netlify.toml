@@ -1,36 +1,39 @@
 [build]
-  command = "npm run build"
-  functions = ".netlify/functions"
+command = "npm run build"
+functions = ".netlify/functions"
+
+[build.environment]
+NPM_FLAGS = "--include=dev"
 
 # Use Netlify's Next.js Runtime for optimal performance
 [[plugins]]
-  package = "@netlify/plugin-nextjs"
+package = "@netlify/plugin-nextjs"
 
 # Headers for security
 [[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+for = "/*"
+[headers.values]
+X-Frame-Options = "DENY"
+X-XSS-Protection = "1; mode=block"
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "strict-origin-when-cross-origin"
 
 # Headers for API routes
 [[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Headers = "Content-Type, Authorization"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+for = "/.netlify/functions/*"
+[headers.values]
+Access-Control-Allow-Origin = "*"
+Access-Control-Allow-Headers = "Content-Type, Authorization"
+Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
 
 # Environment specific builds
 [context.production.environment]
-  NODE_ENV = "production"
-  NEXT_PUBLIC_APP_URL = "https://crystalharbor.netlify.app"
+NODE_ENV = "production"
+NEXT_PUBLIC_APP_URL = "https://crystalharbor.netlify.app"
 
 [context.deploy-preview.environment]
-  NODE_ENV = "development"
-  NEXT_PUBLIC_APP_URL = "https://deploy-preview-{REVIEW_ID}--crystalharbor.netlify.app"
+NODE_ENV = "development"
+NEXT_PUBLIC_APP_URL = "https://deploy-preview-{REVIEW_ID}--crystalharbor.netlify.app"
 
 [context.branch-deploy.environment]
-  NODE_ENV = "development"
+NODE_ENV = "development"
