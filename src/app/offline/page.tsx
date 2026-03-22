@@ -1,10 +1,7 @@
+'use client'
+
 import Link from 'next/link'
 import { WifiIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
-
-export const metadata = {
-  title: 'You\'re Offline - Crystal Harbor Trading Company',
-  description: 'You\'re currently offline. Check your internet connection to continue shopping.',
-}
 
 export default function OfflinePage() {
   const handleRefresh = () => {
@@ -25,10 +22,9 @@ export default function OfflinePage() {
         <h1 className="font-display font-bold text-2xl text-neutral-900 mb-4">
           You're Offline
         </h1>
-        
         <p className="text-secondary-600 mb-6 leading-relaxed">
-          It looks like you've lost your internet connection. Don't worry – you can still browse 
-          some cached pages while offline.
+          It looks like you've lost your internet connection.
+          Don't worry – you can still browse some cached pages while offline.
         </p>
 
         {/* Cached Pages Available */}
@@ -51,8 +47,8 @@ export default function OfflinePage() {
             <ArrowPathIcon className="w-5 h-5" />
             <span>Try Again</span>
           </button>
-          
-          <Link 
+
+          <Link
             href="/"
             className="w-full btn-outline block text-center"
           >
