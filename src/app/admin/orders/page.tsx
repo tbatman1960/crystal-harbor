@@ -255,17 +255,17 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="section-padding">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="font-display font-bold text-3xl text-primary-600 mb-2">
+          <h1 className="font-display font-bold text-2xl sm:text-3xl text-primary-600 mb-1">
             Orders
           </h1>
-          <p className="text-secondary-600">
+          <p className="text-secondary-600 text-sm sm:text-base">
             Manage and track customer orders ({total} total)
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <button className="btn-outline flex items-center space-x-2">
+          <button className="btn-outline flex items-center space-x-2 text-sm">
             <ArrowDownTrayIcon className="w-4 h-4" />
             <span>Export</span>
           </button>
@@ -290,11 +290,11 @@ export default function AdminOrdersPage() {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <select
                 value={filters.status}
                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                className="input-field min-w-0 w-auto"
+                className="input-field min-w-0 w-auto text-sm"
               >
                 {statusOptions.map(option => (
                   <option key={option.value} value={option.value}>
@@ -305,10 +305,11 @@ export default function AdminOrdersPage() {
               
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="btn-outline flex items-center space-x-2"
+                className="btn-outline flex items-center space-x-1 sm:space-x-2 text-sm"
               >
                 <FunnelIcon className="w-4 h-4" />
-                <span>More Filters</span>
+                <span className="hidden sm:inline">More Filters</span>
+                <span className="sm:hidden">Filter</span>
               </button>
             </div>
           </div>
@@ -448,41 +449,86 @@ export default function AdminOrdersPage() {
           <div className="loading-pulse">Loading orders...</div>
         </div>
       ) : filteredOrders.length > 0 ? (
-        <div className="card overflow-hidden">
+        <>
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {filteredOrders.map((order) => (
+            <div key={order.id} className="card p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="font-semibold text-neutral-700">#{order.order_number}</div>
+                  <div className="text-sm text-secondary-600">
+                    {order.shipping_address?.first_name} {order.shipping_address?.last_name}
+                  </div>
+                </div>
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.status)}`}>
+                  {order.status}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm mb-3">
+                <span className="text-secondary-600">{order.order_items?.length || 0} items</span>
+                <span className="font-semibold text-neutral-700">${order.total_amount.toFixed(2)}</span>
+              </div>
+              <div className="text-xs text-secondary-500 mb-3">
+                {new Date(order.created_at).toLocaleDateString()} {new Date(order.created_at).toLocaleTimeString()}
+              </div>
+              <div className="flex items-center justify-between border-t pt-3">
+                <select
+                  value={order.status}
+                  onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                  disabled={updating === order.id}
+                  className={`text-xs font-semibold px-2 py-1 rounded-full border-0 ${getStatusColor(order.status)}`}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="ordered">Ordered</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <div className="flex items-center space-x-2">
+                  <Link
+                    href={`/admin/orders/${order.id}`}
+                    className="inline-flex items-center px-3 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded-full"
+                  >
+                    <EyeIcon className="w-3 h-3 mr-1" />
+                    View
+                  </Link>
+                  {order.status === 'pending' && (
+                    <button
+                      onClick={() => openVendorModal(order)}
+                      className="inline-flex items-center px-3 py-1 bg-accent-coral-100 text-accent-coral-700 text-xs font-medium rounded-full"
+                    >
+                      <EnvelopeIcon className="w-3 h-3 mr-1" />
+                      Vendor
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
+        <div className="hidden lg:block card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-background-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Order
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Items
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Order</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Customer</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Items</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Total</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-background-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-semibold text-neutral-700">
-                        #{order.order_number}
-                      </div>
+                      <div className="font-semibold text-neutral-700">#{order.order_number}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
@@ -495,17 +541,11 @@ export default function AdminOrdersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-neutral-700">
-                        {order.order_items?.length || 0} items
-                      </div>
-                      <div className="text-xs text-secondary-600">
-                        {order.order_items?.reduce((sum, item) => sum + item.quantity, 0)} units
-                      </div>
+                      <div className="text-sm text-neutral-700">{order.order_items?.length || 0} items</div>
+                      <div className="text-xs text-secondary-600">{order.order_items?.reduce((sum: number, item: any) => sum + item.quantity, 0)} units</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-semibold text-neutral-700">
-                        ${order.total_amount.toFixed(2)}
-                      </div>
+                      <div className="font-semibold text-neutral-700">${order.total_amount.toFixed(2)}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
@@ -521,24 +561,17 @@ export default function AdminOrdersPage() {
                         <option value="delivered">Delivered</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
-                      {updating === order.id && (
-                        <div className="text-xs text-secondary-500 mt-1">Updating...</div>
-                      )}
+                      {updating === order.id && <div className="text-xs text-secondary-500 mt-1">Updating...</div>}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-neutral-700">
-                        {new Date(order.created_at).toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-secondary-600">
-                        {new Date(order.created_at).toLocaleTimeString()}
-                      </div>
+                      <div className="text-sm text-neutral-700">{new Date(order.created_at).toLocaleDateString()}</div>
+                      <div className="text-xs text-secondary-600">{new Date(order.created_at).toLocaleTimeString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         <Link
                           href={`/admin/orders/${order.id}`}
-                          className="inline-flex items-center px-3 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 hover:text-primary-800 text-xs font-medium rounded-full transition-colors duration-200"
-                          title="View Order Details"
+                          className="inline-flex items-center px-3 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded-full transition-colors duration-200"
                         >
                           <EyeIcon className="w-3 h-3 mr-1" />
                           View
@@ -546,8 +579,7 @@ export default function AdminOrdersPage() {
                         {order.status === 'pending' && (
                           <button
                             onClick={() => openVendorModal(order)}
-                            className="inline-flex items-center px-3 py-1 bg-accent-coral-100 hover:bg-accent-coral-200 text-accent-coral-700 hover:text-accent-coral-800 text-xs font-medium rounded-full transition-colors duration-200"
-                            title="Send Order to Vendor"
+                            className="inline-flex items-center px-3 py-1 bg-accent-coral-100 hover:bg-accent-coral-200 text-accent-coral-700 text-xs font-medium rounded-full transition-colors duration-200"
                           >
                             <EnvelopeIcon className="w-3 h-3 mr-1" />
                             Send to Vendor
@@ -561,6 +593,7 @@ export default function AdminOrdersPage() {
             </table>
           </div>
         </div>
+        </>
       ) : (
         <div className="card p-12 text-center">
           <div className="text-6xl mb-4">
