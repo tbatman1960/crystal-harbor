@@ -19,6 +19,9 @@ export default function Header() {
     setMounted(true)
   }, [])
 
+  // Hide header on admin pages (admin has its own nav)
+  if (pathname?.startsWith('/admin')) return null
+
   // Don't render cart count until hydrated
   const cartItemCount = mounted ? totalItems : 0
 

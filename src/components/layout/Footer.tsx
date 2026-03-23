@@ -1,8 +1,15 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import NewsletterSignup from '@/components/NewsletterSignup'
 
 export default function Footer() {
+  const pathname = usePathname()
   const currentYear = new Date().getFullYear()
+
+  // Hide footer on admin pages
+  if (pathname?.startsWith('/admin')) return null
 
   const productLinks = [
     { name: 'T-Shirts', href: '/products/t-shirts' },

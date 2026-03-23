@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import NewsletterSignup from './NewsletterSignup'
 import { hasPopupBeenShown, setPopupShownCookie, setupExitIntentDetection } from '@/lib/email-capture'
@@ -14,9 +15,13 @@ export default function EmailCapturePopup({
   delaySeconds = 30, 
   enableExitIntent = true 
 }: EmailCapturePopupProps) {
+  const pathname = usePathname()
   const [isVisible, setIsVisible] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+
+  // Don't show on admin pages
+  if (pathname?.startsWith('/admin')) return null
 
   useEffect(() => {
     // Don't show popup if it's already been shown
