@@ -83,10 +83,8 @@ export default function AdminLayout({
       <div className="p-6 border-b border-primary-500">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="block">
-            <div className="font-display font-bold text-xl text-white">
-              Crys<span className="text-accent-lime-400">tal</span> Har<span className="text-accent-coral-400">bor</span>
-            </div>
-            <div className="text-secondary-300 text-sm">Admin Panel</div>
+            <img src="/images/logo/crystal-harbor-logo.jpg" alt="Crystal Harbor" className="h-9 w-auto rounded" />
+            <div className="text-secondary-300 text-sm mt-1">Admin Panel</div>
           </Link>
           {/* Close button - mobile only */}
           <button
@@ -162,9 +160,7 @@ export default function AdminLayout({
             <Bars3Icon className="w-6 h-6" />
           </button>
           <Link href="/admin" className="block">
-            <div className="font-display font-bold text-lg text-white">
-              Crys<span className="text-accent-lime-400">tal</span> Har<span className="text-accent-coral-400">bor</span>
-            </div>
+            <img src="/images/logo/crystal-harbor-logo.jpg" alt="Crystal Harbor" className="h-8 w-auto rounded" />
           </Link>
           <div className="w-8" /> {/* Spacer for centering */}
         </div>

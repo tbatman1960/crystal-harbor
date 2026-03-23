@@ -36,8 +36,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
-            <div className="font-display font-bold text-xl mb-4">
-              Crys<span className="text-accent-lime-500">tal</span> Har<span className="text-accent-coral-500">bor</span>
+            <div className="mb-4">
+              <img
+                src="/images/logo/crystal-harbor-logo.jpg"
+                alt="Crystal Harbor"
+                className="h-10 w-auto rounded"
+              />
             </div>
             <p className="text-secondary-400 mb-4">
               Custom printed products made simple. Upload your design, choose your product, and we'll handle the rest.

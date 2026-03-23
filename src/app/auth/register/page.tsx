@@ -18,8 +18,8 @@ export default function RegisterPage({
       <div className="container mx-auto">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <div className="font-display font-bold text-2xl text-primary-600">
-              Crys<span className="text-accent-lime-500">tal</span> Har<span className="text-accent-coral-500">bor</span>
+            <div>
+              <img src="/images/logo/crystal-harbor-logo.jpg" alt="Crystal Harbor" className="h-12 w-auto rounded" />
             </div>
           </Link>
         </div>

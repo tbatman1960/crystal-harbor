@@ -43,9 +43,7 @@ export default function AdminLoginPage() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Link href="/" className="inline-block mb-6">
-            <div className="font-display font-bold text-2xl text-primary-600">
-              Crys<span className="text-accent-lime-500">tal</span> Har<span className="text-accent-coral-500">bor</span>
-            </div>
+            <img src="/images/logo/crystal-harbor-logo.jpg" alt="Crystal Harbor" className="h-12 w-auto rounded mx-auto" />
           </Link>
           <h2 className="font-display font-bold text-3xl text-neutral-800">
             Admin Portal

@@ -44,10 +44,12 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="font-display font-bold text-xl text-white">
-              Crys<span className="text-accent-lime-500">tal</span> Har<span className="text-accent-coral-500">bor</span>
-            </div>
+          <Link href="/" className="flex items-center">
+            <img
+              src="/images/logo/crystal-harbor-logo.jpg"
+              alt="Crystal Harbor"
+              className="h-10 w-auto rounded"
+            />
           </Link>
 
           {/* Desktop Navigation */}
