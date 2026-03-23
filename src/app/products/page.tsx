@@ -41,19 +41,31 @@ export default async function ProductsPage() {
                 <Link
                   key={category.id}
                   href={`/products/${category.slug}`}
-                  className="card p-6 text-center hover:shadow-xl transform hover:scale-105 transition-all duration-300 group"
+                  className="card overflow-hidden text-center hover:shadow-xl transform hover:scale-105 transition-all duration-300 group"
                 >
-                  <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">
-                    {getCategoryIcon(category.slug)}
-                  </div>
-                  <h3 className="font-display font-semibold text-lg text-primary-600 group-hover:text-accent-coral-500 transition-colors duration-300">
-                    {category.name}
-                  </h3>
-                  {category.description && (
-                    <p className="text-sm text-secondary-600 mt-2">
-                      {category.description}
-                    </p>
+                  {getCategoryImage(category.slug) ? (
+                    <div className="aspect-[4/3] overflow-hidden">
+                      <img
+                        src={getCategoryImage(category.slug)!}
+                        alt={category.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-3xl pt-6 mb-2 group-hover:scale-110 transition-transform duration-300">
+                      {getCategoryIcon(category.slug)}
+                    </div>
                   )}
+                  <div className="p-4">
+                    <h3 className="font-display font-semibold text-lg text-primary-600 group-hover:text-accent-coral-500 transition-colors duration-300">
+                      {category.name}
+                    </h3>
+                    {category.description && (
+                      <p className="text-sm text-secondary-600 mt-1">
+                        {category.description}
+                      </p>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
@@ -115,4 +127,15 @@ function getCategoryIcon(slug: string): string {
   }
   
   return iconMap[slug] || '📦'
+}
+
+// Helper function to get category images
+function getCategoryImage(slug: string): string | null {
+  const imageMap: { [key: string]: string } = {
+    't-shirts': '/images/products/category-tshirts.jpg',
+    'blankets': '/images/products/category-blankets.jpg',
+    'banners': '/images/products/category-banners.jpg',
+    'flags': '/images/products/category-flags.jpg',
+  }
+  return imageMap[slug] || null
 }

@@ -14,9 +14,17 @@ export default function ProductCard({ product }: ProductCardProps) {
     <Link href={productUrl} className="card group overflow-hidden">
       {/* Product Image */}
       <div className="aspect-square bg-gray-100 overflow-hidden relative">
-        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
-          <div className="text-secondary-400 text-6xl">📷</div>
-        </div>
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
+            <div className="text-secondary-400 text-6xl">📷</div>
+          </div>
+        )}
       </div>
 
       {/* Product Info */}

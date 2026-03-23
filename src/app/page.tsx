@@ -8,24 +8,28 @@ export default function HomePage() {
       name: 'T-Shirts',
       href: '/products/t-shirts',
       icon: '👕',
+      image: '/images/products/category-tshirts.jpg',
       description: 'Custom printed t-shirts in all sizes'
     },
     {
       name: 'Blankets',
       href: '/products/blankets',
       icon: '🏠',
+      image: '/images/products/category-blankets.jpg',
       description: 'Cozy custom blankets and throws'
     },
     {
       name: 'Flags',
       href: '/products/flags',
       icon: '🏴',
+      image: '/images/products/category-flags.jpg',
       description: 'Custom flags for any occasion'
     },
     {
       name: 'Banners',
       href: '/products/banners',
       icon: '📋',
+      image: '/images/products/category-banners.jpg',
       description: 'Vinyl banners and signs'
     }
   ]
@@ -113,17 +117,23 @@ export default function HomePage() {
               <Link
                 key={category.name}
                 href={category.href}
-                className="card p-6 text-center hover:shadow-xl transform hover:scale-105 transition-all duration-300 group"
+                className="card overflow-hidden text-center hover:shadow-xl transform hover:scale-105 transition-all duration-300 group"
               >
-                <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                  {category.icon}
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
                 </div>
-                <h3 className="font-display font-semibold text-xl text-primary-600 mb-2">
-                  {category.name}
-                </h3>
-                <p className="text-secondary-600">{category.description}</p>
-                <div className="mt-4 text-accent-coral-500 font-semibold group-hover:text-accent-lime-500 transition-colors duration-300">
-                  Explore Collection →
+                <div className="p-4">
+                  <h3 className="font-display font-semibold text-xl text-primary-600 mb-1">
+                    {category.name}
+                  </h3>
+                  <p className="text-secondary-600 text-sm">{category.description}</p>
+                  <div className="mt-3 text-accent-coral-500 font-semibold group-hover:text-accent-lime-500 transition-colors duration-300 text-sm">
+                    Explore Collection →
+                  </div>
                 </div>
               </Link>
             ))}
