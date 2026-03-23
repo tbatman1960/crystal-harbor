@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import Link from 'next/link'
 import { loginCustomer, LoginData } from '@/lib/auth'
 import { useAuthStore } from '@/store/authStore'
+import { ShieldCheckIcon } from '@heroicons/react/24/outline'
 
 interface LoginFormProps {
   redirectTo?: string
@@ -14,6 +15,7 @@ interface LoginFormProps {
 
 export default function LoginForm({ redirectTo = '/', showRegisterLink = true }: LoginFormProps) {
   const [error, setError] = useState('')
+  const [showAdminPrompt, setShowAdminPrompt] = useState(false)
   const router = useRouter()
   const { login, setLoading, isLoading } = useAuthStore()
 
@@ -21,7 +23,28 @@ export default function LoginForm({ redirectTo = '/', showRegisterLink = true }:
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    watch,
   } = useForm<LoginData>()
+
+  // Check if email is an admin email on blur
+  const checkAdminEmail = useCallback(async (email: string) => {
+    if (!email || !email.includes('@')) return
+    try {
+      const res = await fetch('/api/auth/check-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await res.json()
+      if (data.isAdmin) {
+        setShowAdminPrompt(true)
+      } else {
+        setShowAdminPrompt(false)
+      }
+    } catch {
+      // Silently fail — not critical
+    }
+  }, [])
 
   const onSubmit = async (data: LoginData) => {
     setError('')
@@ -59,6 +82,39 @@ export default function LoginForm({ redirectTo = '/', showRegisterLink = true }:
           </div>
         )}
 
+        {/* Admin Portal Prompt */}
+        {showAdminPrompt && (
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start space-x-3">
+              <ShieldCheckIcon className="w-6 h-6 text-primary-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-primary-700 text-sm">
+                  Admin account detected
+                </p>
+                <p className="text-primary-600 text-xs mt-1">
+                  Would you like to sign in to the admin portal instead?
+                </p>
+                <div className="flex space-x-3 mt-3">
+                  <button
+                    type="button"
+                    onClick={() => router.push('/admin/login')}
+                    className="bg-primary-600 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-primary-700 transition-colors"
+                  >
+                    Go to Admin Portal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPrompt(false)}
+                    className="text-primary-600 text-sm hover:text-primary-800"
+                  >
+                    Stay Here
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="form-group">
             <label htmlFor="email" className="form-label">
@@ -74,6 +130,7 @@ export default function LoginForm({ redirectTo = '/', showRegisterLink = true }:
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: 'Invalid email address',
                 },
+                onBlur: (e) => checkAdminEmail(e.target.value),
               })}
             />
             {errors.email && <p className="form-error">{errors.email.message}</p>}
@@ -118,7 +175,7 @@ export default function LoginForm({ redirectTo = '/', showRegisterLink = true }:
 
         {showRegisterLink && (
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-            <p className="text-secondary-600 mb-4">Don't have an account?</p>
+            <p className="text-secondary-600 mb-4">Don&apos;t have an account?</p>
             <Link href="/auth/register" className="btn-outline w-full">
               Create Account
             </Link>
