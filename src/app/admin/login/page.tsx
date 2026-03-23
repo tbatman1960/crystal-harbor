@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
                 id="email"
                 type="email"
                 className="input-field"
-                placeholder="admin@crystalharbor.com"
+                placeholder="Enter admin email"
                 {...register('email', {
                   required: 'Email is required',
                   pattern: {
@@ -107,11 +107,7 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-secondary-500">
-              Default credentials: admin@crystalharbor.com / admin123
-            </p>
-          </div>
+          {/* Credentials hint removed for security */}
         </div>
 
         <div className="text-center">
