@@ -17,6 +17,7 @@ import {
   MagnifyingGlassIcon,
   EnvelopeIcon,
   CurrencyDollarIcon,
+  UsersIcon,
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -57,6 +58,7 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin', icon: HomeIcon },
     { name: 'Orders', href: '/admin/orders', icon: ShoppingBagIcon },
+    { name: 'Customers', href: '/admin/customers', icon: UsersIcon },
     { name: 'Products', href: '/admin/products', icon: CubeIcon },
     { name: 'Subscribers', href: '/admin/subscribers', icon: EnvelopeIcon },
     { name: 'Email Test', href: '/admin/email-test', icon: EnvelopeIcon },
