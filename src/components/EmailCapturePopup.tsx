@@ -16,14 +16,13 @@ export default function EmailCapturePopup({
   enableExitIntent = true 
 }: EmailCapturePopupProps) {
   const pathname = usePathname()
+  const isAdmin = pathname?.startsWith('/admin')
   const [isVisible, setIsVisible] = useState(false)
   const [showPopup, setShowPopup] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  // Don't show on admin pages
-  if (pathname?.startsWith('/admin')) return null
-
   useEffect(() => {
+    if (isAdmin) return
     // Don't show popup if it's already been shown
     if (hasPopupBeenShown()) {
       return
@@ -85,7 +84,7 @@ export default function EmailCapturePopup({
     }
   }
 
-  if (!isVisible) return null
+  if (!isVisible || isAdmin) return null
 
   return (
     <>
