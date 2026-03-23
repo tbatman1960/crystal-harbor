@@ -13,11 +13,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Get customer by email
+    // Get customer by email (case-insensitive)
     const { data: customer, error } = await supabase
       .from('customers')
       .select('*')
-      .eq('email', email)
+      .ilike('email', email)
       .single()
 
     if (error || !customer) {

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const { data: admin, error } = await supabase
       .from('admin_users')
       .select('*')
-      .eq('email', email)
+      .ilike('email', email)
       .eq('active', true)
       .single()
 

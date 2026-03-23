@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const { data: existingUser } = await supabase
       .from('customers')
       .select('id')
-      .eq('email', email)
+      .ilike('email', email)
       .single()
 
     if (existingUser) {
