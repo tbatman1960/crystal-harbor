@@ -272,11 +272,19 @@ export default function AdminCustomerDetailPage({ params }: { params: { id: stri
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <EnvelopeIcon className="w-4 h-4 text-secondary-400 flex-shrink-0" />
-                  <span className="text-sm text-neutral-700 break-all">{customer.email}</span>
+                  <a href={`mailto:${customer.email}`} className="text-sm text-primary-600 hover:text-primary-800 underline break-all">
+                    {customer.email}
+                  </a>
                 </div>
                 <div className="flex items-center space-x-3">
                   <PhoneIcon className="w-4 h-4 text-secondary-400 flex-shrink-0" />
-                  <span className="text-sm text-neutral-700">{customer.phone || 'No phone'}</span>
+                  {customer.phone ? (
+                    <a href={`tel:${customer.phone}`} className="text-sm text-primary-600 hover:text-primary-800 underline">
+                      {customer.phone}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-secondary-500">No phone</span>
+                  )}
                 </div>
                 <div className="flex items-start space-x-3">
                   <MapPinIcon className="w-4 h-4 text-secondary-400 flex-shrink-0 mt-0.5" />
@@ -404,13 +412,6 @@ export default function AdminCustomerDetailPage({ params }: { params: { id: stri
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="font-semibold text-neutral-700">${order.total_amount.toFixed(2)}</span>
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          className="inline-flex items-center px-3 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded-full"
-                        >
-                          <EyeIcon className="w-3 h-3 mr-1" />
-                          View
-                        </Link>
                       </div>
                     </div>
                     <div className="text-xs text-secondary-500">
@@ -428,6 +429,28 @@ export default function AdminCustomerDetailPage({ params }: { params: { id: stri
                         ))}
                       </div>
                     )}
+                    <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="inline-flex items-center px-3 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded-full"
+                      >
+                        <EyeIcon className="w-3 h-3 mr-1" />
+                        View Order
+                      </Link>
+                      <a
+                        href={`mailto:${customer.email}?subject=${encodeURIComponent(`Re: Your Crystal Harbor Order #${order.order_number}`)}&body=${encodeURIComponent(
+                          `Hi ${customer.first_name},\n\nRegarding your order #${order.order_number} placed on ${new Date(order.created_at).toLocaleDateString()}:\n\n` +
+                          `Order Total: $${order.total_amount.toFixed(2)}\n` +
+                          `Status: ${order.status}\n` +
+                          (order.order_items ? `Items: ${order.order_items.map((item: any) => `${item.product_name} × ${item.quantity}`).join(', ')}\n` : '') +
+                          `\n\nThank you,\nCrystal Harbor Trading Company`
+                        )}`}
+                        className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 text-xs font-medium rounded-full"
+                      >
+                        <EnvelopeIcon className="w-3 h-3 mr-1" />
+                        Email About Order
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
