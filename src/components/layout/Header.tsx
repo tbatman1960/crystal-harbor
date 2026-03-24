@@ -45,11 +45,9 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <img
-              src="/images/logo/crystal-harbor-logo.jpg"
-              alt="Crystal Harbor"
-              className="h-10 w-auto rounded"
-            />
+            <span className="font-script text-2xl md:text-3xl tracking-wide" style={{ color: '#C0C0C0' }}>
+              Crystal Harbor
+            </span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Poppins } from 'next/font/google'
+import { Inter, Poppins, Dancing_Script } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -17,6 +17,12 @@ const poppins = Poppins({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-poppins',
+})
+
+const dancingScript = Dancing_Script({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-script',
 })
 
 export const metadata: Metadata = {
@@ -76,7 +82,7 @@ export default function RootLayout({
   const organizationData = generateOrganizationStructuredData()
   
   return (
-    <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+    <html lang="en" className={`${inter.variable} ${poppins.variable} ${dancingScript.variable}`}>
       <body className="min-h-screen flex flex-col">
         <GoogleAnalytics />
         <script 

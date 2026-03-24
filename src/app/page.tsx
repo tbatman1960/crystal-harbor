@@ -79,9 +79,12 @@ export default function HomePage() {
       <section className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white">
         <div className="container mx-auto px-4 py-24">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="font-display font-bold text-4xl md:text-6xl mb-6">
-              Custom Products,<br />
-              <span className="text-gradient">Made Your Way</span>
+            <h1 className="mb-6">
+              <span className="font-script text-5xl md:text-7xl tracking-wide" style={{ color: '#C0C0C0' }}>Crystal Harbor</span>
+              <br />
+              <span className="font-display font-bold text-2xl md:text-4xl mt-2 block">
+                Custom Products, <span className="text-gradient">Made Your Way</span>
+              </span>
             </h1>
             <p className="text-xl md:text-2xl text-secondary-200 mb-8">
               Upload your design, choose your product, and we'll handle the rest.<br />

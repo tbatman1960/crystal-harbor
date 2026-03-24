@@ -37,30 +37,30 @@ const config: Config = {
         },
         accent: {
           lime: {
-            50: '#f7fee7',
-            100: '#ecfccb',
-            200: '#d9f99d',
-            300: '#bef264',
-            400: '#a3e635',
-            500: '#84CC16', // Lime Green - Accent 1
-            600: '#65a30d',
-            700: '#4d7c0f',
-            800: '#3f6212',
-            900: '#365314',
-            950: '#1a2e05',
+            50: '#fdfaf3',
+            100: '#faf0d6',
+            200: '#f5e0ad',
+            300: '#edc976',
+            400: '#d4a844',
+            500: '#C4942A', // Gold - Accent 1
+            600: '#a67a22',
+            700: '#87611b',
+            800: '#6e4f1a',
+            900: '#5a4118',
+            950: '#33230a',
           },
           coral: {
-            50: '#fef2f2',
-            100: '#fee2e2',
-            200: '#fecaca',
-            300: '#fca5a5',
-            400: '#f87171',
-            500: '#FF6B6B', // Coral - Accent 2
-            600: '#dc2626',
-            700: '#b91c1c',
-            800: '#991b1b',
-            900: '#7f1d1d',
-            950: '#450a0a',
+            50: '#f0f4f8',
+            100: '#dce4ed',
+            200: '#bcc9d9',
+            300: '#9bafc5',
+            400: '#7a94b0',
+            500: '#8A9DB8', // Silver Blue - Accent 2
+            600: '#5c7a9e',
+            700: '#4a6380',
+            800: '#3d5168',
+            900: '#354557',
+            950: '#222d3a',
           },
         },
         neutral: {
@@ -83,8 +83,9 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Poppins', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'sans-serif'],
+        display: ['var(--font-poppins)', 'Poppins', 'sans-serif'],
+        script: ['var(--font-script)', 'Dancing Script', 'cursive'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',

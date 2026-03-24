@@ -37,11 +37,9 @@ export default function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="mb-4">
-              <img
-                src="/images/logo/crystal-harbor-logo.jpg"
-                alt="Crystal Harbor"
-                className="h-10 w-auto rounded"
-              />
+              <span className="font-script text-2xl tracking-wide" style={{ color: '#C0C0C0' }}>
+                Crystal Harbor
+              </span>
             </div>
             <p className="text-secondary-400 mb-4">
               Custom printed products made simple. Upload your design, choose your product, and we'll handle the rest.

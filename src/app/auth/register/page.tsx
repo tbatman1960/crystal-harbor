@@ -18,9 +18,9 @@ export default function RegisterPage({
       <div className="container mx-auto">
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
-            <div>
-              <img src="/images/logo/crystal-harbor-logo.jpg" alt="Crystal Harbor" className="h-12 w-auto rounded" />
-            </div>
+            <span className="font-script text-4xl text-primary-600 tracking-wide">
+              Crystal Harbor
+            </span>
           </Link>
         </div>
 
