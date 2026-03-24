@@ -97,7 +97,7 @@ export default function LoginForm({ redirectTo = '/', showRegisterLink = true }:
                 <div className="flex space-x-3 mt-3">
                   <button
                     type="button"
-                    onClick={() => router.push('/admin/login')}
+                    onClick={() => router.push(`/admin/login?email=${encodeURIComponent(watch('email'))}`)}
                     className="bg-primary-600 text-white px-4 py-1.5 rounded text-sm font-semibold hover:bg-primary-700 transition-colors"
                   >
                     Go to Admin Portal

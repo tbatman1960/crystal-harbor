@@ -1,22 +1,34 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import Link from 'next/link'
 import { loginAdmin, AdminLoginData } from '@/lib/admin'
 import { useAdminStore } from '@/store/adminStore'
 
 export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background-50 flex items-center justify-center">Loading...</div>}>
+      <AdminLoginForm />
+    </Suspense>
+  )
+}
+
+function AdminLoginForm() {
   const [error, setError] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const prefillEmail = searchParams.get('email') || ''
   const { login, setLoading, isLoading } = useAdminStore()
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<AdminLoginData>()
+  } = useForm<AdminLoginData>({
+    defaultValues: { email: prefillEmail }
+  })
 
   const onSubmit = async (data: AdminLoginData) => {
     setError('')
