@@ -478,21 +478,6 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
             </p>
           </div>
 
-          {/* Development: Skip Payment Option */}
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h4 className="font-semibold text-yellow-800 mb-2">🚧 Development Mode</h4>
-            <p className="text-yellow-700 text-sm mb-3">
-              Skip payment for testing purposes. This creates the order without processing payment.
-            </p>
-            <button
-              onClick={() => handlePaymentSuccess('dev_test_payment_' + Date.now())}
-              disabled={isProcessing}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded transition-colors duration-200 w-full"
-            >
-              {isProcessing ? 'Creating Order...' : 'Skip Payment (Test Order)'}
-            </button>
-          </div>
-
           {/* Mobile Payment Methods */}
           <div className="mb-6">
             <MobilePaymentMethods
