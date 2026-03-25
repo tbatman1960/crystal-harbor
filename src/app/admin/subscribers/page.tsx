@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { useAdminStore } from '@/store/adminStore'
 import { EnvelopeIcon, CalendarIcon, TagIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 
@@ -43,15 +42,13 @@ export default function AdminSubscribersPage() {
 
   const loadData = async () => {
     try {
-      // Load subscribers
-      const { data: subscriberData, error: subscriberError } = await supabase
-        .from('subscriber_emails')
-        .select('*')
-        .order('subscribed_at', { ascending: false })
+      // Load subscribers via API route (RLS blocks direct client access)
+      const res = await fetch('/api/admin/subscribers')
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      const subscriberData: Subscriber[] = data.subscribers || []
 
-      if (subscriberError) throw subscriberError
-
-      setSubscribers(subscriberData || [])
+      setSubscribers(subscriberData)
 
       // Calculate stats
       const now = new Date()
