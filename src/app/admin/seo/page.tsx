@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { supabase } from '@/lib/supabase'
+// Data fetched via API routes (RLS-safe)
 import { useAdminStore } from '@/store/adminStore'
 
 interface SEOSettings {
@@ -41,16 +41,13 @@ export default function AdminSEOPage() {
 
   const loadSEOSettings = async () => {
     try {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('*')
-        .eq('category', 'seo')
-
-      if (error) throw error
+      const res = await fetch('/api/admin/site-settings?category=seo')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const { settings: data } = await res.json()
 
       // Convert array of settings to object
       const settings: any = {}
-      data?.forEach(setting => {
+      data?.forEach((setting: any) => {
         settings[setting.key] = setting.value
       })
 
@@ -85,25 +82,13 @@ export default function AdminSEOPage() {
     setMessage('')
 
     try {
-      // Convert object to array of settings
-      const settingsArray = Object.entries(data).map(([key, value]) => ({
-        category: 'seo',
-        key,
-        value: value || ''
-      }))
+      const saveRes = await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category: 'seo', settings: data })
+      })
 
-      // Delete existing SEO settings
-      await supabase
-        .from('site_settings')
-        .delete()
-        .eq('category', 'seo')
-
-      // Insert new settings
-      const { error } = await supabase
-        .from('site_settings')
-        .insert(settingsArray)
-
-      if (error) throw error
+      if (!saveRes.ok) throw new Error('Failed to save')
 
       setMessage('SEO settings saved successfully!')
       setTimeout(() => setMessage(''), 3000)

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAdminStore } from '@/store/adminStore'
-import { supabase } from '@/lib/supabase'
+// Data fetched via API routes (RLS-safe)
 import { PrinterIcon, DocumentArrowDownIcon, CalendarIcon, FunnelIcon } from '@heroicons/react/24/outline'
 
 interface OrderReport {
@@ -47,24 +47,11 @@ export default function ReportsPage() {
 
   const loadOrders = async () => {
     try {
-      const { data: ordersData, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (
-            product_name,
-            quantity,
-            selected_size,
-            selected_color,
-            custom_text,
-            line_total
-          )
-        `)
-        .order('created_at', { ascending: false })
+      const res = await fetch('/api/admin/reports')
+      if (!res.ok) throw new Error('Failed to fetch')
+      const { orders: ordersData } = await res.json()
 
-      if (error) throw error
-
-      const formattedOrders: OrderReport[] = ordersData.map(order => ({
+      const formattedOrders: OrderReport[] = ordersData.map((order: any) => ({
         id: order.id,
         order_number: order.order_number,
         status: order.status,

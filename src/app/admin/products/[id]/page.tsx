@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getCategories } from '@/lib/products'
 import { PhotoIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface EditProductPageProps {
@@ -15,6 +14,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const router = useRouter()
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -24,6 +25,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     active: true,
     image_url: ''
   })
+  const [sizes, setSizes] = useState<string[]>([])
+  const [colors, setColors] = useState<string[]>([])
+  const [newSize, setNewSize] = useState('')
+  const [newColor, setNewColor] = useState('')
   const [photos, setPhotos] = useState<string[]>([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
@@ -34,66 +39,98 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   const loadCategories = async () => {
     try {
-      const data = await getCategories()
-      setCategories(data)
+      const res = await fetch('/api/admin/categories')
+      const data = await res.json()
+      if (data.categories) {
+        setCategories(data.categories)
+      }
     } catch (error) {
       console.error('Error loading categories:', error)
     }
   }
 
   const loadProduct = async () => {
-    // TODO: Implement product loading by ID
-    console.log('Loading product with ID:', params.id)
-    // For now, just set some dummy data
-    setFormData({
-      name: 'Sample Product',
-      description: 'This is a sample product description',
-      category_id: '',
-      base_price: '19.99',
-      material: 'Cotton',
-      active: true,
-      image_url: '/images/products/sample-product.jpg'
-    })
-    // Mock existing photos
-    setPhotos([
-      '/images/products/sample-product.jpg',
-      '/images/products/sample-product-alt.jpg'
-    ])
+    try {
+      const res = await fetch(`/api/admin/products/${params.id}`)
+      if (!res.ok) {
+        setError('Product not found')
+        setPageLoading(false)
+        return
+      }
+      const data = await res.json()
+      const product = data.product
+
+      setFormData({
+        name: product.name || '',
+        description: product.description || '',
+        category_id: product.category_id || '',
+        base_price: product.base_price?.toString() || '',
+        material: product.material || '',
+        active: product.active ?? true,
+        image_url: product.image_url || ''
+      })
+
+      setSizes(product.sizes?.map((s: any) => s.value) || [])
+      setColors(product.colors?.map((c: any) => c.value) || [])
+
+      if (product.image_url) {
+        setPhotos([product.image_url])
+      }
+    } catch (error) {
+      console.error('Error loading product:', error)
+      setError('Failed to load product')
+    } finally {
+      setPageLoading(false)
+    }
+  }
+
+  const addSize = () => {
+    const trimmed = newSize.trim()
+    if (trimmed && !sizes.includes(trimmed)) {
+      setSizes([...sizes, trimmed])
+      setNewSize('')
+    }
+  }
+
+  const removeSize = (size: string) => {
+    setSizes(sizes.filter(s => s !== size))
+  }
+
+  const addColor = () => {
+    const trimmed = newColor.trim()
+    if (trimmed && !colors.includes(trimmed)) {
+      setColors([...colors, trimmed])
+      setNewColor('')
+    }
+  }
+
+  const removeColor = (color: string) => {
+    setColors(colors.filter(c => c !== color))
   }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
       alert('Please upload a PNG, JPG, or WEBP image file')
       return
     }
 
-    // Validate file size (10MB max for product photos)
     if (file.size > 10 * 1024 * 1024) {
       alert('File size must be under 10MB')
       return
     }
 
     setUploadingPhoto(true)
-    
     try {
-      // TODO: Implement actual file upload to storage
-      // For now, simulate upload with a placeholder URL
       const newPhotoUrl = `/images/products/${Date.now()}-${file.name}`
-      
-      // Add to photos array
       setPhotos(prev => [...prev, newPhotoUrl])
-      
-      // If this is the first photo, set it as the main image
       if (!formData.image_url) {
         setFormData(prev => ({ ...prev, image_url: newPhotoUrl }))
       }
-      
-      alert('Photo uploaded successfully! (Note: This is a demo - actual upload would save to storage)')
+      alert('Photo uploaded successfully! (Note: Storage upload not yet configured)')
     } catch (error) {
       console.error('Error uploading photo:', error)
       alert('Error uploading photo')
@@ -109,13 +146,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const handleDeletePhoto = (photoUrl: string) => {
     if (confirm('Are you sure you want to delete this photo?')) {
       setPhotos(prev => prev.filter(url => url !== photoUrl))
-      
-      // If this was the main image, set the first remaining photo as main
       if (formData.image_url === photoUrl) {
         const remainingPhotos = photos.filter(url => url !== photoUrl)
-        setFormData(prev => ({ 
-          ...prev, 
-          image_url: remainingPhotos.length > 0 ? remainingPhotos[0] : '' 
+        setFormData(prev => ({
+          ...prev,
+          image_url: remainingPhotos.length > 0 ? remainingPhotos[0] : ''
         }))
       }
     }
@@ -124,17 +159,58 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
+    setError('')
+
     try {
-      // TODO: Implement product update API
-      alert('Product update API not implemented yet. This would update: ' + formData.name)
+      const res = await fetch(`/api/admin/products/${params.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          category_id: formData.category_id,
+          base_price: formData.base_price,
+          material: formData.material,
+          active: formData.active,
+          sizes,
+          colors
+        })
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || 'Failed to update product')
+        return
+      }
+
       router.push('/admin/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('Error updating product')
+      setError('Error updating product')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (pageLoading) {
+    return (
+      <div className="section-padding">
+        <div className="text-center py-12">
+          <div className="loading-pulse">Loading product...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error && !formData.name) {
+    return (
+      <div className="section-padding">
+        <div className="text-center py-12">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button onClick={() => router.back()} className="btn-secondary">Go Back</button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -157,6 +233,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       </div>
 
       <div className="max-w-2xl">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="card p-8 space-y-6">
           <div className="form-group">
             <label className="form-label">Product Name *</label>
@@ -183,31 +265,25 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           <div className="form-group">
             <label className="form-label">Product Photos</label>
             <div className="space-y-4">
-              {/* Current Photos Display */}
               {photos.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {photos.map((photoUrl, index) => (
                     <div key={index} className="relative group">
                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img 
-                          src={photoUrl} 
+                        <img
+                          src={photoUrl}
                           alt={`Product photo ${index + 1}`}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            // Replace with placeholder if image fails to load
                             const target = e.target as HTMLImageElement;
                             target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+SW1hZ2U8L3RleHQ+PC9zdmc+';
                           }}
                         />
-                        
-                        {/* Main Photo Indicator */}
                         {formData.image_url === photoUrl && (
                           <div className="absolute top-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
                             Main
                           </div>
                         )}
-                        
-                        {/* Photo Actions */}
                         <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center space-x-2">
                           {formData.image_url !== photoUrl && (
                             <button
@@ -235,7 +311,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 </div>
               )}
 
-              {/* Upload New Photo */}
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
                 <div className="text-center">
                   <input
@@ -265,18 +340,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                     </p>
                   </label>
                 </div>
-              </div>
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Photo Tips:</strong>
-                </p>
-                <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                  <li>• Use high-resolution images (at least 800x600px)</li>
-                  <li>• Square or landscape orientation works best</li>
-                  <li>• The "Main" photo appears in product listings</li>
-                  <li>• Additional photos show in the product gallery</li>
-                </ul>
               </div>
             </div>
           </div>
@@ -326,6 +389,58 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             />
           </div>
 
+          {/* Sizes */}
+          <div className="form-group">
+            <label className="form-label">Sizes</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {sizes.map((size) => (
+                <span key={size} className="inline-flex items-center bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">
+                  {size}
+                  <button type="button" onClick={() => removeSize(size)} className="ml-2 hover:text-blue-600">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                className="input-field flex-1"
+                value={newSize}
+                onChange={(e) => setNewSize(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSize(); } }}
+                placeholder="Add a size (e.g., S, M, L, XL)"
+              />
+              <button type="button" onClick={addSize} className="btn-secondary">Add</button>
+            </div>
+          </div>
+
+          {/* Colors */}
+          <div className="form-group">
+            <label className="form-label">Colors</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {colors.map((color) => (
+                <span key={color} className="inline-flex items-center bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
+                  {color}
+                  <button type="button" onClick={() => removeColor(color)} className="ml-2 hover:text-green-600">
+                    <XMarkIcon className="w-4 h-4" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                className="input-field flex-1"
+                value={newColor}
+                onChange={(e) => setNewColor(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addColor(); } }}
+                placeholder="Add a color (e.g., Red, Blue, Black)"
+              />
+              <button type="button" onClick={addColor} className="btn-secondary">Add</button>
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="flex items-center space-x-2">
               <input
@@ -335,14 +450,6 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               />
               <span>Active (visible to customers)</span>
             </label>
-          </div>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-semibold text-yellow-800 mb-2">⚠️ Development Note</h4>
-            <p className="text-yellow-700 text-sm">
-              This form is set up but the backend APIs for loading and updating products are not yet implemented. 
-              Product ID: {params.id}
-            </p>
           </div>
 
           <div className="flex items-center justify-end space-x-4 pt-4 border-t">

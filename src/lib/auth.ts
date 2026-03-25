@@ -170,28 +170,16 @@ export async function getCustomerById(userId: string): Promise<{ user?: AuthUser
   }
 }
 
-// Password reset - generate reset token (simplified for demo)
+// Password reset - sends reset email with token link
 export async function requestPasswordReset(email: string): Promise<{ success?: boolean; error?: string }> {
   try {
-    // Check if customer exists
-    const { data: customer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('email', email)
-      .single()
+    const response = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
 
-    if (!customer) {
-      // Don't reveal if email exists or not for security
-      return { success: true }
-    }
-
-    // In a real implementation, you would:
-    // 1. Generate a secure reset token
-    // 2. Store it in the database with expiration
-    // 3. Send email with reset link
-    
-    // For demo purposes, just return success
-    console.log(`Password reset requested for: ${email}`)
+    // Always return success to not reveal if email exists
     return { success: true }
   } catch (error) {
     console.error('Password reset error:', error)

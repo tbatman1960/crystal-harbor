@@ -650,3 +650,103 @@ Quality custom printing with no minimums
     replyTo: 'support@crystalharbortc.com'
   }
 }
+
+// Password reset email template
+export function generatePasswordResetEmail(data: {
+  email: string
+  customerName: string
+  resetLink: string
+}): EmailTemplate {
+  const { email, customerName, resetLink } = data
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reset Your Password</title>
+</head>
+<body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f8fafc;">
+  
+  <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
+      <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
+        Crys<span style="color: #84cc16;">tal</span> Har<span style="color: #ff6b6b;">bor</span>
+      </div>
+      <div style="font-size: 18px; font-weight: 600;">Password Reset Request</div>
+    </div>
+
+    <!-- Content -->
+    <div style="padding: 30px 20px;">
+      
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+        <h2 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 24px;">Reset Your Password</h2>
+        <p style="color: #6b7280; font-size: 16px; margin: 0;">
+          Hi ${customerName}, we received a request to reset your password.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 30px;">
+        <a href="${resetLink}" 
+           style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%); color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;">
+          Reset Password
+        </a>
+      </div>
+
+      <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 16px; margin-bottom: 30px;">
+        <p style="color: #92400e; margin: 0; font-size: 14px;">
+          <strong>⏰ This link expires in 1 hour.</strong> If you didn't request a password reset, you can safely ignore this email.
+        </p>
+      </div>
+
+      <div style="background: #f8fafc; padding: 16px; border-radius: 6px; margin-bottom: 30px;">
+        <p style="color: #6b7280; font-size: 13px; margin: 0;">
+          If the button doesn't work, copy and paste this link into your browser:<br>
+          <a href="${resetLink}" style="color: #3b82f6; word-break: break-all;">${resetLink}</a>
+        </p>
+      </div>
+
+      <!-- Contact Info -->
+      <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
+        <div style="margin-bottom: 8px;">
+          Need help? Contact us at 
+          <a href="mailto:support@crystalharbortc.com" style="color: #ff6b6b; text-decoration: none;">support@crystalharbortc.com</a>
+        </div>
+        <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
+      </div>
+
+    </div>
+  </div>
+
+</body>
+</html>`
+
+  const text = `
+Reset Your Password - Crystal Harbor Trading Company
+
+Hi ${customerName},
+
+We received a request to reset your password. Click the link below to set a new password:
+
+${resetLink}
+
+This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+
+Need help? Contact us at support@crystalharbortc.com
+
+Crystal Harbor Trading Company
+Quality custom printing with no minimums
+`
+
+  return {
+    to: email,
+    subject: 'Reset Your Password - Crystal Harbor Trading Company',
+    html,
+    text,
+    replyTo: 'support@crystalharbortc.com'
+  }
+}

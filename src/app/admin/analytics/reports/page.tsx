@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useAdminStore } from '@/store/adminStore'
-import { supabase } from '@/lib/supabase'
+// Data fetched via API routes (RLS-safe)
 import { 
   CalendarIcon, 
   UserGroupIcon, 
@@ -49,44 +49,22 @@ export default function AdvancedReportsPage() {
   const generateReport = async () => {
     setLoading(true)
     try {
-      let query = supabase.from('orders').select(`
-        *,
-        order_items (
-          *,
-          product_id
-        )
-      `)
+      const params = new URLSearchParams()
+      if (dateFrom) params.set('startDate', dateFrom)
+      if (dateTo) params.set('endDate', dateTo + 'T23:59:59')
 
-      // Apply date filters
-      if (dateFrom) query = query.gte('created_at', dateFrom)
-      if (dateTo) query = query.lte('created_at', dateTo + 'T23:59:59')
-
-      const { data: orders, error: ordersError } = await query.order('created_at', { ascending: false })
-
-      if (ordersError) throw ordersError
-
-      // Get customers data
-      const { data: customers, error: customersError } = await supabase
-        .from('customers')
-        .select('*')
-
-      if (customersError) throw customersError
-
-      // Get products data
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('*')
-
-      if (productsError) throw productsError
+      const res = await fetch(`/api/admin/analytics-reports?${params}`)
+      if (!res.ok) throw new Error('Failed to fetch')
+      const { orders, customers, products } = await res.json()
 
       // Calculate summary statistics
       const totalOrders = orders?.length || 0
-      const totalRevenue = orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0
+      const totalRevenue = orders?.reduce((sum: number, order: any) => sum + order.total_amount, 0) || 0
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
       // Top products by quantity sold
       const productSales: { [key: string]: { name: string, quantity: number, revenue: number } } = {}
-      orders?.forEach(order => {
+      orders?.forEach((order: any) => {
         order.order_items?.forEach((item: any) => {
           const key = item.product_name
           if (!productSales[key]) {
@@ -103,7 +81,7 @@ export default function AdvancedReportsPage() {
 
       // Top customers by order value
       const customerSpending: { [key: string]: { email: string, orders: number, total: number } } = {}
-      orders?.forEach(order => {
+      orders?.forEach((order: any) => {
         const key = order.guest_email || order.customer_id || 'Unknown'
         if (!customerSpending[key]) {
           customerSpending[key] = { email: key, orders: 0, total: 0 }
