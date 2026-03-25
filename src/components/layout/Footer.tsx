@@ -46,8 +46,9 @@ export default function Footer() {
             </p>
             <div className="text-secondary-400 text-sm space-y-1">
               <p>Crystal Harbor Trading Company</p>
-              <p>[City, State]</p>
-              <p>(555) 123-4567</p>
+              <p>2307 Willow Lakes East Blvd</p>
+              <p>Greenwood, Indiana 46143</p>
+              <p><a href="tel:+13179975503" className="hover:text-accent-lime-500 transition-colors duration-200">(317) 997-5503</a></p>
               <p>support@crystalharbortc.com</p>
             </div>
           </div>

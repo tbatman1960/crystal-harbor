@@ -76,8 +76,18 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white">
-        <div className="container mx-auto px-4 py-24">
+      <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white overflow-hidden">
+        {/* Background hero image */}
+        <div className="absolute inset-0">
+          <Image
+            src="/images/products/hero-banner.jpg"
+            alt="Custom printed products"
+            fill
+            className="object-cover opacity-20"
+            priority
+          />
+        </div>
+        <div className="container mx-auto px-4 py-24 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="mb-6">
               <span className="font-script text-5xl md:text-7xl tracking-wide" style={{ color: '#C0C0C0' }}>Crystal Harbor</span>
