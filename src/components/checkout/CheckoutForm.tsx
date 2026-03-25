@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/store/cartStore'
 import { AuthUser } from '@/lib/auth'
 import { createOrder } from '@/lib/orders'
-import { supabase } from '@/lib/supabase'
+// Customer data fetched via API routes (not direct Supabase) due to RLS
 import { calculateShipping } from '@/lib/shipping'
 import StripePayment from './StripePayment'
 import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods'
@@ -74,16 +74,13 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
     if (!user?.id) return
 
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        console.error('Error loading customer data:', error)
+      const res = await fetch(`/api/customer/profile?customer_id=${user.id}`)
+      if (!res.ok) {
+        console.error('Error loading customer data')
         return
       }
+      const { customer: data } = await res.json()
+      if (!data) return
 
       setCustomerData(data)
       
@@ -130,9 +127,11 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         if (saveAsDefault) {
           try {
             // Update customer profile with new information
-            const { error } = await supabase
-              .from('customers')
-              .update({
+            const res = await fetch('/api/customer/profile', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                customer_id: user.id,
                 first_name: data.first_name,
                 last_name: data.last_name,
                 phone: data.phone,
@@ -142,12 +141,11 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
                 state: data.state,
                 postal_code: data.postal_code,
                 country: data.country,
-                updated_at: new Date().toISOString()
               })
-              .eq('id', user.id)
+            })
             
-            if (error) {
-              console.error('Error updating customer profile:', error)
+            if (!res.ok) {
+              console.error('Error updating customer profile')
             } else {
               console.log('Customer profile updated successfully')
               // Update local customer data

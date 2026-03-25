@@ -1,5 +1,32 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const customerId = searchParams.get('customer_id')
+
+    if (!customerId) {
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 })
+    }
+
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', customerId)
+      .single()
+
+    if (error) {
+      console.error('Error loading customer data:', error)
+      return NextResponse.json({ error: 'Failed to load customer data' }, { status: 500 })
+    }
+
+    return NextResponse.json({ customer: data })
+  } catch (error) {
+    console.error('Error loading customer data:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function PUT(request: Request) {
   try {

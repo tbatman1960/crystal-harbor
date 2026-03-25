@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { supabaseAdmin as supabase } from './supabase'
 import { calculateSalesTax, recordTaxForReporting } from './sales-tax'
 import { v4 as uuidv4 } from 'uuid'
 
