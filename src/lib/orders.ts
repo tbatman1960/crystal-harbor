@@ -1,5 +1,5 @@
 import { supabaseAdmin as supabase } from './supabase'
-import { calculateSalesTax, recordTaxForReporting } from './sales-tax'
+import { calculateSalesTax } from './sales-tax'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface OrderItem {
@@ -75,14 +75,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
         state: data.shipping_address.state,
         postal_code: data.shipping_address.postal_code,
         country: data.shipping_address.country || 'US'
-      },
-      items: data.items.map(item => ({
-        product_name: item.product_name,
-        category_slug: '', // Would need to be passed or looked up
-        unit_price: item.unit_price,
-        quantity: item.quantity,
-        line_total: item.line_total
-      }))
+      }
     })
 
     const tax_amount = taxCalculation.tax_amount
@@ -288,13 +281,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
     
     console.log('📧 Email sending started in background, order completing...')
 
-    // Record tax for reporting purposes
-    try {
-      await recordTaxForReporting(order.id, taxCalculation)
-    } catch (error) {
-      console.error('Error recording tax for reporting:', error)
-      // Don't fail the order if tax recording fails
-    }
+    // Tax amount is stored on the order itself — no separate recording needed
 
     // Check for large orders and send Telegram alert
     const hasLargeOrderItems = data.items.some((item) => item.quantity >= 100)
