@@ -8,7 +8,7 @@ interface Subscriber {
   id: string
   email: string
   source: 'footer' | 'popup' | 'checkout'
-  subscribed_at: string
+  created_at: string
   active: boolean
   discount_code_sent: boolean
   discount_code: string | null
@@ -58,10 +58,10 @@ export default function AdminSubscribersPage() {
       const stats: SubscriberStats = {
         total: subscriberData?.filter(s => s.active).length || 0,
         thisWeek: subscriberData?.filter(s => 
-          s.active && new Date(s.subscribed_at) >= oneWeekAgo
+          s.active && new Date(s.created_at) >= oneWeekAgo
         ).length || 0,
         thisMonth: subscriberData?.filter(s => 
-          s.active && new Date(s.subscribed_at) >= oneMonthAgo
+          s.active && new Date(s.created_at) >= oneMonthAgo
         ).length || 0,
         bySource: {
           footer: subscriberData?.filter(s => s.active && s.source === 'footer').length || 0,
@@ -91,7 +91,7 @@ export default function AdminSubscribersPage() {
       const csvData = filteredSubscribers.map(subscriber => [
         subscriber.email,
         subscriber.source,
-        new Date(subscriber.subscribed_at).toLocaleDateString(),
+        new Date(subscriber.created_at).toLocaleDateString(),
         subscriber.discount_code || 'N/A',
         subscriber.discount_code_sent ? 'Yes' : 'No'
       ])
@@ -299,7 +299,7 @@ export default function AdminSubscribersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">
-                    {new Date(subscriber.subscribed_at).toLocaleDateString()}
+                    {new Date(subscriber.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary-500">
                     {subscriber.discount_code ? (
