@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-03-23 — Initial generation from codebase scan + development history
+**Last Updated:** 2026-03-24
 
 ---
 
@@ -11,7 +11,7 @@
 - **Frontend:** React 18, Tailwind CSS 3.4.19, Heroicons, Zustand (state management)
 - **Database:** Supabase (PostgreSQL) — hosted, accessed via `@supabase/supabase-js`
 - **Hosting/Deployment:** Netlify (auto-deploys from GitHub push to `main`)
-- **Payment Processing:** Stripe (currently TEST keys — `pk_test_*` / `sk_test_*`)
+- **Payment Processing:** Stripe (LIVE keys active — `pk_live_*` / `sk_live_*`)
 - **Email:** Nodemailer via Namecheap PrivateEmail SMTP (`mail.privateemail.com`, user: `info@crystalharbortc.com`)
 - **Analytics:** Google Analytics 4 (placeholder `G-XXXXXXXXXX` — needs real ID)
 - **Forms:** react-hook-form
@@ -24,7 +24,7 @@ Crystal Harbor is a custom product printing e-commerce site built as a **Next.js
 
 **Data flow:** User interactions on client components (product browsing, cart, checkout) are managed by three Zustand stores persisted to localStorage: `cartStore` (shopping cart), `authStore` (customer auth), and `adminStore` (admin auth). When data needs to persist to the database, client components call API routes which use the Supabase JS client to read/write PostgreSQL. Authentication is custom — NOT Supabase Auth. Customer and admin passwords are bcrypt-hashed and stored in `customers` and `admin_users` tables respectively. Login endpoints compare hashes and return user objects; the client stores them in Zustand/localStorage. There are no JWTs or session tokens — auth state is purely client-side localStorage.
 
-**Payment flow:** Cart → Checkout → Stripe Elements form → API route creates a PaymentIntent → Stripe.js confirms payment client-side → on success, order is created in Supabase via `createOrder()` in `src/lib/orders.ts` → order confirmation email sent via SMTP → redirect to success page. The current Stripe keys are TEST keys and will not process real payments. There is no Stripe webhook handler yet — order creation relies on client-side payment confirmation. **Important:** There is a `dev_test_payment` fallback in the checkout flow where if Stripe fails (e.g., placeholder keys), the order still gets created with a fake payment ID. This MUST be removed before going live.
+**Payment flow:** Cart → Checkout → Stripe Elements form → API route creates a PaymentIntent → Stripe.js confirms payment client-side → on success, order is created in Supabase via `createOrder()` in `src/lib/orders.ts` → order confirmation email sent via SMTP → redirect to success page. **Live Stripe keys are active** (as of 2026-03-24). The `dev_test_payment` bypass has been removed. A webhook endpoint at `/api/webhooks/stripe` verifies payments server-side and handles `payment_intent.succeeded`, `payment_intent.payment_failed`, and `charge.refunded` events.
 
 **Email system:** All outgoing emails use a single sender address (`info@crystalharbortc.com`) with `Reply-To` headers for routing. Email types: order confirmation, order status updates, cancellation notices, welcome/newsletter, vendor order forwarding, admin daily reminders. Emails are sent non-blocking (fire-and-forget with 5s timeout) to prevent checkout hanging. SMTP forces IPv4 (`family: 4`) to avoid IPv6 connectivity issues.
 
@@ -217,6 +217,7 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 | Method | Route | Purpose |
 |--------|-------|---------|
 | POST | `/api/create-payment-intent` | Create Stripe PaymentIntent |
+| POST | `/api/webhooks/stripe` | Stripe webhook (payment_intent.succeeded/failed, charge.refunded) |
 | GET | `/api/orders/[orderNumber]` | Look up order by order number |
 | POST | `/api/orders/cancel` | Customer order cancellation (triggers refund if applicable) |
 | POST | `/api/refunds/process` | Admin refund processing |
@@ -278,9 +279,13 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 - **Deployment:** Netlify auto-deploy from GitHub, security headers, @netlify/plugin-nextjs
 - **Admin security:** No default credentials exposed, admin detection via email blur on customer login
 - **Mobile optimization:** Responsive admin sidebar (hamburger menu), card view for orders/customers on mobile
+- **Admin login email prefill:** When customer login detects admin email and redirects to `/admin/login`, email is passed via URL param and pre-filled
+- **Stripe live payments:** Live keys active, `dev_test_payment` bypass removed, webhook endpoint created
+- **Stripe webhook:** `/api/webhooks/stripe` handles `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.refunded`
+- **Customer detail links:** Tappable phone (`tel:`) and email (`mailto:`) links, plus per-order "Email About Order" button with pre-populated subject/body
 
 ### In Progress
-- **Admin login email prefill:** Code committed but not yet deployed — passes email from customer login redirect to admin login via URL param (commit pending push)
+- **Netlify Pro upgrade needed:** Site is showing "usage limit exceeded" on free tier — needs upgrade to Pro ($19/month) before site is accessible again
 
 ### Known Issues
 - **`active` column missing on `customers` table:** Customer management code references `active` boolean but the column doesn't exist in the database. Needs `ALTER TABLE customers ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT true` run in Supabase SQL editor.
@@ -290,8 +295,6 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 - **Password reset not functional:** `requestPasswordReset()` in `src/lib/auth.ts` is a stub — logs to console, doesn't send email or generate tokens
 - **Product edit page incomplete:** `src/app/admin/products/[id]/page.tsx` has TODO comments — product loading, file upload to storage, and update API are not fully implemented
 - **Order detail PDF:** Admin order detail page has TODO for PDF generation
-- **No Stripe webhook handler:** Order creation relies on client-side confirmation. No `/api/webhooks/stripe` endpoint exists yet.
-- **`dev_test_payment` fallback in checkout:** If Stripe payment fails, orders are created with fake payment IDs — MUST be removed before accepting real payments [VERIFY - need to locate exact code]
 - **Shipping method API integration:** `src/lib/shipping-methods.ts` has TODO for ShipStation/carrier API integration
 - **Sales tax recording:** `src/lib/sales-tax.ts` has TODO for database storage of tax records
 - **No email verification:** Customer registration doesn't verify email addresses
@@ -299,8 +302,6 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 - **Auth is client-side only:** No server-side session validation — anyone with a valid user ID in localStorage can access protected pages
 
 ### Planned / Not Yet Started
-- **Live Stripe keys:** Replace test keys with production keys in Netlify env vars
-- **Stripe webhook endpoint:** Create `/api/webhooks/stripe` for payment verification
 - **Custom domain:** Point `crystalharbortc.com` to Netlify via DNS
 - **Real GA4 measurement ID:** Replace `G-XXXXXXXXXX` placeholder
 - **Real product images:** Current images are stock photos (Unsplash) — need actual product photography
@@ -348,6 +349,8 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 
 17. **Volume pricing via database tiers:** Each product has multiple pricing_tiers rows defining quantity ranges and per-unit prices. The `calculatePrice()` function finds the matching tier for a given quantity.
 
+18. **Stripe webhook for server-side verification (2026-03-24):** Added `/api/webhooks/stripe` to verify payments independently of client-side confirmation. Handles succeeded, failed, and refunded events. Signing secret stored in `STRIPE_WEBHOOK_SECRET` env var.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -366,7 +369,7 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 | Service | Purpose | Config Location | Key Files |
 |---------|---------|----------------|-----------|
 | **Supabase** | PostgreSQL database + API | `.env.local` (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY) | `src/lib/supabase.ts` — all lib files use this client |
-| **Stripe** | Payment processing | `.env.local` (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY) — currently TEST keys | `src/app/api/create-payment-intent/route.ts`, `src/components/checkout/StripePayment.tsx`, `src/lib/refunds.ts` |
+| **Stripe** | Payment processing | `.env.local` (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET) — LIVE keys active | `src/app/api/create-payment-intent/route.ts`, `src/app/api/webhooks/stripe/route.ts`, `src/components/checkout/StripePayment.tsx`, `src/lib/refunds.ts` |
 | **Namecheap PrivateEmail** | SMTP email sending | `.env.local` (SMTP_HOST=mail.privateemail.com, SMTP_PORT=587, SMTP_USER=info@crystalharbortc.com) | `src/lib/email.ts` |
 | **Google Analytics 4** | Website analytics | `.env.local` (NEXT_PUBLIC_GA_MEASUREMENT_ID) — placeholder value | `src/components/GoogleAnalytics.tsx`, `src/lib/analytics.ts` |
 | **Netlify** | Hosting + CDN + auto-deploy | `netlify.toml`, Netlify dashboard env vars | GitHub webhook triggers deploy on push to `main` |
@@ -380,9 +383,32 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
 | **Live site** | `https://crystal-harbor.netlify.app` | Netlify auto-deploys from GitHub |
 | **GitHub repo** | `https://github.com/tbatman1960/crystal-harbor` | User: tbatman1960 |
 | **SMTP** | `info@crystalharbortc.com` via `mail.privateemail.com:587` | Password in .env.local |
-| **Stripe** | Currently TEST keys | Owner has live Stripe account, keys pending |
+| **Stripe** | LIVE keys active | Webhook secret: `whsec_7NTvYz4dmQqyTgVOogI7UkJSEe1CF4oj` — all three env vars set in Netlify |
 
 ## Session Log
+
+### 2026-03-24
+- **Worked on:** Stripe live integration, webhook endpoint, AGENTS.md session protocols, Netlify issue
+- **Key changes:**
+  - Updated `.env.local` with live Stripe keys (`pk_live_*`, `sk_live_*`)
+  - Removed `dev_test_payment` bypass from `CheckoutForm.tsx` (was at line ~482, yellow "Development Mode" panel)
+  - Created Stripe webhook endpoint at `src/app/api/webhooks/stripe/route.ts`
+  - Added `STRIPE_WEBHOOK_SECRET` to `.env.local`
+  - Tim updated Netlify env vars with live Stripe keys + webhook secret and triggered deploy (clear cache)
+  - Updated `AGENTS.md` with Session Management Protocols (document hierarchy, session end protocol, PROJECT_STATE rules, templates)
+- **Decisions made:**
+  - Webhook handles 3 events: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded
+  - Webhook confirms orders, flags failed payments, tracks refunds
+- **Issues discovered:**
+  - Netlify free tier usage limit exceeded — site showing "usage limit exceeded" error
+  - Needs upgrade to Pro ($19/month) before site is accessible
+- **Open threads:**
+  - Netlify Pro upgrade pending
+  - Footer placeholder data still needs real business info
+  - hero-banner.jpg still not wired into homepage
+  - `active` column still needed on customers table
+  - [VERIFY] Reason for custom auth vs Supabase Auth
+  - [VERIFY] Shipping methods table schema
 
 ### 2026-03-23
 - **Worked on:** Customer detail page enhancements, stock product images, logo integration, color rebrand, admin login email prefill, PROJECT_STATE.md generation
@@ -399,11 +425,3 @@ All tables are in Supabase (PostgreSQL). The schema is inferred from TypeScript 
   - Gold + Silver Blue accent palette replacing Lime + Coral
   - Logo image saved but brand name rendered as styled text (not image) in the UI
   - Stock photos as temporary product images until real photography available
-- **Open threads:**
-  - [VERIFY] Reason for custom auth vs Supabase Auth
-  - [VERIFY] Exact location of dev_test_payment fallback in checkout — needs to be removed before going live
-  - [VERIFY] Shipping methods table schema
-  - Stripe live keys pending from user
-  - `active` column needs to be added to customers table via Supabase SQL editor
-  - Footer placeholder data needs real business info
-  - hero-banner.jpg not yet used on homepage
