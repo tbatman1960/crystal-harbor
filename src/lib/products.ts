@@ -189,17 +189,18 @@ export async function getProductBySlug(slug: string): Promise<ProductWithOptions
 }
 
 // Calculate price based on quantity and pricing tiers
-export function calculatePrice(pricingTiers: PricingTier[], quantity: number): {
+export function calculatePrice(pricingTiers: PricingTier[], quantity: number, basePrice?: number): {
   pricePerUnit: number
   totalPrice: number
   tierName: string
   discountPercentage: number
 } {
   if (!pricingTiers || pricingTiers.length === 0) {
+    const price = basePrice || 0
     return {
-      pricePerUnit: 0,
-      totalPrice: 0,
-      tierName: 'No pricing available',
+      pricePerUnit: price,
+      totalPrice: price * quantity,
+      tierName: price > 0 ? 'Standard Price' : 'No pricing available',
       discountPercentage: 0,
     }
   }

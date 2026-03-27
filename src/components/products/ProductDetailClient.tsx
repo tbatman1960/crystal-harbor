@@ -458,6 +458,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
             {/* Pricing */}
             <PricingDisplay
               pricingTiers={product.pricing_tiers}
+              basePrice={product.base_price}
               onPriceChange={setPriceData}
               onQuantityChange={setQuantity}
             />

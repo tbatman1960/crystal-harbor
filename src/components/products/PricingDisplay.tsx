@@ -5,6 +5,7 @@ import { PricingTier, calculatePrice } from '@/lib/products'
 
 interface PricingDisplayProps {
   pricingTiers: PricingTier[]
+  basePrice?: number
   onPriceChange: (priceData: {
     pricePerUnit: number
     totalPrice: number
@@ -16,14 +17,15 @@ interface PricingDisplayProps {
 
 export default function PricingDisplay({ 
   pricingTiers, 
+  basePrice,
   onPriceChange, 
   onQuantityChange 
 }: PricingDisplayProps) {
   const [quantity, setQuantity] = useState(1)
-  const [priceData, setPriceData] = useState(calculatePrice(pricingTiers, 1))
+  const [priceData, setPriceData] = useState(calculatePrice(pricingTiers, 1, basePrice))
 
   useEffect(() => {
-    const newPriceData = calculatePrice(pricingTiers, quantity)
+    const newPriceData = calculatePrice(pricingTiers, quantity, basePrice)
     setPriceData(newPriceData)
     onPriceChange(newPriceData)
     onQuantityChange(quantity)
