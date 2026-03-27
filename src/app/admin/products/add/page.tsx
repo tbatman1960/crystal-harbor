@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { ArrowLeftIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { getCategories } from '@/lib/products'
 import { useAdminStore } from '@/store/adminStore'
 
 interface ProductFormData {
@@ -78,12 +77,12 @@ export default function AddProductPage() {
 
   const loadData = async () => {
     try {
-      const [categoriesData, shippingData] = await Promise.all([
-        getCategories(),
+      const [categoriesRes, shippingData] = await Promise.all([
+        fetch('/api/admin/categories').then(res => res.json()),
         fetch('/api/admin/shipping-methods').then(res => res.json())
       ])
       
-      setCategories(categoriesData)
+      setCategories(categoriesRes.categories || [])
       setShippingMethods(shippingData.shipping_methods || [])
     } catch (error) {
       console.error('Error loading data:', error)

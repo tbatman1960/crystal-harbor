@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getProducts, getCategories } from '@/lib/products'
+// Products and categories fetched via API routes (not direct Supabase) due to RLS
 import { 
   PlusIcon,
   PencilIcon,
@@ -30,12 +30,14 @@ export default function AdminProductsPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [productsData, categoriesData] = await Promise.all([
-        getProducts(),
-        getCategories()
+      const [productsRes, categoriesRes] = await Promise.all([
+        fetch('/api/admin/products'),
+        fetch('/api/admin/categories')
       ])
-      setProducts(productsData)
-      setCategories(categoriesData)
+      const productsData = await productsRes.json()
+      const categoriesData = await categoriesRes.json()
+      setProducts(productsData.products || [])
+      setCategories(categoriesData.categories || [])
     } catch (error) {
       console.error('Error loading products:', error)
     } finally {
