@@ -36,6 +36,7 @@ export interface CreateOrderData {
   items: OrderItem[]
   subtotal: number
   shipping_cost: number
+  shipping_method?: string
   tax_amount?: number
   total_amount: number
   stripe_payment_intent_id: string
@@ -91,6 +92,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
           status: 'pending',
           subtotal: data.subtotal,
           shipping_cost: data.shipping_cost,
+          shipping_method: data.shipping_method || 'Standard Shipping',
           tax_amount: tax_amount,
           total_amount: final_total,
           stripe_payment_intent_id: data.stripe_payment_intent_id,
@@ -232,6 +234,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
             })),
             subtotal: data.subtotal,
             shipping_cost: data.shipping_cost,
+            shipping_method: data.shipping_method || 'Standard Shipping',
             total_amount: final_total,
             shipping_address: data.shipping_address,
             estimated_delivery: undefined
