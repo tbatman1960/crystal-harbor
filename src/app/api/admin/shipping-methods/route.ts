@@ -82,3 +82,49 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+// PUT /api/admin/shipping-methods - Update a shipping method
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Shipping method ID is required' }, { status: 400 })
+    }
+
+    // Build update object, only including provided fields
+    const updateData: any = { updated_at: new Date().toISOString() }
+    
+    if (updates.name !== undefined) updateData.name = updates.name
+    if (updates.description !== undefined) updateData.description = updates.description || null
+    if (updates.method_type !== undefined) updateData.method_type = updates.method_type
+    if (updates.flat_rate_cost !== undefined) updateData.flat_rate_cost = updates.flat_rate_cost != null ? parseFloat(updates.flat_rate_cost) : null
+    if (updates.weight_tiers !== undefined) updateData.weight_tiers = updates.weight_tiers
+    if (updates.carrier_code !== undefined) updateData.carrier_code = updates.carrier_code || null
+    if (updates.service_code !== undefined) updateData.service_code = updates.service_code || null
+    if (updates.min_order_for_free_shipping !== undefined) updateData.min_order_for_free_shipping = updates.min_order_for_free_shipping != null ? parseFloat(updates.min_order_for_free_shipping) : null
+    if (updates.estimated_days_min !== undefined) updateData.estimated_days_min = parseInt(updates.estimated_days_min)
+    if (updates.estimated_days_max !== undefined) updateData.estimated_days_max = parseInt(updates.estimated_days_max)
+    if (updates.active !== undefined) updateData.active = updates.active
+    if (updates.display_order !== undefined) updateData.display_order = parseInt(updates.display_order)
+
+    const { data: method, error } = await supabase
+      .from('shipping_methods')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating shipping method:', error)
+      return NextResponse.json({ error: 'Failed to update shipping method' }, { status: 500 })
+    }
+
+    return NextResponse.json({ shipping_method: method })
+
+  } catch (error) {
+    console.error('Error updating shipping method:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

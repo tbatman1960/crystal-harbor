@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import { useAdminStore } from '@/store/adminStore'
-import { createShippingMethod, ShippingMethod, WeightTier } from '@/lib/shipping-methods'
+import type { WeightTier } from '@/lib/shipping-methods'
 
 interface ShippingMethodFormData {
   name: string
@@ -66,7 +66,7 @@ export default function AddShippingMethodPage() {
 
     try {
       // Clean up data based on method type
-      const methodData: Omit<ShippingMethod, 'id' | 'created_at' | 'updated_at'> = {
+      const methodData = {
         name: data.name,
         description: data.description || null,
         method_type: data.method_type,
@@ -81,15 +81,20 @@ export default function AddShippingMethodPage() {
         display_order: data.display_order
       }
 
-      const result = await createShippingMethod(methodData)
+      const res = await fetch('/api/admin/shipping-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(methodData)
+      })
 
-      if (result.success) {
+      if (res.ok) {
         setMessage({ type: 'success', text: 'Shipping method created successfully!' })
         setTimeout(() => {
           router.push('/admin/shipping')
         }, 1500)
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to create shipping method' })
+        const errData = await res.json()
+        setMessage({ type: 'error', text: errData.error || 'Failed to create shipping method' })
       }
     } catch (error) {
       console.error('Error creating shipping method:', error)

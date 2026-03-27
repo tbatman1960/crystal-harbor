@@ -3,23 +3,10 @@
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { useCartStore } from '@/store/cartStore'
-import { calculateShipping, formatShippingBreakdown } from '@/lib/shipping'
 
 export default function OrderSummary() {
   const { items, subtotal, totalItems } = useCartStore()
   const [mounted, setMounted] = useState(false)
-  
-  // Calculate sophisticated shipping
-  const shippingCalc = calculateShipping(items.map(item => ({
-    product_name: item.product_name,
-    category_slug: item.category_slug,
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    line_total: item.line_total
-  })))
-  
-  const shippingCost = shippingCalc.cost
-  const total = subtotal + shippingCost
 
   useEffect(() => {
     setMounted(true)
@@ -89,25 +76,14 @@ export default function OrderSummary() {
           <span className="font-medium">${subtotal.toFixed(2)}</span>
         </div>
         
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-secondary-600">Shipping ({shippingCalc.method})</span>
-            <span className="font-medium">${shippingCost.toFixed(2)}</span>
-          </div>
-          {shippingCalc.estimatedDays && (
-            <div className="text-xs text-secondary-500">
-              Estimated delivery: {shippingCalc.estimatedDays}
-            </div>
-          )}
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-secondary-600">Shipping</span>
+          <span className="text-xs text-secondary-500 italic">Selected below</span>
         </div>
         
-        <div className="border-t border-gray-200 pt-3">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-lg text-neutral-700">Total</span>
-            <span className="font-bold text-2xl text-primary-600">
-              ${total.toFixed(2)}
-            </span>
-          </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-secondary-600">Tax</span>
+          <span className="text-xs text-secondary-500 italic">Calculated at payment</span>
         </div>
       </div>
 
@@ -120,7 +96,7 @@ export default function OrderSummary() {
           <li>• Payment processed securely via Stripe</li>
           <li>• Order review and design preparation</li>
           <li>• Professional printing on quality materials</li>
-          <li>• Shipping within 2-3 weeks</li>
+          <li>• Shipping within estimated delivery window</li>
         </ul>
       </div>
 

@@ -1,13 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/store/cartStore'
 import { AuthUser } from '@/lib/auth'
 import { createOrder } from '@/lib/orders'
-// Customer data fetched via API routes (not direct Supabase) due to RLS
-import { calculateShipping } from '@/lib/shipping'
 import StripePayment from './StripePayment'
 import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods'
 import { getDeviceInfo } from '@/lib/mobile-detection'
@@ -25,6 +23,20 @@ interface ShippingAddress {
   country: string
 }
 
+interface ShippingOption {
+  method_id: string
+  name: string
+  description?: string
+  cost: number | null
+  estimated_delivery: string
+  type: string
+  carrier?: string
+  service_code?: string
+  is_mock?: boolean
+  is_fallback?: boolean
+  needs_zip?: boolean
+}
+
 interface CheckoutFormProps {
   mode: 'guest' | 'member'
   user: AuthUser | null
@@ -40,28 +52,28 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
   const { items, subtotal, clearCart } = useCartStore()
   const router = useRouter()
 
+  // Shipping options state
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null)
+  const [loadingShipping, setLoadingShipping] = useState(false)
+  const [shippingError, setShippingError] = useState('')
+
+  const shippingCost = selectedShipping?.cost ?? 0
+  const total = subtotal + shippingCost
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset
+    reset,
+    watch,
   } = useForm<ShippingAddress>({
     defaultValues: {
       country: 'US'
     }
   })
 
-  // Calculate sophisticated shipping
-  const shippingCalc = calculateShipping(items.map(item => ({
-    product_name: item.product_name,
-    category_slug: item.category_slug,
-    quantity: item.quantity,
-    unit_price: item.unit_price,
-    line_total: item.line_total
-  })))
-  
-  const shippingCost = shippingCalc.cost
-  const total = subtotal + shippingCost
+  const watchedZip = watch('postal_code')
 
   // Load customer's saved address for pre-filling
   useEffect(() => {
@@ -84,7 +96,6 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
 
       setCustomerData(data)
       
-      // Pre-fill form with saved data
       reset({
         first_name: data.first_name || user.firstName || '',
         last_name: data.last_name || user.lastName || '',
@@ -102,8 +113,81 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
     }
   }
 
+  // Fetch shipping options when zip code changes (debounced)
+  const fetchShippingOptions = useCallback(async (zip: string) => {
+    if (!zip || zip.length < 5) {
+      setShippingOptions([])
+      setSelectedShipping(null)
+      return
+    }
+
+    setLoadingShipping(true)
+    setShippingError('')
+
+    try {
+      const res = await fetch('/api/shipping/available', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map(item => ({
+            product_id: item.product_id,
+            quantity: item.quantity,
+            line_total: item.line_total,
+          })),
+          destination_zip: zip,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch shipping options')
+      }
+
+      const data = await res.json()
+      const opts: ShippingOption[] = data.options || []
+      setShippingOptions(opts)
+
+      // Auto-select the cheapest option
+      const selectable = opts.filter(o => o.cost !== null)
+      if (selectable.length > 0) {
+        setSelectedShipping(selectable[0])
+      }
+    } catch (err) {
+      console.error('Shipping fetch error:', err)
+      setShippingError('Could not load shipping options. A default rate will be applied.')
+      // Fallback
+      const fallback: ShippingOption = {
+        method_id: 'fallback',
+        name: 'Standard Shipping',
+        cost: 9.99,
+        estimated_delivery: '5-7 business days',
+        type: 'flat_rate',
+        is_fallback: true,
+      }
+      setShippingOptions([fallback])
+      setSelectedShipping(fallback)
+    } finally {
+      setLoadingShipping(false)
+    }
+  }, [items])
+
+  // Debounce zip code changes
+  useEffect(() => {
+    if (!watchedZip || watchedZip.length < 5) return
+    const timer = setTimeout(() => {
+      fetchShippingOptions(watchedZip)
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [watchedZip, fetchShippingOptions])
+
   const onShippingSubmit = async (data: ShippingAddress) => {
     setError('')
+
+    // Ensure a shipping method is selected
+    if (!selectedShipping || selectedShipping.cost === null) {
+      setError('Please select a shipping method')
+      return
+    }
+
     setShippingData(data)
     
     // Check if user is logged in and data has changed from saved data
@@ -126,7 +210,6 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         
         if (saveAsDefault) {
           try {
-            // Update customer profile with new information
             const res = await fetch('/api/customer/profile', {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
@@ -144,15 +227,8 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
               })
             })
             
-            if (!res.ok) {
-              console.error('Error updating customer profile')
-            } else {
-              console.log('Customer profile updated successfully')
-              // Update local customer data
-              setCustomerData({
-                ...customerData,
-                ...data
-              })
+            if (res.ok) {
+              setCustomerData({ ...customerData, ...data })
             }
           } catch (error) {
             console.error('Error saving profile updates:', error)
@@ -189,6 +265,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         })),
         subtotal,
         shipping_cost: shippingCost,
+        shipping_method: selectedShipping?.name || 'Standard Shipping',
         total_amount: total,
         stripe_payment_intent_id: paymentIntentId,
         special_instructions: ''
@@ -199,37 +276,23 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
       if (result.success && result.order) {
         console.log('Order created successfully:', result.order.order_number)
         
-        // Redirect to success page first, then clear cart
         const successUrl = `/checkout/success?order=${result.order.order_number}`
-        console.log('Redirecting to:', successUrl)
-        
-        // Set a flag to prevent double-processing
         sessionStorage.setItem('orderCompleted', result.order.order_number)
         
         try {
-          // Use replace instead of push to prevent back navigation to checkout
           router.replace(successUrl)
-          
-          // Clear cart after a short delay to ensure redirect happens first
-          setTimeout(() => {
-            clearCart()
-          }, 500)
-          
-          // Fallback redirect in case Next.js router fails
+          setTimeout(() => { clearCart() }, 500)
           setTimeout(() => {
             if (window.location.pathname !== '/checkout/success') {
-              console.log('Router redirect may have failed, using window.location')
               window.location.replace(successUrl)
             }
           }, 1500)
         } catch (routerError) {
-          console.error('Router replace failed, using window.location:', routerError)
+          console.error('Router replace failed:', routerError)
           window.location.replace(successUrl)
-          // Clear cart after redirect
           setTimeout(() => clearCart(), 100)
         }
       } else {
-        console.error('Order creation failed:', result.error)
         setError(result.error || 'Failed to create order')
       }
     } catch (err) {
@@ -240,12 +303,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
   }
 
   const handleMobilePaymentSuccess = async (paymentData: any) => {
-    console.log('Mobile payment successful:', paymentData)
-    
-    // For mobile payments, we'll create a mock payment intent ID
     const mobilePaymentId = `mobile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    // Process the same as regular payment
     await handlePaymentSuccess(mobilePaymentId)
   }
 
@@ -298,151 +356,159 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
           <form onSubmit={handleSubmit(onShippingSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="form-group">
-                <label htmlFor="first_name" className="form-label">
-                  First Name *
-                </label>
-                <input
-                  id="first_name"
-                  type="text"
-                  className="input-field"
-                  {...register('first_name', { required: 'First name is required' })}
-                />
+                <label htmlFor="first_name" className="form-label">First Name *</label>
+                <input id="first_name" type="text" className="input-field"
+                  {...register('first_name', { required: 'First name is required' })} />
                 {errors.first_name && <p className="form-error">{errors.first_name.message}</p>}
               </div>
-
               <div className="form-group">
-                <label htmlFor="last_name" className="form-label">
-                  Last Name *
-                </label>
-                <input
-                  id="last_name"
-                  type="text"
-                  className="input-field"
-                  {...register('last_name', { required: 'Last name is required' })}
-                />
+                <label htmlFor="last_name" className="form-label">Last Name *</label>
+                <input id="last_name" type="text" className="input-field"
+                  {...register('last_name', { required: 'Last name is required' })} />
                 {errors.last_name && <p className="form-error">{errors.last_name.message}</p>}
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="email" className="form-label">
-                Email Address *
-              </label>
-              <input
-                id="email"
-                type="email"
-                className="input-field"
+              <label htmlFor="email" className="form-label">Email Address *</label>
+              <input id="email" type="email" className="input-field"
                 {...register('email', {
                   required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
-              />
+                  pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' },
+                })} />
               {errors.email && <p className="form-error">{errors.email.message}</p>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="phone" className="form-label">
-                Phone Number *
-              </label>
-              <input
-                id="phone"
-                type="tel"
-                className="input-field"
-                placeholder="(555) 123-4567"
-                {...register('phone', { required: 'Phone number is required' })}
-              />
+              <label htmlFor="phone" className="form-label">Phone Number *</label>
+              <input id="phone" type="tel" className="input-field" placeholder="(555) 123-4567"
+                {...register('phone', { required: 'Phone number is required' })} />
               {errors.phone && <p className="form-error">{errors.phone.message}</p>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="address_line_1" className="form-label">
-                Address Line 1 *
-              </label>
-              <input
-                id="address_line_1"
-                type="text"
-                className="input-field"
-                placeholder="Street address"
-                {...register('address_line_1', { required: 'Address is required' })}
-              />
+              <label htmlFor="address_line_1" className="form-label">Address Line 1 *</label>
+              <input id="address_line_1" type="text" className="input-field" placeholder="Street address"
+                {...register('address_line_1', { required: 'Address is required' })} />
               {errors.address_line_1 && <p className="form-error">{errors.address_line_1.message}</p>}
             </div>
 
             <div className="form-group">
-              <label htmlFor="address_line_2" className="form-label">
-                Address Line 2
-              </label>
-              <input
-                id="address_line_2"
-                type="text"
-                className="input-field"
-                placeholder="Apartment, suite, etc."
-                {...register('address_line_2')}
-              />
+              <label htmlFor="address_line_2" className="form-label">Address Line 2</label>
+              <input id="address_line_2" type="text" className="input-field" placeholder="Apartment, suite, etc."
+                {...register('address_line_2')} />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="form-group">
-                <label htmlFor="city" className="form-label">
-                  City *
-                </label>
-                <input
-                  id="city"
-                  type="text"
-                  className="input-field"
-                  {...register('city', { required: 'City is required' })}
-                />
+                <label htmlFor="city" className="form-label">City *</label>
+                <input id="city" type="text" className="input-field"
+                  {...register('city', { required: 'City is required' })} />
                 {errors.city && <p className="form-error">{errors.city.message}</p>}
               </div>
-
               <div className="form-group">
-                <label htmlFor="state" className="form-label">
-                  State *
-                </label>
-                <input
-                  id="state"
-                  type="text"
-                  className="input-field"
-                  placeholder="CA"
-                  {...register('state', { required: 'State is required' })}
-                />
+                <label htmlFor="state" className="form-label">State *</label>
+                <input id="state" type="text" className="input-field" placeholder="CA"
+                  {...register('state', { required: 'State is required' })} />
                 {errors.state && <p className="form-error">{errors.state.message}</p>}
               </div>
-
               <div className="form-group">
-                <label htmlFor="postal_code" className="form-label">
-                  ZIP Code *
-                </label>
-                <input
-                  id="postal_code"
-                  type="text"
-                  className="input-field"
-                  {...register('postal_code', { required: 'ZIP code is required' })}
-                />
+                <label htmlFor="postal_code" className="form-label">ZIP Code *</label>
+                <input id="postal_code" type="text" className="input-field"
+                  {...register('postal_code', { required: 'ZIP code is required' })} />
                 {errors.postal_code && <p className="form-error">{errors.postal_code.message}</p>}
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="country" className="form-label">
-                Country *
-              </label>
-              <select
-                id="country"
-                className="input-field"
-                {...register('country', { required: 'Country is required' })}
-              >
+              <label htmlFor="country" className="form-label">Country *</label>
+              <select id="country" className="input-field"
+                {...register('country', { required: 'Country is required' })}>
                 <option value="US">United States</option>
               </select>
-              {errors.country && <p className="form-error">{errors.country.message}</p>}
+            </div>
+
+            {/* Shipping Method Selection */}
+            <div className="border-t border-gray-200 pt-6 mt-6">
+              <h3 className="font-display font-semibold text-lg text-primary-600 mb-4">
+                Shipping Method
+              </h3>
+
+              {loadingShipping && (
+                <div className="flex items-center space-x-3 py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-600"></div>
+                  <span className="text-secondary-600 text-sm">Calculating shipping options...</span>
+                </div>
+              )}
+
+              {shippingError && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4 text-sm">
+                  {shippingError}
+                </div>
+              )}
+
+              {!loadingShipping && shippingOptions.length === 0 && (
+                <p className="text-secondary-500 text-sm py-2">
+                  Enter your ZIP code above to see available shipping options.
+                </p>
+              )}
+
+              {!loadingShipping && shippingOptions.length > 0 && (
+                <div className="space-y-3">
+                  {shippingOptions.map((option, idx) => (
+                    <label
+                      key={`${option.method_id}-${option.service_code || idx}`}
+                      className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedShipping?.method_id === option.method_id && 
+                        selectedShipping?.service_code === option.service_code
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      } ${option.cost === null ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <input
+                          type="radio"
+                          name="shipping_method"
+                          disabled={option.cost === null}
+                          checked={
+                            selectedShipping?.method_id === option.method_id &&
+                            selectedShipping?.service_code === option.service_code
+                          }
+                          onChange={() => option.cost !== null && setSelectedShipping(option)}
+                          className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900 text-sm">
+                            {option.name}
+                            {option.is_mock && (
+                              <span className="ml-2 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">
+                                Estimated
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {option.estimated_delivery}
+                            {option.description && ` • ${option.description}`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="font-semibold text-gray-900">
+                        {option.cost === null
+                          ? '—'
+                          : option.cost === 0
+                            ? 'FREE'
+                            : `$${option.cost.toFixed(2)}`
+                        }
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !selectedShipping || selectedShipping.cost === null}
               className="btn-primary w-full"
             >
               {isSubmitting ? 'Validating...' : 'Continue to Payment'}
@@ -471,9 +537,16 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
             <p className="text-sm text-secondary-600">
               {shippingData.first_name} {shippingData.last_name}<br />
               {shippingData.address_line_1}<br />
-              {shippingData.address_line_2 && `${shippingData.address_line_2}\n`}
+              {shippingData.address_line_2 && <>{shippingData.address_line_2}<br /></>}
               {shippingData.city}, {shippingData.state} {shippingData.postal_code}
             </p>
+            {selectedShipping && (
+              <p className="text-sm text-secondary-600 mt-2 pt-2 border-t border-gray-200">
+                <span className="font-medium">Shipping:</span> {selectedShipping.name} — {selectedShipping.cost === 0 ? 'FREE' : `$${selectedShipping.cost?.toFixed(2)}`}
+                <br />
+                <span className="text-xs text-gray-500">{selectedShipping.estimated_delivery}</span>
+              </p>
+            )}
           </div>
 
           {/* Mobile Payment Methods */}

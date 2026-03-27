@@ -23,7 +23,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     base_price: '',
     material: '',
     active: true,
-    image_url: ''
+    image_url: '',
+    weight_lbs: '',
+    length_inches: '',
+    width_inches: '',
+    height_inches: '',
   })
   const [sizes, setSizes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>([])
@@ -67,7 +71,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         base_price: product.base_price?.toString() || '',
         material: product.material || '',
         active: product.active ?? true,
-        image_url: product.image_url || ''
+        image_url: product.image_url || '',
+        weight_lbs: product.weight_lbs?.toString() || '',
+        length_inches: product.length_inches?.toString() || '',
+        width_inches: product.width_inches?.toString() || '',
+        height_inches: product.height_inches?.toString() || '',
       })
 
       setSizes(product.sizes?.map((s: any) => s.value) || [])
@@ -172,6 +180,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           base_price: formData.base_price,
           material: formData.material,
           active: formData.active,
+          weight_lbs: formData.weight_lbs || null,
+          length_inches: formData.length_inches || null,
+          width_inches: formData.width_inches || null,
+          height_inches: formData.height_inches || null,
           sizes,
           colors
         })
@@ -387,6 +399,62 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               onChange={(e) => setFormData({ ...formData, material: e.target.value })}
               placeholder="e.g., Cotton, Polyester, Vinyl"
             />
+          </div>
+
+          {/* Weight & Dimensions */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-3">Shipping Weight &amp; Dimensions</h3>
+            <p className="text-xs text-gray-500 mb-4">Required for weight-based and carrier-calculated shipping rates.</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="form-group">
+                <label className="form-label">Weight (lbs)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className="input-field"
+                  value={formData.weight_lbs}
+                  onChange={(e) => setFormData({ ...formData, weight_lbs: e.target.value })}
+                  placeholder="0.5"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Length (in)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="input-field"
+                  value={formData.length_inches}
+                  onChange={(e) => setFormData({ ...formData, length_inches: e.target.value })}
+                  placeholder="10"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Width (in)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="input-field"
+                  value={formData.width_inches}
+                  onChange={(e) => setFormData({ ...formData, width_inches: e.target.value })}
+                  placeholder="8"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Height (in)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  className="input-field"
+                  value={formData.height_inches}
+                  onChange={(e) => setFormData({ ...formData, height_inches: e.target.value })}
+                  placeholder="1"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Sizes */}

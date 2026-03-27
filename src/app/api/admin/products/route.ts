@@ -72,6 +72,10 @@ export async function POST(request: NextRequest) {
       base_price,
       material,
       active = true,
+      weight_lbs,
+      length_inches,
+      width_inches,
+      height_inches,
       sizes = [],
       colors = [],
       shipping_methods = []
@@ -101,7 +105,11 @@ export async function POST(request: NextRequest) {
         category_id,
         base_price: parseFloat(base_price),
         material: material || null,
-        active
+        active,
+        weight_lbs: weight_lbs != null ? parseFloat(weight_lbs) : null,
+        length_inches: length_inches != null ? parseFloat(length_inches) : null,
+        width_inches: width_inches != null ? parseFloat(width_inches) : null,
+        height_inches: height_inches != null ? parseFloat(height_inches) : null,
       }])
       .select()
       .single()
