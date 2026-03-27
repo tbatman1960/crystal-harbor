@@ -85,6 +85,8 @@ export function generateOrderConfirmationEmail(orderData: {
   }>
   subtotal: number
   shipping_cost: number
+  shipping_method?: string
+  tax_amount?: number
   total_amount: number
   shipping_address: {
     first_name: string
@@ -104,7 +106,9 @@ export function generateOrderConfirmationEmail(orderData: {
     customerEmail, 
     items, 
     subtotal, 
-    shipping_cost, 
+    shipping_cost,
+    shipping_method,
+    tax_amount,
     total_amount,
     shipping_address,
     estimated_delivery 
@@ -175,9 +179,13 @@ export function generateOrderConfirmationEmail(orderData: {
             <td style="text-align: right; padding: 8px 0;">$${subtotal.toFixed(2)}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 0; color: #6b7280;">Shipping:</td>
-            <td style="text-align: right; padding: 8px 0;">$${shipping_cost.toFixed(2)}</td>
+            <td style="padding: 8px 0; color: #6b7280;">Shipping${shipping_method ? ` (${shipping_method})` : ''}:</td>
+            <td style="text-align: right; padding: 8px 0;">${shipping_cost === 0 ? 'FREE' : `$${shipping_cost.toFixed(2)}`}</td>
           </tr>
+          ${tax_amount && tax_amount > 0 ? `<tr>
+            <td style="padding: 8px 0; color: #6b7280;">Tax:</td>
+            <td style="text-align: right; padding: 8px 0;">$${tax_amount.toFixed(2)}</td>
+          </tr>` : ''}
           <tr style="border-top: 2px solid #e5e7eb;">
             <td style="padding: 16px 0 8px 0; font-size: 18px; font-weight: 700; color: #1e3a8a;">Total:</td>
             <td style="text-align: right; padding: 16px 0 8px 0; font-size: 18px; font-weight: 700; color: #1e3a8a;">$${total_amount.toFixed(2)}</td>

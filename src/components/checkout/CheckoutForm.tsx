@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/store/cartStore'
 import { AuthUser } from '@/lib/auth'
 import { createOrder } from '@/lib/orders'
+import { calculateSalesTax } from '@/lib/sales-tax'
 import StripePayment from './StripePayment'
 import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods'
 import { getDeviceInfo } from '@/lib/mobile-detection'
@@ -59,7 +60,6 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
   const [shippingError, setShippingError] = useState('')
 
   const shippingCost = selectedShipping?.cost ?? 0
-  const total = subtotal + shippingCost
 
   const {
     register,
@@ -74,6 +74,20 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
   })
 
   const watchedZip = watch('postal_code')
+  const watchedState = watch('state')
+
+  // Calculate tax based on shipping address state
+  const taxResult = calculateSalesTax({
+    subtotal,
+    shipping_cost: shippingCost,
+    shipping_address: {
+      state: watchedState || '',
+      postal_code: watchedZip || '',
+      country: 'US',
+    }
+  })
+  const taxAmount = taxResult.tax_amount
+  const total = subtotal + shippingCost + taxAmount
 
   // Load customer's saved address for pre-filling
   useEffect(() => {
@@ -266,6 +280,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         subtotal,
         shipping_cost: shippingCost,
         shipping_method: selectedShipping?.name || 'Standard Shipping',
+        tax_amount: taxAmount,
         total_amount: total,
         stripe_payment_intent_id: paymentIntentId,
         special_instructions: ''
@@ -506,12 +521,42 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
               )}
             </div>
 
+            {/* Order Totals */}
+            {selectedShipping && selectedShipping.cost !== null && (
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Shipping ({selectedShipping.name})</span>
+                  <span className="font-medium">{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                </div>
+                {taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tax ({(taxResult.tax_rate * 100).toFixed(0)}% {taxResult.tax_jurisdiction})</span>
+                    <span className="font-medium">${taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                {watchedState && taxAmount === 0 && watchedState !== 'IN' && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tax</span>
+                    <span className="text-gray-500 text-xs">No tax (out of state)</span>
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-2 mt-2">
+                  <span className="font-semibold text-gray-900">Total</span>
+                  <span className="font-bold text-lg text-primary-600">${total.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isSubmitting || !selectedShipping || selectedShipping.cost === null}
               className="btn-primary w-full"
             >
-              {isSubmitting ? 'Validating...' : 'Continue to Payment'}
+              {isSubmitting ? 'Validating...' : `Continue to Payment — $${total.toFixed(2)}`}
             </button>
           </form>
         </div>
@@ -541,11 +586,27 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
               {shippingData.city}, {shippingData.state} {shippingData.postal_code}
             </p>
             {selectedShipping && (
-              <p className="text-sm text-secondary-600 mt-2 pt-2 border-t border-gray-200">
-                <span className="font-medium">Shipping:</span> {selectedShipping.name} — {selectedShipping.cost === 0 ? 'FREE' : `$${selectedShipping.cost?.toFixed(2)}`}
-                <br />
-                <span className="text-xs text-gray-500">{selectedShipping.estimated_delivery}</span>
-              </p>
+              <div className="text-sm text-secondary-600 mt-2 pt-2 border-t border-gray-200 space-y-1">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Shipping ({selectedShipping.name}):</span>
+                  <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                </div>
+                {taxAmount > 0 && (
+                  <div className="flex justify-between">
+                    <span>Tax:</span>
+                    <span>${taxAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t">
+                  <span>Total:</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+                <p className="text-xs text-gray-500">{selectedShipping.estimated_delivery}</p>
+              </div>
             )}
           </div>
 

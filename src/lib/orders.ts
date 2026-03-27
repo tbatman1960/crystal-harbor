@@ -68,18 +68,22 @@ export async function createOrder(data: CreateOrderData): Promise<{
   error?: string
 }> {
   try {
-    // Calculate sales tax
-    const taxCalculation = calculateSalesTax({
-      subtotal: data.subtotal,
-      shipping_cost: data.shipping_cost,
-      shipping_address: {
-        state: data.shipping_address.state,
-        postal_code: data.shipping_address.postal_code,
-        country: data.shipping_address.country || 'US'
-      }
-    })
-
-    const tax_amount = taxCalculation.tax_amount
+    // Use provided tax amount if available, otherwise calculate
+    let tax_amount: number
+    if (data.tax_amount != null && data.tax_amount >= 0) {
+      tax_amount = data.tax_amount
+    } else {
+      const taxCalculation = calculateSalesTax({
+        subtotal: data.subtotal,
+        shipping_cost: data.shipping_cost,
+        shipping_address: {
+          state: data.shipping_address.state,
+          postal_code: data.shipping_address.postal_code,
+          country: data.shipping_address.country || 'US'
+        }
+      })
+      tax_amount = taxCalculation.tax_amount
+    }
     const final_total = data.subtotal + data.shipping_cost + tax_amount
 
     // Start a transaction by creating the order first
@@ -235,6 +239,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
             subtotal: data.subtotal,
             shipping_cost: data.shipping_cost,
             shipping_method: data.shipping_method || 'Standard Shipping',
+            tax_amount: tax_amount,
             total_amount: final_total,
             shipping_address: data.shipping_address,
             estimated_delivery: undefined

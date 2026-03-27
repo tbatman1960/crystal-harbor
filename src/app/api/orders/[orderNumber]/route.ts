@@ -58,6 +58,7 @@ export async function GET(
       status: order.status,
       subtotal: order.subtotal,
       shipping_cost: order.shipping_cost,
+      shipping_method: order.shipping_method || 'Standard Shipping',
       tax_amount: order.tax_amount || 0,
       total_amount: order.total_amount,
       shipping_address: order.shipping_address,

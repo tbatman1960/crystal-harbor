@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { PrinterIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+// Order data fetched via API route (not direct Supabase) due to RLS
 import { generateOrderPDF, generatePDFFromElement, printPage, isPDFSupported } from '@/lib/pdf-generator'
 import { trackPurchase } from '@/lib/analytics'
 import { useCartStore } from '@/store/cartStore'
@@ -75,23 +75,18 @@ export default function OrderSuccessPage() {
 
   const loadOrderDetails = async () => {
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          order_items (*)
-        `)
-        .eq('order_number', orderNumber)
-        .single()
+      const res = await fetch(`/api/orders/${orderNumber}`)
+      if (!res.ok) throw new Error('Failed to load order')
+      const data = await res.json()
+      const orderData = data.order
 
-      if (error) throw error
+      if (!orderData) throw new Error('Order not found')
 
-      // Shipping address is already included in the order data as JSONB
-      setOrder(data)
+      setOrder(orderData)
 
       // Track purchase completion for analytics
-      if (data?.order_items) {
-        const purchaseItems = data.order_items.map((item: any) => ({
+      if (orderData?.order_items) {
+        const purchaseItems = orderData.order_items.map((item: any) => ({
           item_id: item.product_id || item.id,
           item_name: item.product_name,
           item_category: 'custom-printed-products', // Default category
@@ -100,8 +95,8 @@ export default function OrderSuccessPage() {
         }))
 
         trackPurchase({
-          transaction_id: data.order_number,
-          value: data.total_amount,
+          transaction_id: orderData.order_number,
+          value: orderData.total_amount,
           items: purchaseItems
         })
       }
