@@ -202,23 +202,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return created product with relations
-    const { data: fullProduct } = await supabase
-      .from('products')
-      .select(`
-        *,
-        category:categories(*),
-        sizes:product_options!inner(option_value),
-        colors:product_options!inner(option_value),
-        shipping_methods:product_shipping_methods(
-          is_default,
-          shipping_method:shipping_methods(*)
-        )
-      `)
-      .eq('id', product.id)
-      .single()
-
-    return NextResponse.json({ product: fullProduct }, { status: 201 })
+    // Return created product
+    return NextResponse.json({ product }, { status: 201 })
 
   } catch (error) {
     console.error('Error creating product:', error)
