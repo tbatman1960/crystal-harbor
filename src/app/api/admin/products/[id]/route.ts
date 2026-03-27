@@ -36,6 +36,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('product_id', id)
       .order('display_order')
 
+    // Fetch pricing tiers
+    const { data: pricingTiers } = await supabase
+      .from('pricing_tiers')
+      .select('*')
+      .eq('product_id', id)
+      .order('min_quantity')
+
     // Fetch shipping methods separately
     const { data: shippingMethods } = await supabase
       .from('product_shipping_methods')
@@ -56,6 +63,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ...product,
         sizes: sizes.map(s => ({ id: s.id, value: s.option_value })),
         colors: colors.map(c => ({ id: c.id, value: c.option_value })),
+        pricing_tiers: pricingTiers || [],
         shipping_methods: shippingMethods || []
       }
     })
@@ -82,6 +90,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       length_inches,
       width_inches,
       height_inches,
+      regenerate_pricing_tiers = false,
       sizes = [],
       colors = [],
       shipping_methods = []
@@ -191,6 +200,32 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Regenerate pricing tiers if requested
+    if (regenerate_pricing_tiers && base_price) {
+      // Delete existing tiers
+      await supabase.from('pricing_tiers').delete().eq('product_id', id)
+
+      const price = parseFloat(base_price)
+      const tiers = [
+        { tier_name: 'Tier 1', min_quantity: 1, max_quantity: 49, discount_percentage: 0 },
+        { tier_name: 'Tier 2', min_quantity: 50, max_quantity: 249, discount_percentage: 18 },
+        { tier_name: 'Tier 3', min_quantity: 250, max_quantity: null, discount_percentage: 32 },
+      ]
+
+      const tierRows = tiers.map(t => ({
+        id: uuidv4(),
+        product_id: id,
+        tier_name: t.tier_name,
+        min_quantity: t.min_quantity,
+        max_quantity: t.max_quantity,
+        price_per_unit: Math.round(price * (1 - t.discount_percentage / 100) * 100) / 100,
+        discount_percentage: t.discount_percentage,
+      }))
+
+      const { error: tiersError } = await supabase.from('pricing_tiers').insert(tierRows)
+      if (tiersError) console.error('Error regenerating pricing tiers:', tiersError)
+    }
+
     // Return updated product with relations
     const { data: fullProduct } = await supabase
       .from('products')
@@ -198,6 +233,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         *,
         category:categories(*),
         product_options(*),
+        pricing_tiers(*),
         product_shipping_methods(
           is_default,
           shipping_method:shipping_methods(*)

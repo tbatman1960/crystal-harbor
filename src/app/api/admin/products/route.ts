@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
       length_inches,
       width_inches,
       height_inches,
+      enable_volume_pricing = false,
       sizes = [],
       colors = [],
       shipping_methods = []
@@ -152,6 +153,34 @@ export async function POST(request: NextRequest) {
 
       if (colorsError) {
         console.error('Error adding colors:', colorsError)
+      }
+    }
+
+    // Auto-generate volume pricing tiers based on base price
+    if (enable_volume_pricing) {
+      const price = parseFloat(base_price)
+      const tiers = [
+        { tier_name: 'Tier 1', min_quantity: 1, max_quantity: 49, discount_percentage: 0 },
+        { tier_name: 'Tier 2', min_quantity: 50, max_quantity: 249, discount_percentage: 18 },
+        { tier_name: 'Tier 3', min_quantity: 250, max_quantity: null, discount_percentage: 32 },
+      ]
+
+      const tierRows = tiers.map(t => ({
+        id: uuidv4(),
+        product_id: product.id,
+        tier_name: t.tier_name,
+        min_quantity: t.min_quantity,
+        max_quantity: t.max_quantity,
+        price_per_unit: Math.round(price * (1 - t.discount_percentage / 100) * 100) / 100,
+        discount_percentage: t.discount_percentage,
+      }))
+
+      const { error: tiersError } = await supabase
+        .from('pricing_tiers')
+        .insert(tierRows)
+
+      if (tiersError) {
+        console.error('Error creating pricing tiers:', tiersError)
       }
     }
 

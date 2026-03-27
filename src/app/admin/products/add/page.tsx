@@ -14,6 +14,11 @@ interface ProductFormData {
   base_price: string
   material: string
   active: boolean
+  enable_volume_pricing: boolean
+  weight_lbs: string
+  length_inches: string
+  width_inches: string
+  height_inches: string
   sizes: string[]
   colors: string[]
   shipping_methods: string[]
@@ -59,6 +64,11 @@ export default function AddProductPage() {
       base_price: '',
       material: '',
       active: true,
+      enable_volume_pricing: true,
+      weight_lbs: '',
+      length_inches: '',
+      width_inches: '',
+      height_inches: '',
       sizes: [],
       colors: [],
       shipping_methods: []
@@ -68,6 +78,8 @@ export default function AddProductPage() {
   const watchedSizes = watch('sizes')
   const watchedColors = watch('colors')
   const watchedShippingMethods = watch('shipping_methods')
+  const watchedVolumePricing = watch('enable_volume_pricing')
+  const watchedBasePrice = watch('base_price')
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -278,6 +290,74 @@ export default function AddProductPage() {
                 className="input-field"
                 placeholder="e.g., Cotton/Polyester Blend"
               />
+            </div>
+          </div>
+
+          {/* Pricing Mode */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-medium text-gray-900">Volume Pricing</h3>
+                <p className="text-xs text-gray-500">Auto-generate quantity discount tiers from the base price</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('enable_volume_pricing')}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            {watchedVolumePricing && watchedBasePrice && parseFloat(watchedBasePrice) > 0 ? (
+              <div className="bg-blue-50 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-medium text-blue-800 mb-2">Preview — tiers auto-calculated from ${parseFloat(watchedBasePrice).toFixed(2)} base price:</p>
+                {[
+                  { name: 'Tier 1', qty: '1–49', discount: 0 },
+                  { name: 'Tier 2', qty: '50–249', discount: 18 },
+                  { name: 'Tier 3', qty: '250+', discount: 32 },
+                ].map(t => {
+                  const price = Math.round(parseFloat(watchedBasePrice) * (1 - t.discount / 100) * 100) / 100
+                  return (
+                    <div key={t.name} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{t.qty} units</span>
+                      <span className="font-medium">
+                        ${price.toFixed(2)}/ea
+                        {t.discount > 0 && <span className="text-green-600 ml-2">({t.discount}% off)</span>}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : watchedVolumePricing ? (
+              <p className="text-xs text-gray-400 italic">Enter a base price to see tier preview</p>
+            ) : (
+              <p className="text-xs text-gray-400 italic">Disabled — product will use flat base price only</p>
+            )}
+          </div>
+
+          {/* Weight & Dimensions */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Shipping Weight &amp; Dimensions</h3>
+            <p className="text-xs text-gray-500 mb-3">Used for weight-based and carrier-calculated shipping rates</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="form-label">Weight (lbs)</label>
+                <input type="number" step="0.01" min="0" {...register('weight_lbs')} className="input-field" placeholder="0.5" />
+              </div>
+              <div>
+                <label className="form-label">Length (in)</label>
+                <input type="number" step="0.1" min="0" {...register('length_inches')} className="input-field" placeholder="10" />
+              </div>
+              <div>
+                <label className="form-label">Width (in)</label>
+                <input type="number" step="0.1" min="0" {...register('width_inches')} className="input-field" placeholder="8" />
+              </div>
+              <div>
+                <label className="form-label">Height (in)</label>
+                <input type="number" step="0.1" min="0" {...register('height_inches')} className="input-field" placeholder="1" />
+              </div>
             </div>
           </div>
 

@@ -35,6 +35,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [newColor, setNewColor] = useState('')
   const [photos, setPhotos] = useState<string[]>([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [pricingTiers, setPricingTiers] = useState<any[]>([])
+  const [regeneratingTiers, setRegeneratingTiers] = useState(false)
 
   useEffect(() => {
     loadCategories()
@@ -80,6 +82,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
       setSizes(product.sizes?.map((s: any) => s.value) || [])
       setColors(product.colors?.map((c: any) => c.value) || [])
+      setPricingTiers(product.pricing_tiers || [])
 
       if (product.image_url) {
         setPhotos([product.image_url])
@@ -399,6 +402,76 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               onChange={(e) => setFormData({ ...formData, material: e.target.value })}
               placeholder="e.g., Cotton, Polyester, Vinyl"
             />
+          </div>
+
+          {/* Volume Pricing Tiers */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="font-medium text-gray-900">Volume Pricing Tiers</h3>
+                <p className="text-xs text-gray-500">Quantity-based discounts (0%, 18%, 32% off base price)</p>
+              </div>
+              <button
+                type="button"
+                disabled={regeneratingTiers || !formData.base_price}
+                onClick={async () => {
+                  if (!confirm('This will replace all existing pricing tiers with auto-calculated ones based on the current base price. Continue?')) return
+                  setRegeneratingTiers(true)
+                  try {
+                    const res = await fetch(`/api/admin/products/${params.id}`, {
+                      method: 'PUT',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        ...{
+                          name: formData.name,
+                          description: formData.description,
+                          category_id: formData.category_id,
+                          base_price: formData.base_price,
+                          material: formData.material,
+                          active: formData.active,
+                          weight_lbs: formData.weight_lbs || null,
+                          length_inches: formData.length_inches || null,
+                          width_inches: formData.width_inches || null,
+                          height_inches: formData.height_inches || null,
+                          sizes, colors,
+                        },
+                        regenerate_pricing_tiers: true,
+                      })
+                    })
+                    if (res.ok) {
+                      const data = await res.json()
+                      setPricingTiers(data.product?.pricing_tiers || [])
+                    }
+                  } catch (e) { console.error(e) }
+                  finally { setRegeneratingTiers(false) }
+                }}
+                className="text-sm btn-secondary"
+              >
+                {regeneratingTiers ? 'Generating...' : pricingTiers.length > 0 ? 'Regenerate Tiers' : 'Generate Tiers'}
+              </button>
+            </div>
+
+            {pricingTiers.length > 0 ? (
+              <div className="space-y-2">
+                {pricingTiers
+                  .sort((a: any, b: any) => a.min_quantity - b.min_quantity)
+                  .map((tier: any) => (
+                  <div key={tier.id} className="flex items-center justify-between bg-gray-50 rounded p-3 text-sm">
+                    <span className="text-gray-700">
+                      {tier.min_quantity}–{tier.max_quantity || '∞'} units
+                    </span>
+                    <span className="font-medium">
+                      ${tier.price_per_unit.toFixed(2)}/ea
+                      {tier.discount_percentage > 0 && (
+                        <span className="text-green-600 ml-2">({tier.discount_percentage}% off)</span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">No pricing tiers — product uses flat base price. Click &quot;Generate Tiers&quot; to add volume discounts.</p>
+            )}
           </div>
 
           {/* Weight & Dimensions */}
