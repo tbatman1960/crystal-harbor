@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/store/cartStore'
 import { AuthUser } from '@/lib/auth'
-import { createOrder } from '@/lib/orders'
+// Order creation via API route (not direct import) to avoid RLS issues
 import { calculateSalesTax } from '@/lib/sales-tax'
 import StripePayment from './StripePayment'
 import MobilePaymentMethods from '@/components/mobile/MobilePaymentMethods'
@@ -286,7 +286,12 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         special_instructions: ''
       }
 
-      const result = await createOrder(orderData)
+      const orderRes = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData),
+      })
+      const result = await orderRes.json()
 
       if (result.success && result.order) {
         console.log('Order created successfully:', result.order.order_number)

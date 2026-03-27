@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from './supabase'
 import { calculateSalesTax } from './sales-tax'
+import { sendEmail as sendEmailFn, generateOrderConfirmationEmail, generateOrderStatusEmail } from './email'
 import { v4 as uuidv4 } from 'uuid'
 
 export interface OrderItem {
@@ -215,14 +216,14 @@ export async function createOrder(data: CreateOrderData): Promise<{
       }
     }
 
-    // Send order confirmation email (non-blocking)
+    // Send order confirmation email (non-blocking, direct call since we're server-side)
     const sendEmailAsync = async () => {
       try {
         const customerEmail = data.customer_id ? data.shipping_address.email : data.guest_email || ''
         const customerName = `${data.shipping_address.first_name} ${data.shipping_address.last_name}`.trim()
         
         if (customerEmail) {
-          const emailData = {
+          const emailTemplate = generateOrderConfirmationEmail({
             orderNumber: order.order_number,
             customerName,
             customerEmail,
@@ -233,7 +234,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
               line_total: item.line_total,
               selected_size: item.selected_size,
               selected_color: item.selected_color,
-              custom_text: item.custom_text,
+              custom_text: item.custom_text || undefined,
               selected_design: item.selected_design ? { name: item.selected_design.name } : undefined
             })),
             subtotal: data.subtotal,
@@ -243,38 +244,13 @@ export async function createOrder(data: CreateOrderData): Promise<{
             total_amount: final_total,
             shipping_address: data.shipping_address,
             estimated_delivery: undefined
-          }
+          })
 
-          // Set a 5 second timeout for email sending
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-          try {
-            const emailResponse = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'order_confirmation',
-                data: emailData
-              }),
-              signal: controller.signal
-            })
-
-            clearTimeout(timeoutId)
-
-            if (emailResponse.ok) {
-              console.log('✅ Order confirmation email sent successfully')
-            } else {
-              const errorData = await emailResponse.json()
-              console.error('❌ Failed to send order confirmation email:', errorData.error)
-            }
-          } catch (fetchError: any) {
-            clearTimeout(timeoutId)
-            if (fetchError?.name === 'AbortError') {
-              console.warn('⏰ Email sending timed out after 5 seconds - continuing with order')
-            } else {
-              console.error('❌ Error sending order confirmation email:', fetchError)
-            }
+          const emailResult = await sendEmailFn(emailTemplate)
+          if (emailResult.success) {
+            console.log('✅ Order confirmation email sent successfully')
+          } else {
+            console.error('❌ Failed to send order confirmation email:', emailResult.error)
           }
         } else {
           console.warn('⚠️ No customer email available for order confirmation')
@@ -457,36 +433,12 @@ export async function updateOrderStatus(
             statusMessage
           }
 
-          // Set a 5 second timeout for email sending
-          const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 5000)
-
-          try {
-            const emailResponse = await fetch('/api/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'status_update',
-                data: emailData
-              }),
-              signal: controller.signal
-            })
-
-            clearTimeout(timeoutId)
-
-            if (emailResponse.ok) {
-              console.log(`✅ Order status update email sent for ${currentOrder.order_number}`)
-            } else {
-              const errorData = await emailResponse.json()
-              console.error('❌ Failed to send status update email:', errorData.error)
-            }
-          } catch (fetchError: any) {
-            clearTimeout(timeoutId)
-            if (fetchError?.name === 'AbortError') {
-              console.warn('⏰ Status email sending timed out after 5 seconds')
-            } else {
-              console.error('❌ Error sending status update email:', fetchError)
-            }
+          const emailTemplate = generateOrderStatusEmail(emailData)
+          const emailResult = await sendEmailFn(emailTemplate)
+          if (emailResult.success) {
+            console.log(`✅ Order status update email sent for ${currentOrder.order_number}`)
+          } else {
+            console.error('❌ Failed to send status update email:', emailResult.error)
           }
         } catch (error) {
           console.error('Error in status email sending process:', error)
