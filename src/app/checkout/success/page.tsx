@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { PrinterIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
@@ -45,7 +45,7 @@ export interface OrderDetails {
   }
 }
 
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -411,5 +411,19 @@ export default function OrderSuccessPage() {
         }
       `}</style>
     </>
+  )
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="section-padding bg-background-50 min-h-screen">
+        <div className="container mx-auto max-w-4xl text-center py-12">
+          <div className="loading-pulse">Loading order confirmation...</div>
+        </div>
+      </div>
+    }>
+      <OrderSuccessContent />
+    </Suspense>
   )
 }

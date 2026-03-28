@@ -65,7 +65,7 @@ export async function GET(
       special_instructions: order.special_instructions,
       created_at: order.created_at,
       updated_at: order.updated_at,
-      items: order.order_items || []
+      order_items: order.order_items || []
     }
 
     return NextResponse.json({
