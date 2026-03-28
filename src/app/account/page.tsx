@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/store/authStore'
-import { supabase } from '@/lib/supabase'
+// Account data fetched via API routes (not direct Supabase) due to RLS
 import { PencilIcon, MapPinIcon, CheckIcon, XMarkIcon, EnvelopeIcon, ChatBubbleLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 
 interface Order {
@@ -92,26 +92,19 @@ export default function AccountPage() {
     if (!user?.id) return
 
     try {
-      // Load orders
-      const { data: ordersData, error: ordersError } = await supabase
-        .from('orders')
-        .select('id, order_number, status, total_amount, created_at')
-        .eq('customer_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (ordersError) {
-        console.error('Error loading orders:', ordersError)
+      // Load orders via API route
+      const ordersRes = await fetch(`/api/account/orders?customer_id=${user.id}`)
+      if (ordersRes.ok) {
+        const ordersJson = await ordersRes.json()
+        setOrders(ordersJson.orders || [])
       } else {
-        setOrders(ordersData || [])
+        console.error('Error loading orders')
       }
 
-      // Load customer data including address
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('id', user.id)
-        .single()
+      // Load customer data via API route
+      const profileRes = await fetch(`/api/account/profile?customer_id=${user.id}`)
+      const { customer: customerData } = profileRes.ok ? await profileRes.json() : { customer: null }
+      const customerError = !profileRes.ok
 
       if (customerError) {
         console.error('Error loading customer data:', customerError)
@@ -159,10 +152,12 @@ export default function AccountPage() {
     setMessage(null)
 
     try {
-      // Update in database
-      const { error } = await supabase
-        .from('customers')
-        .update({
+      // Update in database via API route
+      const updateRes = await fetch('/api/account/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_id: user.id,
           first_name: data.first_name,
           last_name: data.last_name,
           phone: data.phone || null,
@@ -173,12 +168,11 @@ export default function AccountPage() {
           state: data.state || null,
           postal_code: data.postal_code || null,
           country: data.country || 'US',
-          updated_at: new Date().toISOString()
         })
-        .eq('id', user.id)
+      })
 
-      if (error) {
-        console.error('Error updating profile:', error)
+      if (!updateRes.ok) {
+        console.error('Error updating profile')
         setMessage({ type: 'error', text: 'Failed to update profile. Please try again.' })
         return
       }
