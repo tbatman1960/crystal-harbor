@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         category:categories(*),
-        product_options!inner(*)
+        product_options(*)
       `, { count: 'exact' })
 
     // Apply filters
