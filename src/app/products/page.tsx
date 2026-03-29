@@ -8,7 +8,7 @@ export const metadata = {
   keywords: 'custom printing, t-shirts, blankets, flags, banners, personalized products',
 }
 
-export const revalidate = 300 // Revalidate every 5 minutes
+export const revalidate = 60 // Revalidate every 60 seconds
 
 export default async function ProductsPage() {
   const [categories, products] = await Promise.all([
