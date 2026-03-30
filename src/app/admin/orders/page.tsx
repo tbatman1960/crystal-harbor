@@ -509,6 +509,14 @@ export default function AdminOrdersPage() {
                       Vendor
                     </button>
                   )}
+                  {order.status !== 'cancelled' && (
+                    <Link
+                      href={`/admin/orders/${order.id}`}
+                      className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-full"
+                    >
+                      Refund
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -590,6 +598,14 @@ export default function AdminOrdersPage() {
                             <EnvelopeIcon className="w-3 h-3 mr-1" />
                             Send to Vendor
                           </button>
+                        )}
+                        {order.status !== 'cancelled' && (
+                          <Link
+                            href={`/admin/orders/${order.id}`}
+                            className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-full transition-colors duration-200"
+                          >
+                            Refund
+                          </Link>
                         )}
                       </div>
                     </td>
