@@ -774,33 +774,41 @@ ${user.firstName} ${user.lastName}`)
                         >
                           View Details →
                         </Link>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEmailAboutOrder(order)}
-                            className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 hover:text-accent-lime-800 text-xs font-medium rounded-full transition-colors duration-200"
-                            title="Email about this order"
-                          >
-                            <EnvelopeIcon className="w-3 h-3 mr-1" />
-                            Email About Order
-                          </button>
-                          <button
-                            onClick={() => handleInitiateReturn(order)}
-                            className="inline-flex items-center px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 text-xs font-medium rounded-full transition-colors duration-200"
-                            title="Request return"
-                          >
-                            <ArrowPathIcon className="w-3 h-3 mr-1" />
-                            Return
-                          </button>
-                          {order.status !== 'cancelled' && order.status !== 'delivered' && (
-                            <button
-                              onClick={() => handleCancelOrder(order)}
-                              disabled={cancellingOrder === order.id}
-                              className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
-                              title={order.status === 'pending' ? 'Cancel for full refund' : 'Request cancellation'}
-                            >
-                              <XCircleIcon className="w-3 h-3 mr-1" />
-                              {cancellingOrder === order.id ? 'Cancelling...' : order.status === 'pending' ? 'Cancel Order' : 'Request Cancel'}
-                            </button>
+                        <div className="flex flex-wrap gap-2">
+                          {order.status === 'cancelled' ? (
+                            <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                              ✓ Refund processed — no further refunds or returns available
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleEmailAboutOrder(order)}
+                                className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 hover:text-accent-lime-800 text-xs font-medium rounded-full transition-colors duration-200"
+                                title="Email about this order"
+                              >
+                                <EnvelopeIcon className="w-3 h-3 mr-1" />
+                                Email About Order
+                              </button>
+                              <button
+                                onClick={() => handleInitiateReturn(order)}
+                                className="inline-flex items-center px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 text-xs font-medium rounded-full transition-colors duration-200"
+                                title="Request return"
+                              >
+                                <ArrowPathIcon className="w-3 h-3 mr-1" />
+                                Return
+                              </button>
+                              {order.status !== 'delivered' && (
+                                <button
+                                  onClick={() => handleCancelOrder(order)}
+                                  disabled={cancellingOrder === order.id}
+                                  className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
+                                  title={order.status === 'pending' ? 'Cancel for full refund' : 'Request cancellation'}
+                                >
+                                  <XCircleIcon className="w-3 h-3 mr-1" />
+                                  {cancellingOrder === order.id ? 'Cancelling...' : order.status === 'pending' ? 'Cancel Order' : 'Request Cancel'}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
