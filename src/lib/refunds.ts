@@ -1,4 +1,9 @@
 import { supabaseAdmin as supabase } from './supabase'
+import Stripe from 'stripe'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16',
+})
 
 export interface RefundPolicy {
   id: string
@@ -166,31 +171,25 @@ export async function processStripeRefund(
   error?: string
 }> {
   try {
-    const response = await fetch('/api/refunds/process', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        payment_intent_id: paymentIntentId,
-        amount: Math.round(refundAmount * 100), // Convert to cents
-        reason: 'requested_by_customer',
-        metadata: {
-          order_number: orderNumber
-        }
-      }),
-    })
-
-    const result = await response.json()
-
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Refund processing failed' }
+    // Skip for test payments
+    if (paymentIntentId.startsWith('dev_test_') || paymentIntentId.startsWith('mobile_')) {
+      console.log(`🧪 Test refund simulated for ${paymentIntentId}: $${refundAmount.toFixed(2)}`)
+      return { success: true, refundId: `re_test_${Date.now()}` }
     }
 
-    return { success: true, refundId: result.refund_id }
-  } catch (error) {
+    // Call Stripe directly (not via fetch to API route — relative URLs fail server-side)
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount: Math.round(refundAmount * 100), // Convert to cents
+      reason: 'requested_by_customer',
+      metadata: { order_number: orderNumber }
+    })
+
+    console.log(`✅ Stripe refund processed: ${refund.id} for $${(refund.amount / 100).toFixed(2)}`)
+    return { success: true, refundId: refund.id }
+  } catch (error: any) {
     console.error('Error processing Stripe refund:', error)
-    return { success: false, error: 'Network error occurred' }
+    return { success: false, error: error?.message || 'Refund processing failed' }
   }
 }
 
