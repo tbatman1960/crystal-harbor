@@ -49,6 +49,7 @@ function OrderSuccessContent() {
   const [order, setOrder] = useState<OrderDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [cancelling, setCancelling] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
   const orderNumber = searchParams.get('order')
@@ -105,6 +106,36 @@ function OrderSuccessContent() {
       setError('Order not found or could not be loaded')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCancelOrder = async () => {
+    if (!order) return
+    if (!confirm(`Cancel order ${order.order_number}? You will receive a full refund of $${order.total_amount.toFixed(2)}.`)) return
+    
+    setCancelling(true)
+    try {
+      const res = await fetch('/api/orders/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber: order.order_number })
+      })
+      const result = await res.json()
+      
+      if (res.ok && result.success) {
+        alert(result.refundProcessed 
+          ? `Order cancelled! A refund of $${result.refundAmount?.toFixed(2) || order.total_amount.toFixed(2)} will be processed within 3-5 business days.`
+          : 'Order cancelled successfully!')
+        // Reload to show updated status
+        await loadOrderDetails()
+      } else {
+        alert(result.error || 'Failed to cancel order')
+      }
+    } catch (error) {
+      console.error('Error cancelling order:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setCancelling(false)
     }
   }
 
@@ -359,6 +390,23 @@ function OrderSuccessContent() {
                     <li>• Shipment with tracking info</li>
                   </ul>
                 </div>
+
+                {/* Cancel Order - only for pending */}
+                {order.status === 'pending' && (
+                  <div className="mt-6 p-4 bg-red-50 rounded-lg">
+                    <h3 className="font-semibold text-red-800 mb-2">Changed Your Mind?</h3>
+                    <p className="text-sm text-red-700 mb-3">
+                      Cancel now for a full refund. Once production begins, cancellations are subject to our refund policy.
+                    </p>
+                    <button
+                      onClick={handleCancelOrder}
+                      disabled={cancelling}
+                      className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {cancelling ? 'Cancelling...' : 'Cancel Order & Get Full Refund'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Continue Shopping */}
                 <div className="mt-6 space-y-3">
