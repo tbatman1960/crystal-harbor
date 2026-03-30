@@ -118,7 +118,7 @@ function OrderSuccessContent() {
       const res = await fetch('/api/orders/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderNumber: order.order_number })
+        body: JSON.stringify({ order_id: order.id, order_number: order.order_number })
       })
       const result = await res.json()
       
