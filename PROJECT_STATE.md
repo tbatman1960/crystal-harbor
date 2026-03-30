@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-03-30
 
 ---
 
@@ -270,7 +270,11 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | GET/POST | `/api/admin/shipping-methods` | Manage shipping methods |
 | GET | `/api/admin/reports` | Sales reports data (orders with items) |
 | GET | `/api/admin/analytics-reports` | Analytics data (orders, customers, products with date filtering) |
-| GET/POST | `/api/admin/site-settings` | Read/write site settings by category |
+| GET/POST/PUT | `/api/admin/site-settings` | Read/write site settings (PUT for single upsert) |
+| GET | `/api/admin/dashboard` | Dashboard stats (orders, revenue, recent orders, top products) |
+| GET/PUT | `/api/admin/orders` | List orders (GET with filters) / Update order status (PUT) |
+| GET | `/api/admin/orders/[id]` | Get single order with items |
+| GET/PUT | `/api/admin/refund-policies` | List/update refund policies |
 
 ### Customer
 | Method | Route | Purpose |
@@ -337,6 +341,8 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Auth is client-side only:** No server-side session validation — anyone with a valid user ID in localStorage can access protected pages
 - **Photo upload placeholder:** Product edit page photo upload is a stub — doesn't actually upload to storage
 - **AI newsletter generation:** Requires OPENAI_API_KEY which is not configured. Tim prefers to ask the assistant to write newsletters instead.
+- **Terms & Privacy pages:** Still have "placeholder legal content" warning banners — need real legal text
+- **MobilePaymentMethods:** Apple Pay / Google Pay environment hardcoded to `'TEST'` — needs switch to `'PRODUCTION'`
 
 ### Planned / Not Yet Started
 - **Custom domain:** Point `crystalharbortc.com` to Netlify via DNS
@@ -435,6 +441,30 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-03-30
+- **Worked on:** Comprehensive site audit, admin RLS fixes, placeholder data cleanup, contact form, email consistency
+- **Key changes:**
+  - Full audit of all pages, API routes, and admin portal identified 18 issues
+  - Created 4 new API routes: `/api/admin/dashboard`, `/api/admin/orders` (GET/PUT), `/api/admin/orders/[id]`, `/api/admin/refund-policies` (GET/PUT)
+  - Added PUT handler to `/api/admin/site-settings` for single setting upsert
+  - Fixed 6 admin pages (dashboard, orders, order detail, settings, analytics, refund policies) — all were broken due to client components importing `supabaseAdmin` directly instead of using fetch() to API routes
+  - Fixed sitemap.xml — was using anon key (blocked by RLS), switched to `supabaseAdmin`. Products and categories now appear in sitemap.
+  - Replaced fake phone `(555) 123-4567` with real `(317) 997-5503` across 12 files
+  - Replaced `[City, State]` with real address on contact and refunds pages
+  - Fixed fallback domain `crystalharbor.com` → `crystal-harbor.netlify.app` in 12 files
+  - Contact form now sends email via `/api/send-email` (was just `console.log`)
+  - Added `contact` email type handler in send-email API route
+  - Email template colors updated from coral/lime (#ff6b6b/#84cc16) to gold/silver-blue (#C4942A/#8A9DB8)
+  - Replaced `support@crystalharbortc.com` with `info@crystalharbortc.com` across 11 files (support@ was never a real mailbox)
+- **Decisions made:**
+  - Established "Code Change Discipline" workflow: one fix → build → test → commit → next fix. No more batching unrelated changes.
+  - All customer-facing email uses `info@crystalharbortc.com` only
+- **Issues still open:**
+  - Terms & Privacy pages still have "placeholder legal content" warnings
+  - MobilePaymentMethods hardcoded to TEST environment
+  - GA4 measurement ID still placeholder
+  - Custom domain not configured
 
 ### 2026-03-25
 - **Worked on:** Netlify upgrade, hero banner, footer info, RLS, newsletter system, product edit page, password reset, sales tax cleanup, admin page fixes
