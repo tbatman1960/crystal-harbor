@@ -464,6 +464,25 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
                 )}
               </div>
             </div>
+
+            {/* Refund Actions */}
+            {order.status !== 'cancelled' && (
+              <div className="card p-6 border-red-200 bg-red-50">
+                <h3 className="font-semibold text-red-800 mb-3">Refund / Cancel</h3>
+                <p className="text-sm text-red-700 mb-4">
+                  {order.status === 'pending' || order.status === 'processing'
+                    ? 'Full refund available — order has not shipped.'
+                    : 'Partial refund per policy — order has progressed.'}
+                </p>
+                <button
+                  onClick={() => handleCancellationRequest()}
+                  disabled={updating}
+                  className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {updating ? 'Processing...' : 'Process Refund & Cancel Order'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
