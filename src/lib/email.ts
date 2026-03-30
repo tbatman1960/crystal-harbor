@@ -217,6 +217,20 @@ export function generateOrderConfirmationEmail(orderData: {
         </ul>
       </div>
 
+      <!-- Cancel/Modify Order -->
+      <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 30px; text-align: center;">
+        <div style="color: #991b1b; font-size: 14px; margin-bottom: 8px;">
+          <strong>Need to cancel or modify your order?</strong>
+        </div>
+        <div style="color: #7f1d1d; font-size: 13px; margin-bottom: 12px;">
+          Pending orders can be cancelled for a full refund.
+        </div>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/orders/${orderNumber}" 
+           style="display: inline-block; background: #dc2626; color: white; padding: 8px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 13px;">
+          View or Cancel Order
+        </a>
+      </div>
+
       <!-- Contact Info -->
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
@@ -271,6 +285,10 @@ WHAT'S NEXT:
 • Professional printing
 • Quality check and packaging
 • Shipment with tracking
+
+NEED TO CANCEL?
+Pending orders can be cancelled for a full refund.
+View or cancel your order: ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/orders/${orderNumber}
 
 Questions? Contact us at info@crystalharbortc.com or (317) 997-5503
 
