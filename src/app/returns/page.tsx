@@ -69,7 +69,7 @@ export default function ReturnPolicyPage() {
                 <div className="text-3xl font-bold text-accent-coral-500 mb-2">01</div>
                 <h3 className="font-semibold mb-2">Contact Us</h3>
                 <p className="text-sm text-gray-600">
-                  Email us at support@crystalharbortc.com with your order number and issue details.
+                  Email us at info@crystalharbortc.com with your order number and issue details.
                 </p>
               </div>
               
@@ -188,7 +188,7 @@ export default function ReturnPolicyPage() {
                 <strong>For return requests and questions:</strong>
               </p>
               <div className="space-y-2">
-                <p>📧 Email: <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">support@crystalharbortc.com</a></p>
+                <p>📧 Email: <a href="mailto:info@crystalharbortc.com" className="text-accent-coral-500 hover:underline">info@crystalharbortc.com</a></p>
                 <p>📞 Phone: (317) 997-5503</p>
                 <p>🕒 Business Hours: Monday - Friday, 9 AM - 5 PM EST</p>
               </div>

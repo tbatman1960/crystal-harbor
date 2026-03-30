@@ -215,7 +215,7 @@ export async function generateOrderPDF(
 
     // Contact info
     addText('Questions?', 20, 12, 'bold')
-    addText('Email: support@crystalharbortc.com | Phone: (317) 997-5503', 20, 9)
+    addText('Email: info@crystalharbortc.com | Phone: (317) 997-5503', 20, 9)
 
     // Download the PDF
     pdf.save(filename)

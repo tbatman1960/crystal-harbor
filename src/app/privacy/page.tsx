@@ -138,7 +138,7 @@ export default function PrivacyPage() {
           <h2>12. Contact Us</h2>
           <p>
             If you have questions about this privacy policy or our data practices, please contact us:
-            <br />Email: support@crystalharbortc.com
+            <br />Email: info@crystalharbortc.com
             <br />Phone: (317) 997-5503
           </p>
 

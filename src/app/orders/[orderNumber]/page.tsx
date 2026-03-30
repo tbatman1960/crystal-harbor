@@ -246,7 +246,7 @@ export default function CustomerOrderPage({ params }: OrderPageProps) {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-blue-700 text-sm">
                   💡 Need to cancel or modify your order? 
-                  Contact us at <a href="mailto:support@crystalharbortc.com" className="underline">support@crystalharbortc.com</a> or (317) 997-5503
+                  Contact us at <a href="mailto:info@crystalharbortc.com" className="underline">info@crystalharbortc.com</a> or (317) 997-5503
                 </p>
               </div>
             )}
@@ -336,7 +336,7 @@ export default function CustomerOrderPage({ params }: OrderPageProps) {
             <div className="card p-6 bg-background-50">
               <h3 className="font-semibold text-neutral-700 mb-4">Need Help?</h3>
               <div className="space-y-2 text-sm">
-                <div>📧 <a href="mailto:support@crystalharbortc.com" className="text-primary-600 hover:underline">support@crystalharbortc.com</a></div>
+                <div>📧 <a href="mailto:info@crystalharbortc.com" className="text-primary-600 hover:underline">info@crystalharbortc.com</a></div>
                 <div>📞 (317) 997-5503</div>
                 <div className="text-secondary-500 mt-3">
                   Business Hours: Monday - Friday, 9 AM - 5 PM EST

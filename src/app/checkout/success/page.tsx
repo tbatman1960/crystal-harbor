@@ -377,8 +377,8 @@ function OrderSuccessContent() {
           <div className="mt-12 text-center text-sm text-secondary-600">
             <p className="mb-2">
               Questions about your order? Contact us at{' '}
-              <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">
-                support@crystalharbortc.com
+              <a href="mailto:info@crystalharbortc.com" className="text-accent-coral-500 hover:underline">
+                info@crystalharbortc.com
               </a>{' '}
               or call (317) 997-5503
             </p>

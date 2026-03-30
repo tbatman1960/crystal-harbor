@@ -105,7 +105,7 @@ export default function TermsPage() {
           <h2>12. Contact Information</h2>
           <p>
             If you have questions about these terms, please contact us at:
-            <br />Email: support@crystalharbortc.com
+            <br />Email: info@crystalharbortc.com
             <br />Phone: (317) 997-5503
           </p>
 

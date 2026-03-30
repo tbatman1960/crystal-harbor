@@ -220,7 +220,7 @@ export default function RefundPolicyPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Contact Our Support Team</h3>
                   <p className="text-gray-600 mb-2">
-                    Email us at <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">support@crystalharbortc.com</a> with:
+                    Email us at <a href="mailto:info@crystalharbortc.com" className="text-accent-coral-500 hover:underline">info@crystalharbortc.com</a> with:
                   </p>
                   <ul className="text-sm text-gray-600 space-y-1 ml-4">
                     <li>• Order number</li>
@@ -276,7 +276,7 @@ export default function RefundPolicyPage() {
                 <strong>We're here to help resolve any issues with your order:</strong>
               </p>
               <div className="space-y-2">
-                <p>📧 Email: <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">support@crystalharbortc.com</a></p>
+                <p>📧 Email: <a href="mailto:info@crystalharbortc.com" className="text-accent-coral-500 hover:underline">info@crystalharbortc.com</a></p>
                 <p>📞 Phone: (317) 997-5503</p>
                 <p>🕒 Business Hours: Monday - Friday, 9 AM - 5 PM EST</p>
                 <p>📍 Address: 2307 Willow Lakes East Blvd, Greenwood, IN 46143</p>

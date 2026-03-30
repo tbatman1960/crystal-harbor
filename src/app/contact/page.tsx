@@ -90,7 +90,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-neutral-700 mb-1">Email</h3>
-                    <p className="text-secondary-600">support@crystalharbortc.com</p>
+                    <p className="text-secondary-600">info@crystalharbortc.com</p>
                     <p className="text-sm text-secondary-500">We respond within 24 hours</p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ export default function ContactPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:support@crystalharbortc.com"
+                href="mailto:info@crystalharbortc.com"
                 className="bg-white text-accent-coral-500 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 inline-block"
               >
                 Email Design Support

@@ -49,7 +49,7 @@ export default function Footer() {
               <p>2307 Willow Lakes East Blvd</p>
               <p>Greenwood, Indiana 46143</p>
               <p><a href="tel:+13179975503" className="hover:text-accent-lime-500 transition-colors duration-200">(317) 997-5503</a></p>
-              <p>support@crystalharbortc.com</p>
+              <p>info@crystalharbortc.com</p>
             </div>
           </div>
 

@@ -221,7 +221,7 @@ export function generateOrderConfirmationEmail(orderData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions about your order? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a> 
+          <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a> 
           or call (317) 997-5503
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
@@ -272,7 +272,7 @@ WHAT'S NEXT:
 • Quality check and packaging
 • Shipment with tracking
 
-Questions? Contact us at support@crystalharbortc.com or (317) 997-5503
+Questions? Contact us at info@crystalharbortc.com or (317) 997-5503
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -383,7 +383,7 @@ export function generateWelcomeEmail(subscriberData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a>
+          <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a>
         </div>
         <div style="margin-bottom: 16px;">Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
         <div style="font-size: 12px; color: #9ca3af;">
@@ -419,7 +419,7 @@ What to Expect:
 Ready to Create Something Amazing?
 Visit ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/products to browse our products.
 
-Questions? Contact us at support@crystalharbortc.com
+Questions? Contact us at info@crystalharbortc.com
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -601,7 +601,7 @@ export function generateOrderStatusEmail(orderData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions about your order? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a> 
+          <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a> 
           or call (317) 997-5503
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
@@ -644,7 +644,7 @@ We'd love to hear about your experience with Crystal Harbor!
 • Would you recommend us to friends?
 ` : ''}
 
-Questions? Contact us at support@crystalharbortc.com or (317) 997-5503
+Questions? Contact us at info@crystalharbortc.com or (317) 997-5503
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -655,7 +655,7 @@ Quality custom printing with no minimums
     subject: `${statusInfo.icon} Order ${orderNumber} - ${statusInfo.title}`,
     html,
     text,
-    replyTo: 'support@crystalharbortc.com'
+    replyTo: 'info@crystalharbortc.com'
   }
 }
 
@@ -722,7 +722,7 @@ export function generatePasswordResetEmail(data: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Need help? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a>
+          <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a>
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
       </div>
@@ -744,7 +744,7 @@ ${resetLink}
 
 This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.
 
-Need help? Contact us at support@crystalharbortc.com
+Need help? Contact us at info@crystalharbortc.com
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -755,6 +755,6 @@ Quality custom printing with no minimums
     subject: 'Reset Your Password - Crystal Harbor Trading Company',
     html,
     text,
-    replyTo: 'support@crystalharbortc.com'
+    replyTo: 'info@crystalharbortc.com'
   }
 }

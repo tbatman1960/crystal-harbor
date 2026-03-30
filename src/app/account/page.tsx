@@ -251,7 +251,7 @@ Please let me know how I can be assisted.
 Thank you,
 ${user.firstName} ${user.lastName}`)
 
-    const mailtoUrl = `mailto:support@crystalharbortc.com?subject=${subject}&body=${body}`
+    const mailtoUrl = `mailto:info@crystalharbortc.com?subject=${subject}&body=${body}`
     window.location.href = mailtoUrl
   }
 
@@ -280,7 +280,7 @@ My question/concern:
 Thank you,
 ${user.firstName} ${user.lastName}`)
 
-    const mailtoUrl = `mailto:support@crystalharbortc.com?subject=${subject}&body=${body}`
+    const mailtoUrl = `mailto:info@crystalharbortc.com?subject=${subject}&body=${body}`
     window.location.href = mailtoUrl
   }
 
@@ -319,7 +319,7 @@ I understand that returns must be initiated within your return policy timeframe.
 Thank you,
 ${user.firstName} ${user.lastName}`)
 
-    const mailtoUrl = `mailto:support@crystalharbortc.com?subject=${subject}&body=${body}`
+    const mailtoUrl = `mailto:info@crystalharbortc.com?subject=${subject}&body=${body}`
     window.location.href = mailtoUrl
   }
 
