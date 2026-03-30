@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/store/authStore'
 // Account data fetched via API routes (not direct Supabase) due to RLS
-import { PencilIcon, MapPinIcon, CheckIcon, XMarkIcon, EnvelopeIcon, ChatBubbleLeftIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, MapPinIcon, CheckIcon, XMarkIcon, EnvelopeIcon, ChatBubbleLeftIcon, ArrowPathIcon, XCircleIcon } from '@heroicons/react/24/outline'
 
 interface Order {
   id: string
@@ -321,6 +321,64 @@ ${user.firstName} ${user.lastName}`)
 
     const mailtoUrl = `mailto:info@crystalharbortc.com?subject=${subject}&body=${body}`
     window.location.href = mailtoUrl
+  }
+
+  const [cancellingOrder, setCancellingOrder] = useState<string | null>(null)
+
+  const handleCancelOrder = async (order: Order) => {
+    if (order.status === 'pending') {
+      // Pending orders get full refund automatically
+      if (!confirm(`Cancel order ${order.order_number}? You will receive a full refund of $${order.total_amount.toFixed(2)}.`)) return
+      
+      setCancellingOrder(order.id)
+      try {
+        const res = await fetch('/api/orders/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderNumber: order.order_number, customerId: user?.id })
+        })
+        const result = await res.json()
+        
+        if (res.ok && result.success) {
+          alert(result.refundProcessed 
+            ? `Order cancelled! A refund of $${result.refundAmount?.toFixed(2) || order.total_amount.toFixed(2)} will be processed within 3-5 business days.`
+            : 'Order cancelled successfully!')
+          await loadOrders()
+        } else {
+          alert(result.error || 'Failed to cancel order')
+        }
+      } catch (error) {
+        console.error('Error cancelling order:', error)
+        alert('An error occurred. Please try again.')
+      } finally {
+        setCancellingOrder(null)
+      }
+    } else {
+      // Non-pending orders: send email to admin for review
+      if (!user) return
+      const subject = encodeURIComponent(`Cancellation/Refund Request - ${order.order_number}`)
+      const body = encodeURIComponent(`Hello Crystal Harbor Trading Company,
+
+I would like to request a cancellation/refund for my order.
+
+Order Information:
+- Order Number: ${order.order_number}
+- Order Date: ${new Date(order.created_at).toLocaleDateString()}
+- Order Total: $${order.total_amount.toFixed(2)}
+- Current Status: ${order.status}
+
+Customer Information:
+- Name: ${user.firstName} ${user.lastName}
+- Email: ${user.email}
+
+Reason for cancellation/refund:
+[Please describe your reason here]
+
+Thank you,
+${user.firstName} ${user.lastName}`)
+
+      window.location.href = `mailto:info@crystalharbortc.com?subject=${subject}&body=${body}`
+    }
   }
 
   if (!isAuthenticated || !user) {
@@ -733,6 +791,17 @@ ${user.firstName} ${user.lastName}`)
                             <ArrowPathIcon className="w-3 h-3 mr-1" />
                             Return
                           </button>
+                          {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                            <button
+                              onClick={() => handleCancelOrder(order)}
+                              disabled={cancellingOrder === order.id}
+                              className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
+                              title={order.status === 'pending' ? 'Cancel for full refund' : 'Request cancellation'}
+                            >
+                              <XCircleIcon className="w-3 h-3 mr-1" />
+                              {cancellingOrder === order.id ? 'Cancelling...' : order.status === 'pending' ? 'Cancel Order' : 'Request Cancel'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
