@@ -16,6 +16,25 @@ export async function POST(request: NextRequest) {
       case 'status_update':
         emailTemplate = generateOrderStatusEmail(data)
         break
+
+      case 'contact':
+        emailTemplate = {
+          to: process.env.SMTP_USER || 'info@crystalharbortc.com',
+          subject: `Contact Form: ${data.subject}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1E3A8A;">New Contact Form Submission</h2>
+              <p><strong>Name:</strong> ${data.name}</p>
+              <p><strong>Email:</strong> ${data.email}</p>
+              <p><strong>Subject:</strong> ${data.subject}</p>
+              <hr style="border: 1px solid #eee;" />
+              <p><strong>Message:</strong></p>
+              <p style="white-space: pre-wrap;">${data.message}</p>
+            </div>
+          `,
+          replyTo: data.email
+        }
+        break
       
       default:
         return NextResponse.json(

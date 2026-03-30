@@ -189,7 +189,7 @@ export default function ReturnPolicyPage() {
               </p>
               <div className="space-y-2">
                 <p>📧 Email: <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">support@crystalharbortc.com</a></p>
-                <p>📞 Phone: (555) 123-4567</p>
+                <p>📞 Phone: (317) 997-5503</p>
                 <p>🕒 Business Hours: Monday - Friday, 9 AM - 5 PM EST</p>
               </div>
               

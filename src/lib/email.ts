@@ -145,7 +145,7 @@ export function generateOrderConfirmationEmail(orderData: {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
       <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
-        Crys<span style="color: #84cc16;">tal</span> Har<span style="color: #ff6b6b;">bor</span>
+        Crys<span style="color: #8A9DB8;">tal</span> Har<span style="color: #C4942A;">bor</span>
       </div>
       <div style="font-size: 18px; font-weight: 600;">Order Confirmed!</div>
       <div style="font-size: 16px; opacity: 0.9; margin-top: 8px;">Thank you for your order, ${customerName}!</div>
@@ -221,8 +221,8 @@ export function generateOrderConfirmationEmail(orderData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions about your order? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #ff6b6b; text-decoration: none;">support@crystalharbortc.com</a> 
-          or call (555) 123-4567
+          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a> 
+          or call (317) 997-5503
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
       </div>
@@ -272,7 +272,7 @@ WHAT'S NEXT:
 • Quality check and packaging
 • Shipment with tracking
 
-Questions? Contact us at support@crystalharbortc.com or (555) 123-4567
+Questions? Contact us at support@crystalharbortc.com or (317) 997-5503
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -310,7 +310,7 @@ export function generateWelcomeEmail(subscriberData: {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
       <div style="font-size: 28px; font-weight: bold; margin-bottom: 8px;">
-        Crys<span style="color: #84cc16;">tal</span> Har<span style="color: #ff6b6b;">bor</span>
+        Crys<span style="color: #8A9DB8;">tal</span> Har<span style="color: #C4942A;">bor</span>
       </div>
       <div style="font-size: 18px; font-weight: 600;">Welcome to Crystal Harbor!</div>
       <div style="font-size: 16px; opacity: 0.9; margin-top: 8px;">Thank you for subscribing to our newsletter</div>
@@ -329,7 +329,7 @@ export function generateWelcomeEmail(subscriberData: {
 
       ${discountCode ? `
       <!-- Discount Code -->
-      <div style="background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 30px; color: white;">
+      <div style="background: linear-gradient(135deg, #8A9DB8 0%, #65a30d 100%); border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 30px; color: white;">
         <div style="font-size: 20px; font-weight: bold; margin-bottom: 8px;">🎁 Your Welcome Gift!</div>
         <div style="font-size: 16px; margin-bottom: 16px; opacity: 0.9;">Use this code for 10% off your first order:</div>
         <div style="background: rgba(255,255,255,0.2); padding: 12px 20px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; letter-spacing: 1px;">
@@ -344,14 +344,14 @@ export function generateWelcomeEmail(subscriberData: {
         <h3 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 18px;">What to Expect:</h3>
         <div style="space-y: 12px;">
           <div style="display: flex; margin-bottom: 12px;">
-            <div style="color: #84cc16; margin-right: 12px; font-size: 20px;">🎨</div>
+            <div style="color: #8A9DB8; margin-right: 12px; font-size: 20px;">🎨</div>
             <div>
               <strong style="color: #374151;">Design Inspiration</strong><br>
               <span style="color: #6b7280; font-size: 14px;">Creative ideas and trends for custom printed products</span>
             </div>
           </div>
           <div style="display: flex; margin-bottom: 12px;">
-            <div style="color: #ff6b6b; margin-right: 12px; font-size: 20px;">💰</div>
+            <div style="color: #C4942A; margin-right: 12px; font-size: 20px;">💰</div>
             <div>
               <strong style="color: #374151;">Exclusive Discounts</strong><br>
               <span style="color: #6b7280; font-size: 14px;">Special offers and volume pricing alerts</span>
@@ -372,8 +372,8 @@ export function generateWelcomeEmail(subscriberData: {
         <div style="background: #f0f9ff; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
           <h4 style="color: #1e40af; margin: 0 0 8px 0;">Ready to Create Something Amazing?</h4>
           <p style="color: #6b7280; margin: 0 0 16px 0; font-size: 14px;">Upload your design, choose your product, and we'll handle the rest.</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'}/products" 
-             style="display: inline-block; background: linear-gradient(135deg, #ff6b6b 0%, #84cc16 100%); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/products" 
+             style="display: inline-block; background: linear-gradient(135deg, #C4942A 0%, #8A9DB8 100%); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;">
             Browse Products →
           </a>
         </div>
@@ -383,7 +383,7 @@ export function generateWelcomeEmail(subscriberData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #ff6b6b; text-decoration: none;">support@crystalharbortc.com</a>
+          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a>
         </div>
         <div style="margin-bottom: 16px;">Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
         <div style="font-size: 12px; color: #9ca3af;">
@@ -417,7 +417,7 @@ What to Expect:
 🚀 New Products - First access to new customization options
 
 Ready to Create Something Amazing?
-Visit ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'}/products to browse our products.
+Visit ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/products to browse our products.
 
 Questions? Contact us at support@crystalharbortc.com
 
@@ -531,7 +531,7 @@ export function generateOrderStatusEmail(orderData: {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
       <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
-        Crys<span style="color: #84cc16;">tal</span> Har<span style="color: #ff6b6b;">bor</span>
+        Crys<span style="color: #8A9DB8;">tal</span> Har<span style="color: #C4942A;">bor</span>
       </div>
       <div style="font-size: 18px; font-weight: 600;">Order Update</div>
       <div style="font-size: 16px; opacity: 0.9; margin-top: 8px;">Order ${orderNumber}</div>
@@ -601,8 +601,8 @@ export function generateOrderStatusEmail(orderData: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Questions about your order? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #ff6b6b; text-decoration: none;">support@crystalharbortc.com</a> 
-          or call (555) 123-4567
+          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a> 
+          or call (317) 997-5503
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
       </div>
@@ -644,7 +644,7 @@ We'd love to hear about your experience with Crystal Harbor!
 • Would you recommend us to friends?
 ` : ''}
 
-Questions? Contact us at support@crystalharbortc.com or (555) 123-4567
+Questions? Contact us at support@crystalharbortc.com or (317) 997-5503
 
 Crystal Harbor Trading Company
 Quality custom printing with no minimums
@@ -682,7 +682,7 @@ export function generatePasswordResetEmail(data: {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
       <div style="font-size: 24px; font-weight: bold; margin-bottom: 8px;">
-        Crys<span style="color: #84cc16;">tal</span> Har<span style="color: #ff6b6b;">bor</span>
+        Crys<span style="color: #8A9DB8;">tal</span> Har<span style="color: #C4942A;">bor</span>
       </div>
       <div style="font-size: 18px; font-weight: 600;">Password Reset Request</div>
     </div>
@@ -722,7 +722,7 @@ export function generatePasswordResetEmail(data: {
       <div style="text-align: center; padding: 20px 0; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">
         <div style="margin-bottom: 8px;">
           Need help? Contact us at 
-          <a href="mailto:support@crystalharbortc.com" style="color: #ff6b6b; text-decoration: none;">support@crystalharbortc.com</a>
+          <a href="mailto:support@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">support@crystalharbortc.com</a>
         </div>
         <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
       </div>

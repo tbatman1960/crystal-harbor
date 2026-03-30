@@ -7,7 +7,7 @@ interface SEOHeadProps {
 }
 
 export default function SEOHead({ seoData, structuredData = [] }: SEOHeadProps) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
   
   return (
     <Head>

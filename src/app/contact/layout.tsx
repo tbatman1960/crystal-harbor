@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Contact Crystal Harbor Trading Company',
     description: 'Get in touch with us for custom printing help and support. We\'re here to answer your questions.',
-    url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'}/contact`,
+    url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/contact`,
     siteName: 'Crystal Harbor Trading Company',
     images: ['/icons/icon-192x192.png'],
     type: 'website'
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     images: ['/icons/icon-192x192.png']
   },
   alternates: {
-    canonical: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'}/contact`
+    canonical: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/contact`
   }
 }
 

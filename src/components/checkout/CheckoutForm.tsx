@@ -401,7 +401,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
 
             <div className="form-group">
               <label htmlFor="phone" className="form-label">Phone Number *</label>
-              <input id="phone" type="tel" className="input-field" placeholder="(555) 123-4567"
+              <input id="phone" type="tel" className="input-field" placeholder="(317) 997-5503"
                 {...register('phone', { required: 'Phone number is required' })} />
               {errors.phone && <p className="form-error">{errors.phone.message}</p>}
             </div>

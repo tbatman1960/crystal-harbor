@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getAllRefundPolicies, updateRefundPolicy, RefundPolicy } from '@/lib/refunds'
+interface RefundPolicy {
+  status: string
+  refund_percentage: number
+  conditions: string
+  processing_fee_percentage: number
+  restocking_fee_percentage: number
+}
 import { ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
 export default function RefundPoliciesPage() {
@@ -16,8 +22,9 @@ export default function RefundPoliciesPage() {
 
   const loadPolicies = async () => {
     try {
-      const policiesData = await getAllRefundPolicies()
-      setPolicies(policiesData)
+      const res = await fetch('/api/admin/refund-policies')
+      const data = await res.json()
+      setPolicies(data.policies || [])
     } catch (error) {
       console.error('Error loading refund policies:', error)
       setMessage({ type: 'error', text: 'Failed to load refund policies' })
@@ -31,9 +38,14 @@ export default function RefundPoliciesPage() {
     setMessage(null)
 
     try {
-      const result = await updateRefundPolicy(status, updates)
+      const res = await fetch('/api/admin/refund-policies', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, ...updates })
+      })
+      const result = await res.json()
       
-      if (result.success) {
+      if (result.success || res.ok) {
         setPolicies(policies.map(p => 
           p.status === status ? { ...p, ...updates } : p
         ))

@@ -450,7 +450,7 @@ ${user.firstName} ${user.lastName}`)
                       type="tel"
                       {...register('phone')}
                       className="input-field"
-                      placeholder="(555) 123-4567"
+                      placeholder="(317) 997-5503"
                     />
                   </div>
 

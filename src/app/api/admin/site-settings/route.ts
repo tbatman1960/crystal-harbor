@@ -55,3 +55,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 })
   }
 }
+
+// PUT — upsert a single site setting
+export async function PUT(request: NextRequest) {
+  try {
+    const { key, value } = await request.json()
+
+    if (!key) {
+      return NextResponse.json({ error: 'key is required' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('site_settings')
+      .upsert(
+        { key, value: value || '', updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      )
+
+    if (error) throw error
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error updating site setting:', error)
+    return NextResponse.json({ error: 'Failed to update setting' }, { status: 500 })
+  }
+}

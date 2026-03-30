@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { getOrderById, updateOrderStatus } from '@/lib/admin'
-import { calculateRefundAmount, processStripeRefund } from '@/lib/refunds'
+// All data fetched via API routes (not direct lib imports)
 import {
   ArrowLeftIcon,
   EnvelopeIcon,
@@ -46,11 +45,11 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
 
   const loadOrder = async () => {
     try {
-      const result = await getOrderById(params.id)
-      if (result.order) {
+      const res = await fetch(`/api/admin/orders/${params.id}`)
+      const result = await res.json()
+      if (res.ok && result.order) {
         setOrder(result.order)
       } else {
-        // Order not found, redirect back
         router.push('/admin/orders')
       }
     } catch (error) {
@@ -74,7 +73,12 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
     if (newStatus === 'pending' || newStatus === 'processing') {
       setUpdating(true)
       try {
-        const result = await updateOrderStatus(order.id, newStatus)
+        const res = await fetch('/api/admin/orders', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: order.id, status: newStatus })
+        })
+        const result = await res.json()
         if (result.success) {
           setOrder({ ...order, status: newStatus })
         } else {
@@ -104,13 +108,16 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
 
     try {
       // Calculate recommended refund amount based on current status
-      const refundCalc = await calculateRefundAmount(order.total_amount, order.status)
+      // Simple refund calculation (full refund for pending/processing, partial otherwise)
+      const refundAmount = (order.status === 'pending' || order.status === 'processing') 
+        ? order.total_amount 
+        : order.total_amount * 0.85 // 15% restocking for shipped orders
       
       setRefundData({
-        refundType: refundCalc.netRefund === order.total_amount ? 'full' : 'partial',
-        refundAmount: refundCalc.netRefund,
+        refundType: refundAmount === order.total_amount ? 'full' : 'partial',
+        refundAmount: Math.round(refundAmount * 100) / 100,
         refundReason: `Order cancelled by admin from ${order.status} status`,
-        processRefund: refundCalc.netRefund > 0
+        processRefund: refundAmount > 0
       })
       
       setShowRefundModal(true)
@@ -126,10 +133,12 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
     setUpdating(true)
     try {
       // First update order status to cancelled
-      const statusResult = await updateOrderStatus(order.id, 'cancelled', {
-        statusMessage: refundData.refundReason,
-        sendEmail: true
+      const cancelRes = await fetch('/api/admin/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id, status: 'cancelled', statusMessage: refundData.refundReason, sendEmail: true })
       })
+      const statusResult = await cancelRes.json()
 
       if (!statusResult.success) {
         alert('Failed to cancel order')
@@ -144,13 +153,18 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
           alert(`Order cancelled successfully. Test refund of $${refundData.refundAmount.toFixed(2)} simulated.`)
         } else {
           // Process real Stripe refund
-          const refundResult = await processStripeRefund(
-            order.stripe_payment_intent_id,
-            refundData.refundAmount,
-            order.order_number
-          )
+          const refundRes = await fetch('/api/refunds/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              payment_intent_id: order.stripe_payment_intent_id,
+              amount: Math.round(refundData.refundAmount * 100),
+              order_number: order.order_number
+            })
+          })
+          const refundResult = await refundRes.json()
 
-          if (refundResult.success) {
+          if (refundResult.success || refundRes.ok) {
             alert(`Order cancelled successfully. Refund of $${refundData.refundAmount.toFixed(2)} processed.`)
           } else {
             alert(`Order cancelled successfully, but refund failed: ${refundResult.error}. Manual processing required.`)
@@ -179,12 +193,19 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
     try {
       const { status, trackingNumber, estimatedDelivery, statusMessage, sendEmail } = statusUpdateData
       
-      const result = await updateOrderStatus(order.id, status, {
-        trackingNumber: trackingNumber || undefined,
-        estimatedDelivery: estimatedDelivery || undefined,
-        statusMessage: statusMessage || undefined,
-        sendEmail
+      const updateRes = await fetch('/api/admin/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: order.id,
+          status,
+          trackingNumber: trackingNumber || undefined,
+          estimatedDelivery: estimatedDelivery || undefined,
+          statusMessage: statusMessage || undefined,
+          sendEmail
+        })
       })
+      const result = await updateRes.json()
       
       if (result.success) {
         setOrder({ ...order, status })

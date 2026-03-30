@@ -380,7 +380,7 @@ function OrderSuccessContent() {
               <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">
                 support@crystalharbortc.com
               </a>{' '}
-              or call (555) 123-4567
+              or call (317) 997-5503
             </p>
             <p>
               Order processing time: 2-3 weeks • Free design review included

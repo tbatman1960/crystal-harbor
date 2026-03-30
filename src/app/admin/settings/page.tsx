@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getSiteSettings, updateSiteSetting } from '@/lib/admin'
+// Settings fetched via API routes
 import { 
   BuildingStorefrontIcon,
   EnvelopeIcon,
@@ -92,8 +92,16 @@ export default function AdminSettingsPage() {
   const loadSettings = async () => {
     setLoading(true)
     try {
-      const data = await getSiteSettings()
-      setSettings(data)
+      const res = await fetch('/api/admin/site-settings')
+      const data = await res.json()
+      // site-settings API returns { settings: [...] } or key-value object
+      if (Array.isArray(data.settings)) {
+        const mapped: { [key: string]: string } = {}
+        data.settings.forEach((s: any) => { mapped[s.key] = s.value || '' })
+        setSettings(mapped)
+      } else if (data && typeof data === 'object') {
+        setSettings(data)
+      }
     } catch (error) {
       console.error('Error loading settings:', error)
     } finally {
@@ -114,8 +122,12 @@ export default function AdminSettingsPage() {
   const saveSetting = async (key: string, value: string) => {
     setSaving(key)
     try {
-      const result = await updateSiteSetting(key, value)
-      if (result.success) {
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      })
+      if (res.ok) {
         setSavedSettings(prev => new Set(prev).add(key))
         setTimeout(() => {
           setSavedSettings(prev => {
@@ -139,7 +151,11 @@ export default function AdminSettingsPage() {
     setSaving('all')
     try {
       const promises = settingDefinitions.map(setting => 
-        updateSiteSetting(setting.key, settings[setting.key] || '')
+        fetch('/api/admin/site-settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: setting.key, value: settings[setting.key] || '' })
+        })
       )
       
       await Promise.all(promises)

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getAllOrders, updateOrderStatus } from '@/lib/admin'
+// Orders fetched via API routes (not direct lib imports)
 import { 
   EyeIcon, 
   ArrowDownTrayIcon,
@@ -58,12 +58,13 @@ export default function AdminOrdersPage() {
   const loadOrders = async () => {
     setLoading(true)
     try {
-      const result = await getAllOrders({
-        status: statusFilter || undefined,
-        limit: 50
-      })
-      setOrders(result.orders)
-      setTotal(result.total)
+      const params = new URLSearchParams()
+      if (statusFilter) params.set('status', statusFilter)
+      params.set('limit', '50')
+      const res = await fetch(`/api/admin/orders?${params}`)
+      const result = await res.json()
+      setOrders(result.orders || [])
+      setTotal(result.total || 0)
     } catch (error) {
       console.error('Error loading orders:', error)
     } finally {
@@ -74,7 +75,12 @@ export default function AdminOrdersPage() {
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setUpdating(orderId)
     try {
-      const result = await updateOrderStatus(orderId, newStatus)
+      const res = await fetch('/api/admin/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: newStatus })
+      })
+      const result = await res.json()
       if (result.success) {
         // Update local state
         setOrders(orders.map(order => 

@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { getDashboardStats, DashboardStats } from '@/lib/admin'
+interface DashboardStats {
+  totalOrders: number
+  totalRevenue: number
+  pendingOrders: number
+  recentOrders: any[]
+  topProducts: any[]
+}
 import { 
   ShoppingBagIcon, 
   CurrencyDollarIcon, 
@@ -24,7 +30,8 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const data = await getDashboardStats()
+      const res = await fetch('/api/admin/dashboard')
+      const data = await res.json()
       setStats(data)
     } catch (error) {
       console.error('Error loading dashboard stats:', error)

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
     
     // Static pages
     const staticPages = [

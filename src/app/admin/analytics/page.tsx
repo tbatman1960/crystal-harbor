@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getDashboardStats } from '@/lib/admin'
+// Dashboard stats fetched via API route
 import { 
   CurrencyDollarIcon, 
   ShoppingBagIcon,
@@ -19,7 +19,8 @@ export default function AnalyticsPage() {
 
   const loadStats = async () => {
     try {
-      const data = await getDashboardStats()
+      const res = await fetch('/api/admin/dashboard')
+      const data = await res.json()
       setStats(data)
     } catch (error) {
       console.error('Error loading analytics:', error)

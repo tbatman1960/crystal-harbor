@@ -31,10 +31,24 @@ export default function ContactPage() {
     setIsSubmitting(true)
     
     try {
-      // Simulate form submission - in real implementation, this would send to your backend
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'contact',
+          data: {
+            name: data.name,
+            email: data.email,
+            subject: data.subject,
+            message: data.message
+          }
+        })
+      })
       
-      console.log('Contact form submission:', data)
+      if (!response.ok) {
+        throw new Error('Failed to send message')
+      }
+      
       setIsSubmitted(true)
       reset()
       
@@ -87,7 +101,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-neutral-700 mb-1">Phone</h3>
-                    <p className="text-secondary-600">(555) 123-4567</p>
+                    <p className="text-secondary-600">(317) 997-5503</p>
                     <p className="text-sm text-secondary-500">Monday - Friday, 9 AM - 5 PM EST</p>
                   </div>
                 </div>
@@ -100,8 +114,8 @@ export default function ContactPage() {
                     <h3 className="font-semibold text-neutral-700 mb-1">Address</h3>
                     <p className="text-secondary-600">
                       Crystal Harbor Trading Company<br />
-                      [City, State]<br />
-                      United States
+                      2307 Willow Lakes East Blvd<br />
+                      Greenwood, Indiana 46143
                     </p>
                   </div>
                 </div>
@@ -268,7 +282,7 @@ export default function ContactPage() {
                 Email Design Support
               </a>
               <a
-                href="tel:(555)123-4567"
+                href="tel:(317)997-5503"
                 className="bg-white text-accent-lime-500 hover:bg-gray-100 font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 inline-block"
               >
                 Call Design Support

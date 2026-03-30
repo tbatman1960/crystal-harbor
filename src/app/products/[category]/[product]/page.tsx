@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 
   const seoData = generateSEOMetadata('product', product)
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
 
   return {
     title: seoData.title,

@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Crystal Harbor Trading Co. — Custom Printed Products',
     description: 'Quality custom printing with no minimums. Upload your design and create something unique.',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app',
     siteName: 'Crystal Harbor Trading Company',
     images: [
       {

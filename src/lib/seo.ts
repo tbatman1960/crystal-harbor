@@ -24,8 +24,8 @@ export const generateOrganizationStructuredData = () => {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'Crystal Harbor Trading Company',
-    url: process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com',
-    logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'}/icons/icon-192x192.png`,
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app',
+    logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/icons/icon-192x192.png`,
     contactPoint: {
       '@type': 'ContactPoint',
       telephone: '+1-555-CRYSTAL',
@@ -51,7 +51,7 @@ export const generateProductStructuredData = (product: {
   category?: { name: string }
   image_url?: string | null
 }) => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
   
   return {
     '@context': 'https://schema.org',
@@ -79,7 +79,7 @@ export const generateProductStructuredData = (product: {
 
 // Generate breadcrumb structured data
 export const generateBreadcrumbStructuredData = (breadcrumbs: Array<{ name: string; url: string }>) => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
   
   return {
     '@context': 'https://schema.org',
@@ -95,7 +95,7 @@ export const generateBreadcrumbStructuredData = (breadcrumbs: Array<{ name: stri
 
 // Generate SEO meta tags for different page types
 export const generateSEOMetadata = (pageType: string, data?: any): SEOData => {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
   
   switch (pageType) {
     case 'homepage':

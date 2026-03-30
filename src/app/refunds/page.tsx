@@ -277,9 +277,9 @@ export default function RefundPolicyPage() {
               </p>
               <div className="space-y-2">
                 <p>📧 Email: <a href="mailto:support@crystalharbortc.com" className="text-accent-coral-500 hover:underline">support@crystalharbortc.com</a></p>
-                <p>📞 Phone: (555) 123-4567</p>
+                <p>📞 Phone: (317) 997-5503</p>
                 <p>🕒 Business Hours: Monday - Friday, 9 AM - 5 PM EST</p>
-                <p>📍 Address: Crystal Harbor Trading Company, [City, State]</p>
+                <p>📍 Address: 2307 Willow Lakes East Blvd, Greenwood, IN 46143</p>
               </div>
               
               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded">

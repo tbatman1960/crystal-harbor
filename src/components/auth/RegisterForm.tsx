@@ -159,7 +159,7 @@ export default function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
               id="phone"
               type="tel"
               className="input-field"
-              placeholder="(555) 123-4567"
+              placeholder="(317) 997-5503"
               {...register('phone', {
                 pattern: {
                   value: /^[\+]?[1-9][\d]{0,15}$/,

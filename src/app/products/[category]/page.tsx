@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 
   const seoData = generateSEOMetadata('category', category)
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystalharbor.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'
 
   return {
     title: seoData.title,
