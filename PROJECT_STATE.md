@@ -460,11 +460,24 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Decisions made:**
   - Established "Code Change Discipline" workflow: one fix → build → test → commit → next fix. No more batching unrelated changes.
   - All customer-facing email uses `info@crystalharbortc.com` only
+  - Added Cancel Order button to customer account page (pending → auto-refund, non-pending → email request)
+  - Added Cancel Order & Full Refund button to checkout success page (visible while pending)
+  - Added Refund button to admin orders list (mobile + desktop) linking to order detail
+  - Added dedicated Refund/Cancel card on admin order detail page sidebar
+  - Added View/Cancel Order link in order confirmation email (HTML + plain text)
+  - Fixed Stripe refund not processing — `processStripeRefund()` was using `fetch('/api/refunds/process')` (relative URL fails server-side). Now calls Stripe SDK directly.
+  - Fixed cancel button sending wrong field (`orderNumber` instead of `order_id`) to `/api/orders/cancel`
+  - Cancelled orders now show "Refund processed" message instead of Return/Cancel buttons on account page
+- **Decisions made:**
+  - Established "Code Change Discipline" workflow: one fix → build → test → commit → next fix. No more batching unrelated changes. Added to AGENTS.md as permanent rule.
+  - All customer-facing email uses `info@crystalharbortc.com` only
+  - Server-side lib files must call Stripe/email SDKs directly — never use relative `fetch()` URLs
 - **Issues still open:**
   - Terms & Privacy pages still have "placeholder legal content" warnings
   - MobilePaymentMethods hardcoded to TEST environment
   - GA4 measurement ID still placeholder
   - Custom domain not configured
+  - Need Stripe test keys for safe testing
 
 ### 2026-03-25
 - **Worked on:** Netlify upgrade, hero banner, footer info, RLS, newsletter system, product edit page, password reset, sales tax cleanup, admin page fixes
