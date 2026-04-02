@@ -2,62 +2,76 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { PlusIcon, PencilIcon, TrashIcon, TruckIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { TruckIcon, PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAdminStore } from '@/store/adminStore'
 
-interface ShippingMethod {
+interface SizeClass {
   id: string
   name: string
+  label: string
   description: string | null
-  method_type: string
-  flat_rate_cost: number | null
-  weight_tiers: any[] | null
-  carrier_code: string | null
-  service_code: string | null
-  min_order_for_free_shipping: number | null
-  estimated_days_min: number
-  estimated_days_max: number
-  active: boolean
+  display_order: number
+}
+
+interface RateTier {
+  id: string
+  size_class_name: string
+  min_quantity: number
+  max_quantity: number | null
+  rate: number
   display_order: number
 }
 
 export default function AdminShippingPage() {
   const { isAuthenticated } = useAdminStore()
-  const [methods, setMethods] = useState<ShippingMethod[]>([])
+  const [sizeClasses, setSizeClasses] = useState<SizeClass[]>([])
+  const [rateTiers, setRateTiers] = useState<RateTier[]>([])
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [shipFromZip, setShipFromZip] = useState('')
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [shipFromZip, setShipFromZip] = useState('46143')
   const [savingZip, setSavingZip] = useState(false)
+
+  // Editing state for rate tiers
+  const [editingTiers, setEditingTiers] = useState<{ [sizeClass: string]: RateTier[] }>({})
+  const [isEditing, setIsEditing] = useState<string | null>(null) // which size class is being edited
+
+  // New size class form
+  const [showAddSizeClass, setShowAddSizeClass] = useState(false)
+  const [newSizeClass, setNewSizeClass] = useState({ name: '', label: '', description: '' })
+  const [savingSizeClass, setSavingSizeClass] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadShippingMethods()
-      loadShipFromZip()
+      loadData()
     }
   }, [isAuthenticated])
 
-  const loadShippingMethods = async () => {
+  const loadData = async () => {
     try {
-      const res = await fetch('/api/admin/shipping-methods')
-      const data = await res.json()
-      setMethods(data.shipping_methods || [])
+      const [scRes, rtRes, zipRes] = await Promise.all([
+        fetch('/api/admin/shipping/size-classes'),
+        fetch('/api/admin/shipping/rate-tiers'),
+        fetch('/api/admin/site-settings?key=ship_from_zip')
+      ])
+
+      const scData = await scRes.json()
+      const rtData = await rtRes.json()
+      const zipData = await zipRes.json()
+
+      setSizeClasses(scData.size_classes || [])
+      setRateTiers(rtData.rate_tiers || [])
+
+      if (zipData.settings) {
+        const zipSetting = Array.isArray(zipData.settings)
+          ? zipData.settings.find((s: any) => s.key === 'ship_from_zip')
+          : zipData.settings
+        if (zipSetting?.value) setShipFromZip(zipSetting.value)
+      }
     } catch (error) {
-      console.error('Error loading shipping methods:', error)
-      setMessage({ type: 'error', text: 'Failed to load shipping methods' })
+      console.error('Error loading shipping data:', error)
+      setMessage({ type: 'error', text: 'Failed to load shipping data' })
     } finally {
       setLoading(false)
-    }
-  }
-
-  const loadShipFromZip = async () => {
-    try {
-      const res = await fetch('/api/admin/site-settings?category=shipping')
-      const data = await res.json()
-      const zipSetting = data.settings?.find((s: any) => s.key === 'ship_from_zip')
-      if (zipSetting) setShipFromZip(zipSetting.value)
-      else setShipFromZip('46143') // default
-    } catch {
-      setShipFromZip('46143')
     }
   }
 
@@ -65,9 +79,9 @@ export default function AdminShippingPage() {
     setSavingZip(true)
     try {
       const res = await fetch('/api/admin/site-settings', {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'ship_from_zip', value: shipFromZip, category: 'shipping' })
+        body: JSON.stringify({ key: 'ship_from_zip', value: shipFromZip })
       })
       if (res.ok) {
         setMessage({ type: 'success', text: 'Ship-from ZIP code saved' })
@@ -81,83 +95,161 @@ export default function AdminShippingPage() {
     }
   }
 
-  const handleToggleActive = async (method: ShippingMethod) => {
+  // --- Size Class Management ---
+
+  const handleAddSizeClass = async () => {
+    if (!newSizeClass.name || !newSizeClass.label) {
+      setMessage({ type: 'error', text: 'Name and label are required' })
+      return
+    }
+    setSavingSizeClass(true)
     try {
-      const res = await fetch('/api/admin/shipping-methods', {
-        method: 'PUT',
+      const res = await fetch('/api/admin/shipping/size-classes', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: method.id, active: !method.active })
+        body: JSON.stringify({
+          name: newSizeClass.name.toLowerCase().replace(/\s+/g, '-'),
+          label: newSizeClass.label,
+          description: newSizeClass.description || null,
+          display_order: sizeClasses.length + 1
+        })
       })
-      
       if (res.ok) {
-        await loadShippingMethods()
-        setMessage({ type: 'success', text: `${method.name} ${method.active ? 'disabled' : 'enabled'}` })
+        setMessage({ type: 'success', text: `Size class "${newSizeClass.label}" created` })
+        setNewSizeClass({ name: '', label: '', description: '' })
+        setShowAddSizeClass(false)
+        await loadData()
       } else {
-        setMessage({ type: 'error', text: 'Failed to update shipping method' })
+        const err = await res.json()
+        setMessage({ type: 'error', text: err.error || 'Failed to create size class' })
       }
     } catch {
-      setMessage({ type: 'error', text: 'Failed to update shipping method' })
+      setMessage({ type: 'error', text: 'Failed to create size class' })
+    } finally {
+      setSavingSizeClass(false)
     }
   }
 
-  const handleDelete = async (method: ShippingMethod) => {
-    if (!confirm(`Deactivate "${method.name}"? It will be hidden but not permanently deleted.`)) return
-
+  const handleDeleteSizeClass = async (sc: SizeClass) => {
+    if (!confirm(`Delete size class "${sc.label}"? This will also remove its shipping rate tiers.`)) return
     try {
-      // Soft delete: just mark inactive
-      const res = await fetch('/api/admin/shipping-methods', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: method.id, active: false })
-      })
-      
+      const res = await fetch(`/api/admin/shipping/size-classes?id=${sc.id}`, { method: 'DELETE' })
       if (res.ok) {
-        await loadShippingMethods()
-        setMessage({ type: 'success', text: `${method.name} deactivated` })
+        setMessage({ type: 'success', text: `Size class "${sc.label}" deleted` })
+        await loadData()
       } else {
-        setMessage({ type: 'error', text: 'Failed to deactivate shipping method' })
+        setMessage({ type: 'error', text: 'Failed to delete size class' })
       }
     } catch {
-      setMessage({ type: 'error', text: 'Failed to deactivate shipping method' })
+      setMessage({ type: 'error', text: 'Failed to delete size class' })
     }
   }
 
-  const getMethodTypeDisplay = (type: string) => {
-    switch (type) {
-      case 'flat_rate': return 'Flat Rate'
-      case 'weight_based': return 'Weight Based'
-      case 'calculated': return 'Carrier Calculated'
-      case 'free': return 'Free Shipping'
-      default: return type
+  // --- Rate Tier Editing ---
+
+  const getTiersForClass = (sizeClassName: string) => {
+    if (isEditing === sizeClassName && editingTiers[sizeClassName]) {
+      return editingTiers[sizeClassName]
+    }
+    return rateTiers.filter(t => t.size_class_name === sizeClassName)
+  }
+
+  const startEditingTiers = (sizeClassName: string) => {
+    const currentTiers = rateTiers.filter(t => t.size_class_name === sizeClassName)
+    setEditingTiers({ ...editingTiers, [sizeClassName]: currentTiers.length > 0 ? [...currentTiers] : [
+      { id: 'new-1', size_class_name: sizeClassName, min_quantity: 1, max_quantity: 5, rate: 0, display_order: 1 }
+    ]})
+    setIsEditing(sizeClassName)
+  }
+
+  const cancelEditing = () => {
+    setIsEditing(null)
+    setEditingTiers({})
+  }
+
+  const updateEditingTier = (sizeClassName: string, index: number, field: string, value: any) => {
+    const tiers = [...(editingTiers[sizeClassName] || [])]
+    tiers[index] = { ...tiers[index], [field]: value }
+    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
+  }
+
+  const addEditingTier = (sizeClassName: string) => {
+    const tiers = [...(editingTiers[sizeClassName] || [])]
+    const lastTier = tiers[tiers.length - 1]
+    const newMin = lastTier ? (lastTier.max_quantity || lastTier.min_quantity) + 1 : 1
+    tiers.push({
+      id: `new-${Date.now()}`,
+      size_class_name: sizeClassName,
+      min_quantity: newMin,
+      max_quantity: null,
+      rate: 0,
+      display_order: tiers.length + 1
+    })
+    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
+  }
+
+  const removeEditingTier = (sizeClassName: string, index: number) => {
+    const tiers = [...(editingTiers[sizeClassName] || [])]
+    tiers.splice(index, 1)
+    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
+  }
+
+  const saveEditingTiers = async (sizeClassName: string) => {
+    const tiers = editingTiers[sizeClassName]
+    if (!tiers || tiers.length === 0) {
+      setMessage({ type: 'error', text: 'At least one tier is required' })
+      return
+    }
+
+    // Validate tiers
+    for (const tier of tiers) {
+      if (tier.min_quantity < 1) {
+        setMessage({ type: 'error', text: 'Min quantity must be at least 1' })
+        return
+      }
+      if (tier.rate < 0) {
+        setMessage({ type: 'error', text: 'Rate cannot be negative' })
+        return
+      }
+    }
+
+    try {
+      const res = await fetch('/api/admin/shipping/rate-tiers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          size_class_name: sizeClassName,
+          tiers: tiers.map((t, i) => ({
+            size_class_name: sizeClassName,
+            min_quantity: t.min_quantity,
+            max_quantity: t.max_quantity,
+            rate: t.rate,
+            display_order: i + 1
+          }))
+        })
+      })
+
+      if (res.ok) {
+        setMessage({ type: 'success', text: `Shipping rates updated for ${sizeClassName}` })
+        setIsEditing(null)
+        setEditingTiers({})
+        await loadData()
+      } else {
+        const err = await res.json()
+        setMessage({ type: 'error', text: err.error || 'Failed to save rates' })
+      }
+    } catch {
+      setMessage({ type: 'error', text: 'Failed to save rates' })
     }
   }
 
-  const getMethodTypeBadgeColor = (type: string) => {
-    switch (type) {
-      case 'flat_rate': return 'bg-blue-100 text-blue-800'
-      case 'weight_based': return 'bg-green-100 text-green-800'
-      case 'calculated': return 'bg-purple-100 text-purple-800'
-      case 'free': return 'bg-orange-100 text-orange-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
+  // --- Carrier API Status ---
 
-  const getMethodCostDisplay = (method: ShippingMethod) => {
-    switch (method.method_type) {
-      case 'free': return 'Free'
-      case 'flat_rate':
-        return method.flat_rate_cost ? `$${method.flat_rate_cost.toFixed(2)}` : 'Not set'
-      case 'weight_based':
-        if (method.weight_tiers && method.weight_tiers.length > 0) {
-          const sorted = [...method.weight_tiers].sort((a, b) => a.cost - b.cost)
-          return `$${sorted[0].cost.toFixed(2)} – $${sorted[sorted.length - 1].cost.toFixed(2)}`
-        }
-        return 'Not configured'
-      case 'calculated':
-        return `${(method.carrier_code || 'carrier').toUpperCase()} API`
-      default: return 'Unknown'
-    }
-  }
+  const carrierStatus = [
+    { name: 'USPS', code: 'usps', status: 'placeholder', label: 'Placeholder — mock rates active' },
+    { name: 'FedEx', code: 'fedex', status: 'coming_soon', label: 'Coming soon' },
+    { name: 'UPS', code: 'ups', status: 'coming_soon', label: 'Coming soon' },
+  ]
 
   if (!isAuthenticated) {
     return (
@@ -175,167 +267,260 @@ export default function AdminShippingPage() {
       <div className="p-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-16 bg-gray-200 rounded"></div>)}</div>
+          <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded"></div>)}</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-            <TruckIcon className="h-8 w-8 mr-3 text-blue-600" />
-            Shipping Management
-          </h1>
-          <p className="text-gray-600 mt-1">Configure shipping methods, rates, and carrier integrations</p>
-        </div>
-        <Link href="/admin/shipping/add" className="btn-primary flex items-center">
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add Shipping Method
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+          <TruckIcon className="h-7 w-7 mr-3 text-blue-600" />
+          Shipping Configuration
+        </h1>
+        <p className="text-gray-600 mt-1">Manage shipping size classes, flat rate tiers, and carrier integrations</p>
       </div>
 
       {message && (
-        <div className={`mb-4 p-4 rounded-lg ${
+        <div className={`mb-4 p-3 rounded-lg text-sm ${
           message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
           {message.text}
-          <button onClick={() => setMessage(null)} className="ml-4 text-sm underline">Dismiss</button>
+          <button onClick={() => setMessage(null)} className="ml-3 underline text-xs">Dismiss</button>
         </div>
       )}
 
-      {/* Ship-From Configuration */}
-      <div className="bg-white shadow-sm rounded-lg p-6 mb-6 border border-gray-200">
-        <div className="flex items-center mb-4">
-          <Cog6ToothIcon className="h-5 w-5 mr-2 text-gray-600" />
-          <h2 className="font-semibold text-gray-900">Shipping Origin</h2>
-        </div>
-        <div className="flex items-end space-x-4">
+      {/* Ship-From ZIP */}
+      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
+        <h2 className="font-semibold text-gray-900 mb-3">Shipping Origin</h2>
+        <div className="flex items-end gap-3">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Ship-From ZIP Code</label>
             <input
               type="text"
               value={shipFromZip}
               onChange={(e) => setShipFromZip(e.target.value)}
-              className="input-field w-40"
+              className="input-field w-36"
               placeholder="46143"
               maxLength={5}
             />
-            <p className="text-xs text-gray-500 mt-1">Used for carrier rate calculations (USPS, etc.)</p>
           </div>
-          <button onClick={saveShipFromZip} disabled={savingZip} className="btn-primary h-10">
+          <button onClick={saveShipFromZip} disabled={savingZip} className="btn-primary h-10 text-sm">
             {savingZip ? 'Saving...' : 'Save'}
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-2">Used for carrier rate calculations (USPS, FedEx, UPS)</p>
       </div>
 
-      {/* Shipping Methods Table */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cost</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delivery</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {methods.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-12 text-center">
-                  <TruckIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No shipping methods</h3>
-                  <p className="text-gray-500 mb-4">Create your first shipping method to get started.</p>
-                  <Link href="/admin/shipping/add" className="btn-primary inline-flex items-center">
-                    <PlusIcon className="h-5 w-5 mr-2" /> Add Shipping Method
-                  </Link>
-                </td>
-              </tr>
-            ) : (
-              methods.map((method) => (
-                <tr key={method.id} className={`hover:bg-gray-50 ${!method.active ? 'opacity-60' : ''}`}>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{method.name}</div>
-                    {method.description && <div className="text-sm text-gray-500">{method.description}</div>}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMethodTypeBadgeColor(method.method_type)}`}>
-                      {getMethodTypeDisplay(method.method_type)}
-                    </span>
-                    {method.carrier_code && (
-                      <span className="ml-1 text-xs text-gray-500">({method.carrier_code.toUpperCase()})</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900">{getMethodCostDisplay(method)}</td>
-                  <td className="px-6 py-4 text-sm text-gray-900">
-                    {method.estimated_days_min === method.estimated_days_max
-                      ? `${method.estimated_days_min} days`
-                      : `${method.estimated_days_min}-${method.estimated_days_max} days`}
-                  </td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={() => handleToggleActive(method)}
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        method.active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'
-                      }`}
-                    >
-                      {method.active ? 'Active' : 'Inactive'}
-                    </button>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex items-center space-x-3">
-                      <Link href={`/admin/shipping/${method.id}/edit`} className="text-blue-600 hover:text-blue-900" title="Edit">
-                        <PencilIcon className="h-5 w-5" />
-                      </Link>
-                      <button onClick={() => handleDelete(method)} className="text-red-600 hover:text-red-900" title="Deactivate">
-                        <TrashIcon className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Size Classes */}
+      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="font-semibold text-gray-900">Size Classes</h2>
+          <button
+            onClick={() => setShowAddSizeClass(!showAddSizeClass)}
+            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+          >
+            <PlusIcon className="h-4 w-4 mr-1" />
+            Add Size Class
+          </button>
+        </div>
 
-      {/* Quick Stats */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-500 mb-1">Total Methods</h3>
-          <p className="text-3xl font-bold text-blue-600">{methods.length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-500 mb-1">Active</h3>
-          <p className="text-3xl font-bold text-green-600">{methods.filter(m => m.active).length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-500 mb-1">Carrier Integrated</h3>
-          <p className="text-3xl font-bold text-purple-600">{methods.filter(m => m.method_type === 'calculated').length}</p>
-        </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-500 mb-1">Ship-From ZIP</h3>
-          <p className="text-3xl font-bold text-gray-700">{shipFromZip || '—'}</p>
-        </div>
-      </div>
-
-      {/* USPS API Status */}
-      <div className="mt-6 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <h2 className="font-semibold text-gray-900 mb-3">Carrier API Status</h2>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-            <span className="text-sm text-gray-700">USPS — Placeholder credentials (mock rates active)</span>
+        {showAddSizeClass && (
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Name (slug)</label>
+                <input
+                  type="text"
+                  value={newSizeClass.name}
+                  onChange={(e) => setNewSizeClass({ ...newSizeClass, name: e.target.value })}
+                  className="input-field text-sm"
+                  placeholder="e.g., extra-large"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Label</label>
+                <input
+                  type="text"
+                  value={newSizeClass.label}
+                  onChange={(e) => setNewSizeClass({ ...newSizeClass, label: e.target.value })}
+                  className="input-field text-sm"
+                  placeholder="e.g., Extra Large"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={newSizeClass.description}
+                  onChange={(e) => setNewSizeClass({ ...newSizeClass, description: e.target.value })}
+                  className="input-field text-sm"
+                  placeholder="e.g., Oversized banners"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleAddSizeClass} disabled={savingSizeClass} className="btn-primary text-sm">
+                {savingSizeClass ? 'Creating...' : 'Create'}
+              </button>
+              <button onClick={() => setShowAddSizeClass(false)} className="btn-secondary text-sm">Cancel</button>
+            </div>
           </div>
+        )}
+
+        <div className="space-y-2">
+          {sizeClasses.map(sc => (
+            <div key={sc.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
+              <div>
+                <span className="font-medium text-gray-900">{sc.label}</span>
+                <span className="text-gray-400 text-xs ml-2">({sc.name})</span>
+                {sc.description && <span className="text-gray-500 text-sm ml-3">— {sc.description}</span>}
+              </div>
+              <button
+                onClick={() => handleDeleteSizeClass(sc)}
+                className="text-red-500 hover:text-red-700 p-1"
+                title="Delete"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Add real USPS API credentials in Netlify environment variables (USPS_API_USER_ID, USPS_API_KEY) to enable live rates.
+      </div>
+
+      {/* Flat Rate Tiers — one section per size class */}
+      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
+        <h2 className="font-semibold text-gray-900 mb-4">Flat Rate Shipping Tiers</h2>
+        <p className="text-sm text-gray-500 mb-4">Set shipping rates by quantity bracket for each size class. These rates apply to all products assigned that size class.</p>
+
+        {sizeClasses.map(sc => {
+          const tiers = getTiersForClass(sc.name)
+          const editing = isEditing === sc.name
+
+          return (
+            <div key={sc.name} className="mb-6 last:mb-0">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-semibold text-gray-700">{sc.label}</h3>
+                {!editing ? (
+                  <button onClick={() => startEditingTiers(sc.name)} className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                    <PencilIcon className="h-3.5 w-3.5 mr-1" /> Edit
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => saveEditingTiers(sc.name)} className="text-sm text-green-600 hover:text-green-800 flex items-center">
+                      <CheckIcon className="h-3.5 w-3.5 mr-1" /> Save
+                    </button>
+                    <button onClick={cancelEditing} className="text-sm text-gray-500 hover:text-gray-700 flex items-center">
+                      <XMarkIcon className="h-3.5 w-3.5 mr-1" /> Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 uppercase">
+                    <th className="pb-1 pr-3">Qty Min</th>
+                    <th className="pb-1 pr-3">Qty Max</th>
+                    <th className="pb-1 pr-3">Rate</th>
+                    {editing && <th className="pb-1 w-10"></th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tiers.length === 0 ? (
+                    <tr>
+                      <td colSpan={editing ? 4 : 3} className="py-3 text-gray-400 text-center italic">
+                        No tiers configured
+                      </td>
+                    </tr>
+                  ) : (
+                    tiers.map((tier, idx) => (
+                      <tr key={tier.id || idx} className="border-t border-gray-100">
+                        <td className="py-1.5 pr-3">
+                          {editing ? (
+                            <input
+                              type="number"
+                              min={1}
+                              value={tier.min_quantity}
+                              onChange={(e) => updateEditingTier(sc.name, idx, 'min_quantity', parseInt(e.target.value) || 1)}
+                              className="input-field w-20 text-sm"
+                            />
+                          ) : tier.min_quantity}
+                        </td>
+                        <td className="py-1.5 pr-3">
+                          {editing ? (
+                            <input
+                              type="number"
+                              min={1}
+                              value={tier.max_quantity ?? ''}
+                              placeholder="∞"
+                              onChange={(e) => updateEditingTier(sc.name, idx, 'max_quantity', e.target.value ? parseInt(e.target.value) : null)}
+                              className="input-field w-20 text-sm"
+                            />
+                          ) : (tier.max_quantity ?? '∞')}
+                        </td>
+                        <td className="py-1.5 pr-3">
+                          {editing ? (
+                            <div className="flex items-center">
+                              <span className="text-gray-500 mr-1">$</span>
+                              <input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                value={tier.rate}
+                                onChange={(e) => updateEditingTier(sc.name, idx, 'rate', parseFloat(e.target.value) || 0)}
+                                className="input-field w-24 text-sm"
+                              />
+                            </div>
+                          ) : `$${Number(tier.rate).toFixed(2)}`}
+                        </td>
+                        {editing && (
+                          <td className="py-1.5">
+                            <button onClick={() => removeEditingTier(sc.name, idx)} className="text-red-400 hover:text-red-600">
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              {editing && (
+                <button
+                  onClick={() => addEditingTier(sc.name)}
+                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  <PlusIcon className="h-3.5 w-3.5 mr-1" /> Add Bracket
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Carrier API Status */}
+      <div className="bg-white shadow-sm rounded-lg p-5 border border-gray-200">
+        <h2 className="font-semibold text-gray-900 mb-3">Carrier API Status</h2>
+        <div className="space-y-2">
+          {carrierStatus.map(carrier => (
+            <div key={carrier.code} className="flex items-center gap-3 py-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${
+                carrier.status === 'connected' ? 'bg-green-400' :
+                carrier.status === 'placeholder' ? 'bg-yellow-400' :
+                'bg-gray-300'
+              }`} />
+              <span className="text-sm font-medium text-gray-700 w-16">{carrier.name}</span>
+              <span className="text-sm text-gray-500">{carrier.label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gray-400 mt-3">
+          Configure carrier API credentials in Netlify environment variables to enable live rates.
         </p>
       </div>
     </div>
