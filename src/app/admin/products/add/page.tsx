@@ -30,6 +30,8 @@ interface ProductFormData {
   length_inches: string
   width_inches: string
   height_inches: string
+  packing_units: string
+  packed_weight_lbs: string
   sizes: string[]
   colors: string[]
   size_class: string
@@ -83,6 +85,8 @@ export default function AddProductPage() {
       length_inches: '',
       width_inches: '',
       height_inches: '',
+      packing_units: '1.0',
+      packed_weight_lbs: '0.5',
       sizes: [],
       colors: [],
       size_class: 'small',
@@ -420,6 +424,50 @@ export default function AddProductPage() {
               <div>
                 <label className="form-label">Height (in)</label>
                 <input type="number" step="0.1" min="0" {...register('height_inches')} className="input-field" placeholder="1" />
+              </div>
+            </div>
+          </div>
+
+          {/* Packing Information */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Package-Based Shipping</h3>
+            <p className="text-xs text-gray-500 mb-3">Used for the new package-based packing algorithm and carrier API rates</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="form-label">Packing Units *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  {...register('packing_units', { 
+                    required: 'Packing units is required',
+                    min: { value: 0.01, message: 'Must be greater than 0' }
+                  })}
+                  className="input-field"
+                  placeholder="1.0"
+                />
+                <p className="text-xs text-gray-500 mt-1">How many "units" of package space this product takes (e.g., 1.0 for small items, 4.0 for bulky items)</p>
+                {errors.packing_units && (
+                  <p className="form-error">{errors.packing_units.message}</p>
+                )}
+              </div>
+              <div>
+                <label className="form-label">Packed Weight (lbs) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  {...register('packed_weight_lbs', { 
+                    required: 'Packed weight is required',
+                    min: { value: 0.01, message: 'Must be greater than 0' }
+                  })}
+                  className="input-field"
+                  placeholder="0.5"
+                />
+                <p className="text-xs text-gray-500 mt-1">Weight when packaged for shipping (includes any packaging material specific to this product)</p>
+                {errors.packed_weight_lbs && (
+                  <p className="form-error">{errors.packed_weight_lbs.message}</p>
+                )}
               </div>
             </div>
           </div>

@@ -39,6 +39,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     length_inches: '',
     width_inches: '',
     height_inches: '',
+    packing_units: '1.0',
+    packed_weight_lbs: '0.5',
     size_class: 'small',
     shipping_method: 'flat_rate',
   })
@@ -109,6 +111,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         length_inches: product.length_inches?.toString() || '',
         width_inches: product.width_inches?.toString() || '',
         height_inches: product.height_inches?.toString() || '',
+        packing_units: product.packing_units?.toString() || '1.0',
+        packed_weight_lbs: product.packed_weight_lbs?.toString() || '0.5',
         size_class: product.size_class || 'small',
         shipping_method: product.shipping_method || 'flat_rate',
       })
@@ -628,6 +632,42 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                   onChange={(e) => setFormData({ ...formData, height_inches: e.target.value })}
                   placeholder="1"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Packing Information */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Package-Based Shipping</h3>
+            <p className="text-xs text-gray-500 mb-3">Used for the new package-based packing algorithm and carrier API rates</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-group">
+                <label className="form-label">Packing Units *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  className="input-field"
+                  value={formData.packing_units}
+                  onChange={(e) => setFormData({ ...formData, packing_units: e.target.value })}
+                  placeholder="1.0"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">How many "units" of package space this product takes (e.g., 1.0 for small items, 4.0 for bulky items)</p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Packed Weight (lbs) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  className="input-field"
+                  value={formData.packed_weight_lbs}
+                  onChange={(e) => setFormData({ ...formData, packed_weight_lbs: e.target.value })}
+                  placeholder="0.5"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">Weight when packaged for shipping (includes any packaging material specific to this product)</p>
               </div>
             </div>
           </div>

@@ -97,6 +97,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       length_inches,
       width_inches,
       height_inches,
+      packing_units,
+      packed_weight_lbs,
       regenerate_pricing_tiers = false,
       sizes = [],
       colors = [],
@@ -133,6 +135,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         length_inches: length_inches != null ? parseFloat(length_inches) : null,
         width_inches: width_inches != null ? parseFloat(width_inches) : null,
         height_inches: height_inches != null ? parseFloat(height_inches) : null,
+        ...(packing_units !== undefined && { packing_units: parseFloat(packing_units) }),
+        ...(packed_weight_lbs !== undefined && { packed_weight_lbs: parseFloat(packed_weight_lbs) }),
         ...(size_class !== undefined && { size_class }),
         ...(shipping_method !== undefined && { shipping_method }),
         updated_at: new Date().toISOString()

@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
       length_inches,
       width_inches,
       height_inches,
+      packing_units = '1.0',
+      packed_weight_lbs = '0.5',
       enable_volume_pricing = false,
       sizes = [],
       colors = [],
@@ -113,6 +115,8 @@ export async function POST(request: NextRequest) {
         length_inches: length_inches != null ? parseFloat(length_inches) : null,
         width_inches: width_inches != null ? parseFloat(width_inches) : null,
         height_inches: height_inches != null ? parseFloat(height_inches) : null,
+        packing_units: packing_units != null ? parseFloat(packing_units) : 1.0,
+        packed_weight_lbs: packed_weight_lbs != null ? parseFloat(packed_weight_lbs) : 0.5,
         size_class: size_class || 'small',
         shipping_method: shipping_method || 'flat_rate',
       }])
