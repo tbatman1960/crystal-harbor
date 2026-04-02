@@ -267,7 +267,8 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | DELETE | `/api/admin/customers` | Delete customer |
 | GET | `/api/admin/customer-detail` | Single customer with orders + subscriber status |
 | POST | `/api/admin/export-data` | Export data as CSV |
-| GET/POST | `/api/admin/shipping-methods` | Manage shipping methods |
+| GET/POST/DELETE | `/api/admin/shipping/size-classes` | Manage shipping size classes |
+| GET/PUT | `/api/admin/shipping/rate-tiers` | Manage flat rate shipping tiers |
 | GET | `/api/admin/reports` | Sales reports data (orders with items) |
 | GET | `/api/admin/analytics-reports` | Analytics data (orders, customers, products with date filtering) |
 | GET/POST/PUT | `/api/admin/site-settings` | Read/write site settings (PUT for single upsert) |
@@ -337,6 +338,8 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Admin refund button (2026-03-30):** Dedicated Refund/Cancel card added to admin order detail sidebar. Refund button added to admin orders list.
 - **Stripe refund fix (2026-03-30):** `processStripeRefund()` in `lib/refunds.ts` changed from `fetch('/api/refunds/process')` (broken server-side) to direct Stripe SDK call.
 - **Cancelled order UX (2026-03-30):** Customer account page hides Return/Cancel buttons for cancelled orders, shows "Refund processed" message instead.
+- **Shipping v2 (2026-03-31):** Complete shipping system rewrite. Old system (flat_rate/weight_based/calculated/free methods, product_shipping_methods join table, ShipStation scaffolding) replaced with size-class + quantity-bracket flat rate tiers. New tables: `shipping_size_classes`, `shipping_rate_tiers`. Products have `size_class` and `shipping_method` columns. Admin shipping page: size class CRUD, inline tier editor, ship-from ZIP, carrier API status. Product add/edit pages: size class dropdown, shipping method dropdown (flat_rate, USPS, FedEx coming soon, UPS coming soon). Mixed carts sum per-item shipping. USPS falls back to flat rate silently.
+- **Account page enhancements (2026-03-31):** "Start Shopping" button at top right of account page. "Reorder" button on every order — fetches order items, matches to current products, adds to cart, redirects to cart page.
 
 ### In Progress
 - **USPS shipping API integration:** Tim has no ShipStation account (doesn't want monthly subscription). Plan is to integrate USPS API directly (free). Waiting on Tim to register for USPS Web Tools account and provide User ID. UPS/FedEx can be added later.
@@ -419,6 +422,10 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 
 26. **Customer cancel/refund UX (2026-03-30):** Pending orders can be cancelled by customers for full automatic refund via Stripe SDK. Non-pending orders route to email for manual admin review. Cancelled orders show "refund processed" message with no further action buttons. Admin order detail has dedicated refund card in sidebar.
 
+27. **Shipping v2: size-class + flat-rate tiers (2026-03-31):** Replaced the over-engineered multi-type shipping system (flat_rate/weight_based/calculated/free methods, product_shipping_methods join table, ShipStation scaffolding, shipping zones) with a simple size-class model. Three size classes (small/medium/large) assigned per product. Flat rate tiers are quantity brackets × size classes (e.g., small 1-5 items = $7.99). Each product has a `shipping_method` field (flat_rate, usps, fedex, ups) controlling which calculation method applies. Mixed carts sum per-item shipping. Carrier APIs (USPS/FedEx/UPS) fall back to flat rate silently when unconfigured. Admin controls tiers and size classes; customer sees one shipping price at checkout determined by product settings.
+
+28. **Reorder from order history (2026-03-31):** Reorder button on account page fetches order items via `/api/orders/{orderNumber}`, matches to current products by name via `/api/products`, adds to cart with generated IDs, redirects to cart. Falls back to products page if items no longer exist. Product matching is by name since `order_items` doesn't store `product_slug` or `category_slug`.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -456,6 +463,32 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-03-31
+- **Worked on:** Complete shipping system rewrite (v2), account page enhancements
+- **Key changes:**
+  - Created `shipping_size_classes` and `shipping_rate_tiers` tables in Supabase
+  - Added `size_class` and `shipping_method` columns to products table
+  - Rewrote `src/lib/shipping-methods.ts` and `src/lib/shipping.ts` for new tier system
+  - Rewrote `/api/shipping/available` to calculate per-item shipping from product settings
+  - Created `/api/admin/shipping/size-classes` (GET/POST/DELETE) and `/api/admin/shipping/rate-tiers` (GET/PUT)
+  - New admin shipping page: size class management, inline tier editor, ship-from ZIP, carrier status
+  - Added Shipping section to product add + edit pages (size class + shipping method dropdowns)
+  - Removed: old add/edit shipping pages, `/api/admin/shipping-methods` route, all `product_shipping_methods` refs, ShipStation code
+  - Added "Start Shopping" button to account page header
+  - Added "Reorder" button to each order in order history (fetches items, adds to cart)
+- **Decisions made:**
+  - Flat rate tiers per size class, not per product — keeps management simple
+  - Shipping quantity brackets independent from pricing tiers
+  - One shipping method per product (admin-controlled), no customer choice at checkout
+  - Mixed carts: per-item calculation, summed to single total
+  - USPS/FedEx/UPS as dropdown options; FedEx/UPS disabled as "coming soon"
+  - Reorder button matches by product name since order_items don't store product slugs
+- **Lessons learned:**
+  - `site_settings` table has `description` not `category` column — verify schema before SQL
+  - Supabase SQL Editor rolls back entire query on any error
+  - `Array.from(new Set())` instead of `[...new Set()]` for TypeScript compat
+  - CartItem requires an `id` field for programmatic addItem calls
 
 ### 2026-03-30
 - **Worked on:** Comprehensive site audit (18 issues), admin RLS fixes, placeholder data, contact form, email consistency, cancel/refund flows, Stripe refund fix

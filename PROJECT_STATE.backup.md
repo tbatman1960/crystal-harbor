@@ -328,6 +328,15 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Row Level Security:** RLS enabled on ALL tables with no policies. Service role key bypasses RLS in API routes. Anon key blocked from direct DB access.
 - **Sales tax:** Simplified to flat 7% Indiana only (single nexus state). No county/local variations. Shipping is taxable.
 - **Supabase client split:** `supabase` (anon, client-side) and `supabaseAdmin` (service role, server-side) properly separated. All API routes and lib files use `supabaseAdmin`.
+- **Admin RLS fixes (2026-03-30):** Dashboard, orders, order detail, settings, analytics, refund policies pages all migrated from direct lib imports to API routes. Created `/api/admin/dashboard`, `/api/admin/orders` (GET/PUT), `/api/admin/orders/[id]`, `/api/admin/refund-policies` (GET/PUT), PUT on `/api/admin/site-settings`.
+- **Sitemap fix (2026-03-30):** `sitemap.xml/route.ts` switched from anon key to `supabaseAdmin` — products and categories now appear in sitemap.
+- **Contact page fix (2026-03-30):** Placeholder phone, address, and non-functional form replaced with real data and working email submission via `/api/send-email`.
+- **Email consistency (2026-03-30):** All customer-facing email references changed from `support@crystalharbortc.com` to `info@crystalharbortc.com`. Email template colors updated to gold/silver-blue brand palette.
+- **Fallback domain fix (2026-03-30):** SEO metadata fallback `crystalharbor.com` corrected to `crystal-harbor.netlify.app` across 12 files.
+- **Customer cancel/refund (2026-03-30):** Cancel Order buttons added to account page, checkout success page, and order confirmation email. Pending orders auto-refund via Stripe. Non-pending route to admin email.
+- **Admin refund button (2026-03-30):** Dedicated Refund/Cancel card added to admin order detail sidebar. Refund button added to admin orders list.
+- **Stripe refund fix (2026-03-30):** `processStripeRefund()` in `lib/refunds.ts` changed from `fetch('/api/refunds/process')` (broken server-side) to direct Stripe SDK call.
+- **Cancelled order UX (2026-03-30):** Customer account page hides Return/Cancel buttons for cancelled orders, shows "Refund processed" message instead.
 
 ### In Progress
 - **USPS shipping API integration:** Tim has no ShipStation account (doesn't want monthly subscription). Plan is to integrate USPS API directly (free). Waiting on Tim to register for USPS Web Tools account and provide User ID. UPS/FedEx can be added later.
@@ -404,6 +413,12 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 
 23. **Newsletter workflow (2026-03-25):** AI newsletter generation is available in the admin UI but requires an OpenAI API key. Tim prefers option 3: ask the assistant to write newsletters, then paste into the manual compose. No API key needed.
 
+24. **Server-side lib files must call SDKs directly (2026-03-30):** `fetch('/api/...')` with relative URLs fails when called from server-side lib code (no host to resolve). Discovered three times: email sending in orders.ts, refund processing in refunds.ts, and potentially any future server-to-server calls. Rule: lib files must import and call SDKs (Stripe, Nodemailer) directly, never via fetch() to own API routes.
+
+25. **Atomic commits for code changes (2026-03-30):** Tim mandated one-fix-at-a-time workflow after batched changes caused regressions. Codified in AGENTS.md as "Code Change Discipline": single change → build → test → commit → next fix. No exceptions.
+
+26. **Customer cancel/refund UX (2026-03-30):** Pending orders can be cancelled by customers for full automatic refund via Stripe SDK. Non-pending orders route to email for manual admin review. Cancelled orders show "refund processed" message with no further action buttons. Admin order detail has dedicated refund card in sidebar.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -443,41 +458,28 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 ## Session Log
 
 ### 2026-03-30
-- **Worked on:** Comprehensive site audit, admin RLS fixes, placeholder data cleanup, contact form, email consistency
+- **Worked on:** Comprehensive site audit (18 issues), admin RLS fixes, placeholder data, contact form, email consistency, cancel/refund flows, Stripe refund fix
 - **Key changes:**
-  - Full audit of all pages, API routes, and admin portal identified 18 issues
-  - Created 4 new API routes: `/api/admin/dashboard`, `/api/admin/orders` (GET/PUT), `/api/admin/orders/[id]`, `/api/admin/refund-policies` (GET/PUT)
-  - Added PUT handler to `/api/admin/site-settings` for single setting upsert
-  - Fixed 6 admin pages (dashboard, orders, order detail, settings, analytics, refund policies) — all were broken due to client components importing `supabaseAdmin` directly instead of using fetch() to API routes
-  - Fixed sitemap.xml — was using anon key (blocked by RLS), switched to `supabaseAdmin`. Products and categories now appear in sitemap.
-  - Replaced fake phone `(555) 123-4567` with real `(317) 997-5503` across 12 files
-  - Replaced `[City, State]` with real address on contact and refunds pages
-  - Fixed fallback domain `crystalharbor.com` → `crystal-harbor.netlify.app` in 12 files
-  - Contact form now sends email via `/api/send-email` (was just `console.log`)
-  - Added `contact` email type handler in send-email API route
-  - Email template colors updated from coral/lime (#ff6b6b/#84cc16) to gold/silver-blue (#C4942A/#8A9DB8)
-  - Replaced `support@crystalharbortc.com` with `info@crystalharbortc.com` across 11 files (support@ was never a real mailbox)
+  - Created 5 new API routes: `/api/admin/dashboard`, `/api/admin/orders` (GET/PUT), `/api/admin/orders/[id]`, `/api/admin/refund-policies` (GET/PUT), PUT on `/api/admin/site-settings`
+  - Fixed 6 admin pages broken by RLS — migrated from direct supabaseAdmin lib imports to fetch() API routes
+  - Fixed sitemap.xml (anon key → supabaseAdmin), fallback domain in 12 files, fake phone in 12 files, placeholder address
+  - Contact form now sends email via API; email templates updated to brand colors; support@ → info@ in 11 files
+  - Added cancel/refund buttons: customer account page, checkout success page, admin orders list, admin order detail sidebar, confirmation email
+  - Fixed `processStripeRefund()` — was using relative `fetch('/api/refunds/process')` server-side (no host). Now calls Stripe SDK directly.
+  - Fixed cancel API field mismatch (`orderNumber` → `order_id`)
+  - Cancelled orders show "Refund processed" message, hide Return/Cancel buttons
+  - Verified all markdown files are conflict-free across AGENTS.md, MEMORY.md, USER.md, SOUL.md
 - **Decisions made:**
-  - Established "Code Change Discipline" workflow: one fix → build → test → commit → next fix. No more batching unrelated changes.
+  - "Code Change Discipline" — one fix → build → test → commit → next fix. Added to AGENTS.md as permanent rule.
+  - Server-side lib files must call SDKs directly — never use relative fetch() to own API routes
   - All customer-facing email uses `info@crystalharbortc.com` only
-  - Added Cancel Order button to customer account page (pending → auto-refund, non-pending → email request)
-  - Added Cancel Order & Full Refund button to checkout success page (visible while pending)
-  - Added Refund button to admin orders list (mobile + desktop) linking to order detail
-  - Added dedicated Refund/Cancel card on admin order detail page sidebar
-  - Added View/Cancel Order link in order confirmation email (HTML + plain text)
-  - Fixed Stripe refund not processing — `processStripeRefund()` was using `fetch('/api/refunds/process')` (relative URL fails server-side). Now calls Stripe SDK directly.
-  - Fixed cancel button sending wrong field (`orderNumber` instead of `order_id`) to `/api/orders/cancel`
-  - Cancelled orders now show "Refund processed" message instead of Return/Cancel buttons on account page
-- **Decisions made:**
-  - Established "Code Change Discipline" workflow: one fix → build → test → commit → next fix. No more batching unrelated changes. Added to AGENTS.md as permanent rule.
-  - All customer-facing email uses `info@crystalharbortc.com` only
-  - Server-side lib files must call Stripe/email SDKs directly — never use relative `fetch()` URLs
+  - Customer cancel: pending → auto Stripe refund; non-pending → email to admin for review
 - **Issues still open:**
-  - Terms & Privacy pages still have "placeholder legal content" warnings
-  - MobilePaymentMethods hardcoded to TEST environment
-  - GA4 measurement ID still placeholder
+  - Need Stripe test keys from Tim for safe testing
+  - Terms & Privacy placeholder legal content
+  - MobilePaymentMethods in TEST mode
+  - GA4 measurement ID placeholder
   - Custom domain not configured
-  - Need Stripe test keys for safe testing
 
 ### 2026-03-25
 - **Worked on:** Netlify upgrade, hero banner, footer info, RLS, newsletter system, product edit page, password reset, sales tax cleanup, admin page fixes
