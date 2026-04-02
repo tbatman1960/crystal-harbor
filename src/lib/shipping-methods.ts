@@ -1,325 +1,242 @@
 import { supabaseAdmin as supabase } from './supabase'
 
-export interface ShippingMethod {
+// ============================================
+// SHIPPING V2 — Size Class + Flat Rate Tiers
+// ============================================
+
+export interface ShippingSizeClass {
   id: string
   name: string
+  label: string
   description: string | null
-  method_type: 'flat_rate' | 'weight_based' | 'calculated' | 'free'
-  flat_rate_cost: number | null
-  weight_tiers: WeightTier[] | null
-  carrier_code: string | null
-  service_code: string | null
-  min_order_for_free_shipping: number | null
-  estimated_days_min: number
-  estimated_days_max: number
-  active: boolean
   display_order: number
-  created_at: string
-  updated_at: string
 }
 
-export interface WeightTier {
-  max_weight: number
-  cost: number
-  name: string
-}
-
-export interface ShippingZone {
+export interface ShippingRateTier {
   id: string
-  name: string
-  description: string | null
-  countries: string[]
-  states: string[] | null
-  postal_codes: string[] | null
-  active: boolean
+  size_class_name: string
+  min_quantity: number
+  max_quantity: number | null  // null = unlimited (e.g., 25+)
+  rate: number
+  display_order: number
 }
 
 export interface ShippingCalculationInput {
   items: Array<{
     product_id: string
     product_name: string
-    category_slug: string
     quantity: number
-    unit_price: number
-    line_total: number
+    size_class: string
+    shipping_method: string
   }>
   shipping_address: {
     country: string
     state: string
     postal_code: string
   }
-  subtotal: number
 }
 
-export interface ShippingOption {
-  method_id: string
-  name: string
-  description: string | null
-  cost: number
-  estimated_delivery: string
-  carrier_code?: string
-  service_code?: string
+export interface ShippingResult {
+  total: number
+  breakdown: Array<{
+    product_name: string
+    quantity: number
+    size_class: string
+    shipping_method: string
+    cost: number
+  }>
 }
 
-// Get all active shipping methods
-export async function getActiveShippingMethods(): Promise<ShippingMethod[]> {
+// --- Size Class CRUD ---
+
+export async function getSizeClasses(): Promise<ShippingSizeClass[]> {
   const { data, error } = await supabase
-    .from('shipping_methods')
+    .from('shipping_size_classes')
     .select('*')
-    .eq('active', true)
     .order('display_order', { ascending: true })
 
   if (error) {
-    console.error('Error fetching shipping methods:', error)
+    console.error('Error fetching size classes:', error)
     return []
   }
-
   return data || []
 }
 
-// Get shipping methods for a specific product
-export async function getProductShippingMethods(productId: string): Promise<ShippingMethod[]> {
-  const { data, error } = await supabase
-    .from('product_shipping_methods')
-    .select(`
-      shipping_method:shipping_methods (*)
-    `)
-    .eq('product_id', productId)
+export async function createSizeClass(sizeClass: { name: string; label: string; description?: string; display_order?: number }): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('shipping_size_classes')
+    .insert([sizeClass])
 
-  if (error) {
-    console.error('Error fetching product shipping methods:', error)
-    return []
-  }
-
-  return (data?.map((item: any) => item.shipping_method).filter(Boolean) as ShippingMethod[]) || []
+  if (error) return { success: false, error: error.message }
+  return { success: true }
 }
 
-// Calculate available shipping options for an order
-export async function calculateShippingOptions(input: ShippingCalculationInput): Promise<ShippingOption[]> {
-  // Get all active shipping methods
-  const methods = await getActiveShippingMethods()
-  
-  // Calculate total weight (using our existing product weight estimates)
-  const productWeights: { [key: string]: number } = {
-    'custom-t-shirt': 0.5,
-    'custom-fleece-blanket': 2.0, 
-    'custom-vinyl-banner': 1.5,
-    'custom-polyester-flag': 0.8
+export async function updateSizeClass(id: string, updates: Partial<ShippingSizeClass>): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('shipping_size_classes')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function deleteSizeClass(id: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase
+    .from('shipping_size_classes')
+    .delete()
+    .eq('id', id)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// --- Rate Tier CRUD ---
+
+export async function getRateTiers(): Promise<ShippingRateTier[]> {
+  const { data, error } = await supabase
+    .from('shipping_rate_tiers')
+    .select('*')
+    .order('size_class_name, display_order', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching rate tiers:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function getRateTiersBySizeClass(sizeClassName: string): Promise<ShippingRateTier[]> {
+  const { data, error } = await supabase
+    .from('shipping_rate_tiers')
+    .select('*')
+    .eq('size_class_name', sizeClassName)
+    .order('min_quantity', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching rate tiers for size class:', error)
+    return []
+  }
+  return data || []
+}
+
+export async function upsertRateTiers(tiers: Array<Omit<ShippingRateTier, 'id'> & { id?: string }>): Promise<{ success: boolean; error?: string }> {
+  // Delete existing tiers for affected size classes, then insert fresh
+  const sizeClasses = Array.from(new Set(tiers.map(t => t.size_class_name)))
+
+  for (const sc of sizeClasses) {
+    const { error: delError } = await supabase
+      .from('shipping_rate_tiers')
+      .delete()
+      .eq('size_class_name', sc)
+
+    if (delError) return { success: false, error: delError.message }
   }
 
-  let totalWeight = 0
-  input.items.forEach(item => {
-    const productSlug = item.product_name.toLowerCase().replace(/\s+/g, '-')
-    const itemWeight = productWeights[productSlug] || 1.0
-    totalWeight += itemWeight * item.quantity
+  const { error } = await supabase
+    .from('shipping_rate_tiers')
+    .insert(tiers.map(({ id, ...rest }) => rest))
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+// --- Shipping Calculation ---
+
+/**
+ * Calculate flat rate shipping for a given size class and quantity.
+ * Finds the matching quantity bracket and returns the rate.
+ */
+export async function calculateFlatRate(sizeClassName: string, quantity: number): Promise<number> {
+  const tiers = await getRateTiersBySizeClass(sizeClassName)
+
+  if (tiers.length === 0) {
+    console.warn(`No shipping tiers found for size class: ${sizeClassName}, using fallback $9.99`)
+    return 9.99
+  }
+
+  // Find the tier that matches the quantity
+  const matchingTier = tiers.find(tier => {
+    if (tier.max_quantity === null) {
+      return quantity >= tier.min_quantity
+    }
+    return quantity >= tier.min_quantity && quantity <= tier.max_quantity
   })
 
-  const options: ShippingOption[] = []
+  if (!matchingTier) {
+    // Shouldn't happen if tiers are set up correctly, but fallback to highest tier
+    const lastTier = tiers[tiers.length - 1]
+    return lastTier.rate
+  }
 
-  for (const method of methods) {
+  return Number(matchingTier.rate)
+}
+
+/**
+ * Calculate USPS shipping rate via API.
+ * Falls back to flat rate silently if USPS credentials aren't configured.
+ */
+export async function calculateUSPSRate(
+  sizeClassName: string,
+  quantity: number,
+  _destinationZip: string,
+  _shipFromZip: string
+): Promise<{ cost: number; carrier: string; service: string }> {
+  // TODO: Implement real USPS API call when credentials are available
+  // For now, fall back to flat rate silently
+  const flatRate = await calculateFlatRate(sizeClassName, quantity)
+  return {
+    cost: flatRate,
+    carrier: 'usps',
+    service: 'USPS Priority Mail (estimated)'
+  }
+}
+
+/**
+ * Calculate shipping for a full cart.
+ * Each item uses its product's assigned shipping method.
+ * Returns a total and per-item breakdown.
+ */
+export async function calculateCartShipping(input: ShippingCalculationInput): Promise<ShippingResult> {
+  const breakdown: ShippingResult['breakdown'] = []
+  let total = 0
+
+  // Load ship-from ZIP for carrier calculations
+  const { data: zipSetting } = await supabase
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'ship_from_zip')
+    .single()
+  const shipFromZip = zipSetting?.value || '46143'
+
+  for (const item of input.items) {
     let cost = 0
-    let isEligible = true
 
-    switch (method.method_type) {
-      case 'free':
-        cost = 0
-        break
-
-      case 'flat_rate':
-        cost = method.flat_rate_cost || 0
-        
-        // Check if order qualifies for free shipping
-        if (method.min_order_for_free_shipping && 
-            input.subtotal >= method.min_order_for_free_shipping) {
-          cost = 0
-        }
-        break
-
-      case 'weight_based':
-        if (method.weight_tiers && method.weight_tiers.length > 0) {
-          const applicableTier = method.weight_tiers.find(tier => totalWeight <= tier.max_weight)
-          if (applicableTier) {
-            cost = applicableTier.cost
-          } else {
-            // Weight exceeds all tiers
-            isEligible = false
-          }
-        }
-        break
-
-      case 'calculated':
-        // TODO: Implement ShipStation/carrier API integration
-        // For now, fall back to a default rate
-        cost = 15.99
-        break
+    if (item.shipping_method === 'flat_rate') {
+      cost = await calculateFlatRate(item.size_class, item.quantity)
+    } else if (item.shipping_method === 'usps') {
+      const result = await calculateUSPSRate(
+        item.size_class,
+        item.quantity,
+        input.shipping_address.postal_code,
+        shipFromZip
+      )
+      cost = result.cost
+    } else {
+      // fedex, ups — not yet implemented, fall back to flat rate
+      cost = await calculateFlatRate(item.size_class, item.quantity)
     }
 
-    if (isEligible) {
-      const estimatedDelivery = method.estimated_days_min === method.estimated_days_max 
-        ? `${method.estimated_days_min} business days`
-        : `${method.estimated_days_min}-${method.estimated_days_max} business days`
+    breakdown.push({
+      product_name: item.product_name,
+      quantity: item.quantity,
+      size_class: item.size_class,
+      shipping_method: item.shipping_method,
+      cost
+    })
 
-      options.push({
-        method_id: method.id,
-        name: method.name,
-        description: method.description,
-        cost,
-        estimated_delivery: estimatedDelivery,
-        carrier_code: method.carrier_code || undefined,
-        service_code: method.service_code || undefined
-      })
-    }
+    total += cost
   }
 
-  return options.sort((a, b) => a.cost - b.cost) // Sort by cost, cheapest first
-}
-
-// Admin functions
-
-// Create new shipping method
-export async function createShippingMethod(method: Omit<ShippingMethod, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; error?: string; method?: ShippingMethod }> {
-  try {
-    const { data, error } = await supabase
-      .from('shipping_methods')
-      .insert([method])
-      .select()
-      .single()
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true, method: data }
-  } catch (error) {
-    console.error('Error creating shipping method:', error)
-    return { success: false, error: 'Failed to create shipping method' }
-  }
-}
-
-// Update shipping method
-export async function updateShippingMethod(id: string, updates: Partial<ShippingMethod>): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('shipping_methods')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error updating shipping method:', error)
-    return { success: false, error: 'Failed to update shipping method' }
-  }
-}
-
-// Delete shipping method
-export async function deleteShippingMethod(id: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('shipping_methods')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error deleting shipping method:', error)
-    return { success: false, error: 'Failed to delete shipping method' }
-  }
-}
-
-// Assign shipping method to product
-export async function assignShippingMethodToProduct(productId: string, shippingMethodId: string, isDefault: boolean = false): Promise<{ success: boolean; error?: string }> {
-  try {
-    // If setting as default, first remove default from other methods for this product
-    if (isDefault) {
-      await supabase
-        .from('product_shipping_methods')
-        .update({ is_default: false })
-        .eq('product_id', productId)
-    }
-
-    // Insert or update the assignment
-    const { error } = await supabase
-      .from('product_shipping_methods')
-      .upsert([{
-        product_id: productId,
-        shipping_method_id: shippingMethodId,
-        is_default: isDefault
-      }])
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error assigning shipping method to product:', error)
-    return { success: false, error: 'Failed to assign shipping method' }
-  }
-}
-
-// Remove shipping method from product
-export async function removeShippingMethodFromProduct(productId: string, shippingMethodId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('product_shipping_methods')
-      .delete()
-      .eq('product_id', productId)
-      .eq('shipping_method_id', shippingMethodId)
-
-    if (error) {
-      return { success: false, error: error.message }
-    }
-
-    return { success: true }
-  } catch (error) {
-    console.error('Error removing shipping method from product:', error)
-    return { success: false, error: 'Failed to remove shipping method' }
-  }
-}
-
-// Get all shipping methods (for admin)
-export async function getAllShippingMethods(): Promise<ShippingMethod[]> {
-  const { data, error } = await supabase
-    .from('shipping_methods')
-    .select('*')
-    .order('display_order', { ascending: true })
-
-  if (error) {
-    console.error('Error fetching all shipping methods:', error)
-    return []
-  }
-
-  return data || []
-}
-
-// ShipStation integration preparation
-export interface ShipStationConfig {
-  api_key: string
-  api_secret: string
-  base_url: string
-  webhook_url: string
-}
-
-// Placeholder for ShipStation integration
-export async function calculateShipStationRates(
-  config: ShipStationConfig,
-  shipment: {
-    to_address: any
-    from_address: any  
-    packages: Array<{ weight: number; dimensions: any }>
-  }
-): Promise<ShippingOption[]> {
-  // TODO: Implement actual ShipStation API integration
-  // This would make HTTP requests to ShipStation's rate calculation API
-  
-  console.log('ShipStation integration not yet implemented')
-  return []
+  return { total, breakdown }
 }

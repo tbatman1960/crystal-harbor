@@ -43,15 +43,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('product_id', id)
       .order('min_quantity')
 
-    // Fetch shipping methods separately
-    const { data: shippingMethods } = await supabase
-      .from('product_shipping_methods')
-      .select(`
-        is_default,
-        shipping_method:shipping_methods(*)
-      `)
-      .eq('product_id', id)
-
     // Separate sizes and colors
     const sizes = options?.filter(opt => opt.option_type === 'size') || []
     const colors = options?.filter(opt => opt.option_type === 'color') || []
@@ -63,8 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         ...product,
         sizes: sizes.map(s => ({ id: s.id, value: s.option_value })),
         colors: colors.map(c => ({ id: c.id, value: c.option_value })),
-        pricing_tiers: pricingTiers || [],
-        shipping_methods: shippingMethods || []
+        pricing_tiers: pricingTiers || []
       }
     })
 
@@ -93,7 +83,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       regenerate_pricing_tiers = false,
       sizes = [],
       colors = [],
-      shipping_methods = []
+      size_class,
+      shipping_method,
     } = body
 
     // Validate required fields
@@ -124,6 +115,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         length_inches: length_inches != null ? parseFloat(length_inches) : null,
         width_inches: width_inches != null ? parseFloat(width_inches) : null,
         height_inches: height_inches != null ? parseFloat(height_inches) : null,
+        ...(size_class !== undefined && { size_class }),
+        ...(shipping_method !== undefined && { shipping_method }),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
@@ -177,29 +170,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // Update shipping method associations
-    await supabase
-      .from('product_shipping_methods')
-      .delete()
-      .eq('product_id', id)
-
-    if (shipping_methods.length > 0) {
-      const shippingAssociations = shipping_methods.map((methodId: string, index: number) => ({
-        id: uuidv4(),
-        product_id: id,
-        shipping_method_id: methodId,
-        is_default: index === 0
-      }))
-
-      const { error: shippingError } = await supabase
-        .from('product_shipping_methods')
-        .insert(shippingAssociations)
-
-      if (shippingError) {
-        console.error('Error updating shipping methods:', shippingError)
-      }
-    }
-
     // Regenerate pricing tiers if requested
     if (regenerate_pricing_tiers && base_price) {
       // Delete existing tiers
@@ -233,11 +203,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         *,
         category:categories(*),
         product_options(*),
-        pricing_tiers(*),
-        product_shipping_methods(
-          is_default,
-          shipping_method:shipping_methods(*)
-        )
+        pricing_tiers(*)
       `)
       .eq('id', id)
       .single()

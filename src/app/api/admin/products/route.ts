@@ -79,7 +79,8 @@ export async function POST(request: NextRequest) {
       enable_volume_pricing = false,
       sizes = [],
       colors = [],
-      shipping_methods = []
+      size_class = 'small',
+      shipping_method = 'flat_rate',
     } = body
 
     // Validate required fields
@@ -111,6 +112,8 @@ export async function POST(request: NextRequest) {
         length_inches: length_inches != null ? parseFloat(length_inches) : null,
         width_inches: width_inches != null ? parseFloat(width_inches) : null,
         height_inches: height_inches != null ? parseFloat(height_inches) : null,
+        size_class: size_class || 'small',
+        shipping_method: shipping_method || 'flat_rate',
       }])
       .select()
       .single()
@@ -181,24 +184,6 @@ export async function POST(request: NextRequest) {
 
       if (tiersError) {
         console.error('Error creating pricing tiers:', tiersError)
-      }
-    }
-
-    // Add shipping method associations
-    if (shipping_methods.length > 0) {
-      const shippingAssociations = shipping_methods.map((methodId: string, index: number) => ({
-        id: uuidv4(),
-        product_id: product.id,
-        shipping_method_id: methodId,
-        is_default: index === 0 // First one is default
-      }))
-
-      const { error: shippingError } = await supabase
-        .from('product_shipping_methods')
-        .insert(shippingAssociations)
-
-      if (shippingError) {
-        console.error('Error adding shipping methods:', shippingError)
       }
     }
 
