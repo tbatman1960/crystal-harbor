@@ -1,5 +1,5 @@
 import { PackedBox } from '@/lib/packing';
-import { getUSPSRates, USPSRate } from './usps';
+import { getUSPSRates, USPSRate, createUSPSLabel, getUSPSTracking, USPSLabelRequest, USPSLabelResponse, USPSTrackingResponse } from './usps';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 
 export interface ShippingRate {
@@ -170,7 +170,7 @@ export async function getCarrierStatus(): Promise<{
   return {
     usps: {
       available: true,
-      configured: !!(process.env.USPS_API_KEY && process.env.USPS_USER_ID)
+      configured: !!(process.env.USPS_CLIENT_ID && process.env.USPS_CLIENT_SECRET)
     },
     fedex: {
       available: false, // Coming soon
@@ -196,4 +196,82 @@ export function formatShippingOptions(response: ShippingRatesResponse): string[]
     
     return `${rate.service} - $${rate.total_cost.toFixed(2)} (${deliveryText})`;
   });
+}
+
+/**
+ * Create shipping labels for an order's packages
+ */
+export async function createShippingLabels(
+  order: any,
+  packages: PackedBox[]
+): Promise<USPSLabelResponse[]> {
+  if (!order || !packages || packages.length === 0) {
+    throw new Error('Order and packages are required');
+  }
+
+  const shippingAddress = order.shipping_address;
+  if (!shippingAddress) {
+    throw new Error('Order must have a shipping address');
+  }
+
+  const labels: USPSLabelResponse[] = [];
+
+  for (let i = 0; i < packages.length; i++) {
+    const pkg = packages[i];
+    
+    // Determine mail class based on package size/weight
+    let mailClass = 'PRIORITY_MAIL';
+    if (pkg.gross_weight <= 1) {
+      mailClass = 'GROUND_ADVANTAGE';
+    } else if (pkg.gross_weight > 20) {
+      mailClass = 'PRIORITY_MAIL';
+    }
+
+    const labelRequest: USPSLabelRequest = {
+      toAddress: {
+        firstName: shippingAddress.first_name || 'Customer',
+        lastName: shippingAddress.last_name || '',
+        streetAddress: shippingAddress.address_line_1 || '',
+        city: shippingAddress.city || '',
+        state: shippingAddress.state || '',
+        zipCode: shippingAddress.postal_code || '',
+        phone: shippingAddress.phone || ''
+      },
+      packageDescription: {
+        weight: pkg.gross_weight,
+        length: pkg.package_type.length_inches,
+        width: pkg.package_type.width_inches,
+        height: pkg.package_type.height_inches,
+        mailClass,
+        processingCategory: 'MACHINABLE',
+        rateIndicator: 'DR'
+      }
+    };
+
+    try {
+      const label = await createUSPSLabel(labelRequest);
+      labels.push(label);
+    } catch (error) {
+      console.error(`Error creating label for package ${i + 1}:`, error);
+      throw new Error(`Failed to create label for package ${i + 1}`);
+    }
+  }
+
+  return labels;
+}
+
+/**
+ * Get tracking information for a tracking number
+ */
+export async function getTrackingInfo(trackingNumber: string): Promise<USPSTrackingResponse> {
+  if (!trackingNumber) {
+    throw new Error('Tracking number is required');
+  }
+
+  try {
+    return await getUSPSTracking(trackingNumber);
+  } catch (error) {
+    console.error('Error getting tracking info:', error);
+    throw new Error('Failed to get tracking information');
+  }
 }

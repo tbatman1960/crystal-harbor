@@ -37,3 +37,19 @@ Next steps:
 
 ## Issues Encountered
 - None yet
+
+### [003] — Updated USPS Integration (COMPLETE)
+- **What:** Rewrote src/lib/carriers/usps.ts with new OAuth2 REST API integration
+- **Approach:** 
+  - Added OAuth2 token management with caching
+  - Implemented real API calls for rates, labels, and tracking
+  - Kept all existing mock functionality intact
+  - Added jsPDF mock label generation with realistic barcode patterns
+- **Result:** Successfully built and committed
+- **Key features:**
+  - OAuth2 client credentials flow with token caching (50min expiry)
+  - Real USPS Domestic Prices v3 API for rates
+  - Real USPS Domestic Labels v3 API for label creation
+  - Real USPS Tracking v3 API for package tracking
+  - Complete fallback to mock when credentials not configured
+  - Mock labels generated as professional-looking PDFs with fake barcodes
