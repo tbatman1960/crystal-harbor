@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCartStore } from '@/store/cartStore'
-import { calculateShipping } from '@/lib/shipping'
+import { calculateShippingSync } from '@/lib/shipping'
 import { TrashIcon, PlusIcon, MinusIcon } from '@heroicons/react/24/outline'
 
 export default function CartPage() {
@@ -12,7 +12,7 @@ export default function CartPage() {
   const [mounted, setMounted] = useState(false)
   
   // Calculate sophisticated shipping
-  const shippingCalc = calculateShipping(items.map(item => ({
+  const shippingCalc = calculateShippingSync(items.map(item => ({
     product_name: item.product_name,
     category_slug: item.category_slug,
     quantity: item.quantity,
