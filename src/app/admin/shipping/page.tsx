@@ -205,10 +205,29 @@ export default function AdminShippingPage() {
 
   const updateProductPacking = async (productId: string, updates: Partial<Product>) => {
     try {
+      // Fetch current product data first (PUT requires name, category_id, base_price)
+      const getRes = await fetch(`/api/admin/products/${productId}`)
+      const getData = await getRes.json()
+      const existing = getData.product
+      if (!existing) {
+        setMessage({ type: 'error', text: 'Failed to load product data' })
+        return
+      }
+
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
+        body: JSON.stringify({
+          name: existing.name,
+          category_id: existing.category_id,
+          base_price: existing.base_price,
+          description: existing.description,
+          material: existing.material,
+          active: existing.active,
+          sizes: existing.sizes?.map((s: any) => s.value) || [],
+          colors: existing.colors?.map((c: any) => c.value) || [],
+          ...updates,
+        })
       })
 
       if (response.ok) {
@@ -232,15 +251,12 @@ export default function AdminShippingPage() {
     }
 
     try {
-      const response = await fetch('/api/shipping/available', {
+      // Use the test endpoint that accepts packing data directly
+      const response = await fetch('/api/admin/shipping/test-calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: testItems.map((item, index) => ({
-            product_id: `test-${index}`,
-            product_name: item.product_name,
-            quantity: item.quantity
-          })),
+          items: testItems,
           destination_zip: testDestZip
         })
       })
@@ -428,17 +444,510 @@ export default function AdminShippingPage() {
         </div>
       )}
 
-      {/* Other tabs will be implemented in following parts... */}
+      {/* Settings Tab */}
       {activeTab === 'settings' && (
-        <div className="text-gray-500">Settings tab - Coming next...</div>
+        <SettingsTab
+          settings={settings}
+          carrierStatus={carrierStatus}
+          onUpdateSetting={updateSetting}
+          message={message}
+          setMessage={setMessage}
+        />
       )}
-      
+
+      {/* Products Packing Tab */}
       {activeTab === 'products' && (
-        <div className="text-gray-500">Products packing editor - Coming next...</div>
+        <ProductsPackingTab
+          products={products}
+          editingProduct={editingProduct}
+          setEditingProduct={setEditingProduct}
+          onUpdateProduct={updateProductPacking}
+          setProducts={setProducts}
+        />
       )}
-      
+
+      {/* Test Calculator Tab */}
       {activeTab === 'test' && (
-        <div className="text-gray-500">Test calculator - Coming next...</div>
+        <TestCalculatorTab
+          products={products}
+          testItems={testItems}
+          setTestItems={setTestItems}
+          testDestZip={testDestZip}
+          setTestDestZip={setTestDestZip}
+          testResult={testResult}
+          setTestResult={setTestResult}
+          onRunTest={runTestCalculation}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── Settings Tab ───
+function SettingsTab({
+  settings,
+  carrierStatus,
+  onUpdateSetting,
+  message,
+  setMessage,
+}: {
+  settings: SiteSettings
+  carrierStatus: CarrierStatus | null
+  onUpdateSetting: (key: string, value: string) => void
+  message: { type: 'success' | 'error'; text: string } | null
+  setMessage: (m: { type: 'success' | 'error'; text: string } | null) => void
+}) {
+  const [local, setLocal] = useState({ ...settings })
+
+  useEffect(() => { setLocal({ ...settings }) }, [settings])
+
+  return (
+    <div className="space-y-6 max-w-2xl">
+      {/* Ship-from ZIP */}
+      <div className="bg-white shadow sm:rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Origin &amp; Carrier</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="form-label">Ship-From ZIP Code</label>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                className="input-field w-40"
+                value={local.shipping_origin_zip}
+                onChange={(e) => setLocal({ ...local, shipping_origin_zip: e.target.value })}
+                maxLength={5}
+              />
+              <button
+                className="btn-primary"
+                onClick={() => onUpdateSetting('shipping_origin_zip', local.shipping_origin_zip)}
+              >
+                Save
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Used as the origin for all carrier rate calculations</p>
+          </div>
+
+          <div>
+            <label className="form-label">Active Carrier</label>
+            <div className="space-y-2 mt-1">
+              {[
+                { key: 'usps', label: 'USPS', status: carrierStatus?.usps },
+                { key: 'fedex', label: 'FedEx', status: carrierStatus?.fedex },
+                { key: 'ups', label: 'UPS', status: carrierStatus?.ups },
+              ].map(c => (
+                <div key={c.key} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+                  <span className="font-medium text-gray-800">{c.label}</span>
+                  <div className="flex items-center space-x-3">
+                    {c.status?.available ? (
+                      <>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          c.status.configured
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {c.status.configured ? 'Configured' : 'Using mock rates'}
+                        </span>
+                        <span className="text-green-600 text-sm font-medium">Active</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Coming soon</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fallback Settings */}
+      <div className="bg-white shadow sm:rounded-lg p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-1">Fallback Pricing</h3>
+        <p className="text-sm text-gray-500 mb-4">Used when the carrier API is unavailable. Calculates shipping from package utilization × fallback rates.</p>
+        <div className="space-y-4">
+          <div>
+            <label className="form-label">Minimum Charge Per Package ($)</label>
+            <div className="flex space-x-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="input-field w-40"
+                value={local.shipping_fallback_min_per_package}
+                onChange={(e) => setLocal({ ...local, shipping_fallback_min_per_package: e.target.value })}
+              />
+              <button
+                className="btn-primary"
+                onClick={() => onUpdateSetting('shipping_fallback_min_per_package', local.shipping_fallback_min_per_package)}
+              >
+                Save
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Even a nearly-empty package costs at least this much to ship</p>
+          </div>
+
+          <div>
+            <label className="form-label">Fallback Markup (%)</label>
+            <div className="flex space-x-2">
+              <input
+                type="number"
+                step="1"
+                min="0"
+                className="input-field w-40"
+                value={local.shipping_fallback_markup_pct}
+                onChange={(e) => setLocal({ ...local, shipping_fallback_markup_pct: e.target.value })}
+              />
+              <button
+                className="btn-primary"
+                onClick={() => onUpdateSetting('shipping_fallback_markup_pct', local.shipping_fallback_markup_pct)}
+              >
+                Save
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Optional margin on top of fallback calculation (0 = no markup)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Products Packing Tab ───
+function ProductsPackingTab({
+  products,
+  editingProduct,
+  setEditingProduct,
+  onUpdateProduct,
+  setProducts,
+}: {
+  products: Product[]
+  editingProduct: string | null
+  setEditingProduct: (id: string | null) => void
+  onUpdateProduct: (id: string, updates: Partial<Product>) => void
+  setProducts: (p: Product[]) => void
+}) {
+  const [editValues, setEditValues] = useState<Record<string, { packing_units: string; packed_weight_lbs: string }>>({})
+
+  const startEditing = (product: Product) => {
+    setEditingProduct(product.id)
+    setEditValues({
+      ...editValues,
+      [product.id]: {
+        packing_units: product.packing_units.toString(),
+        packed_weight_lbs: product.packed_weight_lbs.toString(),
+      }
+    })
+  }
+
+  const saveEditing = (productId: string) => {
+    const vals = editValues[productId]
+    if (!vals) return
+    onUpdateProduct(productId, {
+      packing_units: parseFloat(vals.packing_units) || 1.0,
+      packed_weight_lbs: parseFloat(vals.packed_weight_lbs) || 0.5,
+    })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-lg font-medium">Product Packing Data</h2>
+        <p className="text-sm text-gray-500">Set the packing units and weight per unit for each product. These drive the packing algorithm.</p>
+      </div>
+
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Packing Units</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Weight (lbs)</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {products.map(product => {
+              const isEditing = editingProduct === product.id
+              const vals = editValues[product.id]
+
+              return (
+                <tr key={product.id}>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.name}</td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        className="input-field w-24"
+                        value={vals?.packing_units || ''}
+                        onChange={(e) => setEditValues({
+                          ...editValues,
+                          [product.id]: { ...vals!, packing_units: e.target.value }
+                        })}
+                      />
+                    ) : (
+                      product.packing_units
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900">
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        className="input-field w-24"
+                        value={vals?.packed_weight_lbs || ''}
+                        onChange={(e) => setEditValues({
+                          ...editValues,
+                          [product.id]: { ...vals!, packed_weight_lbs: e.target.value }
+                        })}
+                      />
+                    ) : (
+                      `${product.packed_weight_lbs} lbs`
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-right text-sm space-x-2">
+                    {isEditing ? (
+                      <>
+                        <button onClick={() => saveEditing(product.id)} className="text-green-600 hover:text-green-800">
+                          <CheckIcon className="h-5 w-5 inline" />
+                        </button>
+                        <button onClick={() => setEditingProduct(null)} className="text-gray-400 hover:text-gray-600">
+                          <XMarkIcon className="h-5 w-5 inline" />
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => startEditing(product)} className="text-blue-600 hover:text-blue-800">
+                        <PencilIcon className="h-4 w-4 inline" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Test Calculator Tab ───
+function TestCalculatorTab({
+  products,
+  testItems,
+  setTestItems,
+  testDestZip,
+  setTestDestZip,
+  testResult,
+  setTestResult,
+  onRunTest,
+}: {
+  products: Product[]
+  testItems: TestItem[]
+  setTestItems: (items: TestItem[]) => void
+  testDestZip: string
+  setTestDestZip: (z: string) => void
+  testResult: any
+  setTestResult: (r: any) => void
+  onRunTest: () => void
+}) {
+  const [selectedProduct, setSelectedProduct] = useState('')
+  const [testQuantity, setTestQuantity] = useState('1')
+  const [calculating, setCalculating] = useState(false)
+
+  const addTestItem = () => {
+    const product = products.find(p => p.id === selectedProduct)
+    if (!product) return
+    setTestItems([...testItems, {
+      product_name: product.name,
+      quantity: parseInt(testQuantity) || 1,
+      packing_units: product.packing_units,
+      packed_weight_lbs: product.packed_weight_lbs,
+    }])
+    setTestQuantity('1')
+    setTestResult(null)
+  }
+
+  const removeTestItem = (index: number) => {
+    setTestItems(testItems.filter((_, i) => i !== index))
+    setTestResult(null)
+  }
+
+  const handleRunTest = async () => {
+    setCalculating(true)
+    await onRunTest()
+    setCalculating(false)
+  }
+
+  const totalUnits = testItems.reduce((s, i) => s + i.quantity * i.packing_units, 0)
+  const totalWeight = testItems.reduce((s, i) => s + i.quantity * i.packed_weight_lbs, 0)
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h2 className="text-lg font-medium">Shipping Test Calculator</h2>
+        <p className="text-sm text-gray-500">Simulate an order to see how items are packed and what shipping will cost.</p>
+      </div>
+
+      {/* Add items */}
+      <div className="bg-white shadow sm:rounded-lg p-6">
+        <h3 className="font-medium text-gray-900 mb-3">Order Items</h3>
+        <div className="flex items-end space-x-3 mb-4">
+          <div className="flex-1">
+            <label className="form-label">Product</label>
+            <select
+              className="input-field"
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+            >
+              <option value="">Select a product</option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.packing_units} units, {p.packed_weight_lbs} lbs)
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="w-24">
+            <label className="form-label">Qty</label>
+            <input
+              type="number"
+              min="1"
+              className="input-field"
+              value={testQuantity}
+              onChange={(e) => setTestQuantity(e.target.value)}
+            />
+          </div>
+          <button
+            onClick={addTestItem}
+            disabled={!selectedProduct}
+            className="btn-primary px-4 py-2"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        {testItems.length > 0 && (
+          <div className="space-y-2 mb-4">
+            {testItems.map((item, index) => (
+              <div key={index} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2">
+                <div>
+                  <span className="text-sm font-medium">{item.quantity}× {item.product_name}</span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    ({(item.quantity * item.packing_units).toFixed(1)} units, {(item.quantity * item.packed_weight_lbs).toFixed(1)} lbs)
+                  </span>
+                </div>
+                <button onClick={() => removeTestItem(index)} className="text-red-500 hover:text-red-700">
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            <div className="border-t pt-2 flex justify-between text-sm font-medium">
+              <span>Totals</span>
+              <span>{totalUnits.toFixed(1)} packing units · {totalWeight.toFixed(1)} lbs</span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end space-x-3">
+          <div className="w-40">
+            <label className="form-label">Destination ZIP</label>
+            <input
+              type="text"
+              className="input-field"
+              value={testDestZip}
+              onChange={(e) => setTestDestZip(e.target.value)}
+              maxLength={5}
+              placeholder="90210"
+            />
+          </div>
+          <button
+            onClick={handleRunTest}
+            disabled={testItems.length === 0 || !testDestZip || calculating}
+            className="btn-primary"
+          >
+            {calculating ? 'Calculating...' : 'Calculate Shipping'}
+          </button>
+        </div>
+      </div>
+
+      {/* Results */}
+      {testResult && (
+        <div className="bg-white shadow sm:rounded-lg p-6 space-y-5">
+          <h3 className="font-medium text-gray-900">Results</h3>
+
+          {testResult.error ? (
+            <div className="bg-red-50 text-red-700 p-3 rounded-lg">{testResult.error}</div>
+          ) : (
+            <>
+              {/* Source badge */}
+              <div className="flex items-center space-x-2">
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                  testResult.source === 'carrier' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {testResult.source === 'carrier' ? 'Carrier Rates' : 'Fallback Rates'}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {testResult.origin_zip} → {testResult.destination_zip}
+                </span>
+              </div>
+
+              {/* Packing breakdown */}
+              {testResult.packing && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">📦 Packing Breakdown ({testResult.packing.total_packages} package{testResult.packing.total_packages !== 1 ? 's' : ''})</h4>
+                  <div className="space-y-2">
+                    {testResult.packing.boxes?.map((box: any, bi: number) => (
+                      <div key={bi} className="bg-gray-50 rounded-lg px-4 py-3 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="font-medium">{box.package_name}</span>
+                          <span className="text-xs text-gray-500">{box.dimensions}</span>
+                        </div>
+                        <div className="flex justify-between text-gray-600 mt-1">
+                          <span>{box.units_used} / {box.capacity} units ({box.utilization}% full)</span>
+                          <span>{box.gross_weight} lbs total</span>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Fallback cost: ${box.fallback_cost} (rate: ${box.fallback_rate} × {box.utilization}%)
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Shipping rates */}
+              {testResult.rates && testResult.rates.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">💰 Shipping Options</h4>
+                  {testResult.rates.map((rate: any, ri: number) => (
+                    <div key={ri} className="border rounded-lg overflow-hidden mb-2">
+                      <div className="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{rate.service}</span>
+                          <span className="text-xs text-gray-500 ml-2">Est. {rate.estimated_days} business days</span>
+                        </div>
+                        <span className="font-bold text-lg">${rate.total_cost.toFixed(2)}</span>
+                      </div>
+                      {rate.per_package && rate.per_package.length > 1 && (
+                        <div className="px-4 py-2 space-y-1 border-t">
+                          {rate.per_package.map((pkg: any, pi: number) => (
+                            <div key={pi} className="flex justify-between text-sm text-gray-600">
+                              <span>{pkg.package_name} · {pkg.weight.toFixed(1)} lbs</span>
+                              <span>${pkg.cost.toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
     </div>
   )
