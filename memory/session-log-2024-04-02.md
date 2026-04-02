@@ -53,3 +53,61 @@ Next steps:
   - Real USPS Tracking v3 API for package tracking
   - Complete fallback to mock when credentials not configured
   - Mock labels generated as professional-looking PDFs with fake barcodes
+
+### [004] — Updated Carriers Index (COMPLETE)
+- **What:** Added label and tracking functions to src/lib/carriers/index.ts  
+- **Approach:** Added createShippingLabels and getTrackingInfo functions, updated carrier status check
+- **Result:** Successfully built and committed
+- **Key features:**
+  - createShippingLabels: generates labels for order packages using packing algorithm
+  - getTrackingInfo: retrieves package tracking information
+  - Updated carrier status to check USPS_CLIENT_ID/SECRET instead of old credentials
+
+### [005] — Created Shipping Label API Endpoints (COMPLETE)
+- **What:** Created 3 new API endpoints for label management
+- **Approach:** 
+  - POST /api/admin/orders/[id]/labels - Create labels for order packages
+  - GET /api/admin/orders/[id]/labels - Get label status
+  - GET /api/admin/orders/[id]/labels/[index] - Download individual PDF
+  - GET /api/admin/orders/[id]/tracking - Get tracking for all packages
+- **Result:** Successfully built and committed
+- **Key features:**
+  - Uses packing algorithm to determine optimal package configuration  
+  - Saves label data to shipping_labels table + order shipping_details JSONB
+  - Returns base64 PDFs for label download
+  - Prevents duplicate label creation
+  - Comprehensive error handling
+
+### [006] — Status Update
+**COMPLETED:**
+1. ✅ Update .env.local with new USPS OAuth2 environment variables
+2. ✅ Rewrite src/lib/carriers/usps.ts with new API client  
+3. ✅ Update src/lib/carriers/index.ts with label creation functions
+4. ✅ Create shipping label API endpoints
+
+**NEXT STEPS:**
+5. Create shipping_labels table (SQL provided)
+6. Add shipping labels UI to admin order detail page
+7. Update email.ts for tracking numbers
+8. Test end-to-end functionality
+
+**SQL FOR TIM TO RUN:**
+```sql
+CREATE TABLE IF NOT EXISTS shipping_labels (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id),
+  package_index INTEGER NOT NULL DEFAULT 0,
+  package_name TEXT,
+  tracking_number TEXT,
+  carrier TEXT NOT NULL DEFAULT 'usps',
+  service_name TEXT,
+  label_data TEXT,
+  label_format TEXT DEFAULT 'PDF',
+  cost DECIMAL(10,2),
+  status TEXT DEFAULT 'created',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE shipping_labels ENABLE ROW LEVEL SECURITY;
+```
