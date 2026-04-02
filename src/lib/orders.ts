@@ -242,6 +242,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
             subtotal: data.subtotal,
             shipping_cost: data.shipping_cost,
             shipping_method: data.shipping_method || 'Standard Shipping',
+            shipping_details: data.shipping_details,
             tax_amount: tax_amount,
             total_amount: final_total,
             shipping_address: data.shipping_address,

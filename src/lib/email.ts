@@ -86,6 +86,19 @@ export function generateOrderConfirmationEmail(orderData: {
   subtotal: number
   shipping_cost: number
   shipping_method?: string
+  shipping_details?: {
+    service_name?: string
+    estimated_delivery?: string
+    packages?: Array<{
+      package_type: string
+      utilization: number
+      weight: number
+      dimensions: string
+    }>
+    cost?: number
+    is_fallback?: boolean
+    description?: string
+  }
   tax_amount?: number
   total_amount: number
   shipping_address: {
@@ -108,6 +121,7 @@ export function generateOrderConfirmationEmail(orderData: {
     subtotal, 
     shipping_cost,
     shipping_method,
+    shipping_details,
     tax_amount,
     total_amount,
     shipping_address,
@@ -179,7 +193,10 @@ export function generateOrderConfirmationEmail(orderData: {
             <td style="text-align: right; padding: 8px 0;">$${subtotal.toFixed(2)}</td>
           </tr>
           <tr>
-            <td style="padding: 8px 0; color: #6b7280;">Shipping${shipping_method ? ` (${shipping_method})` : ''}:</td>
+            <td style="padding: 8px 0; color: #6b7280;">
+              Shipping${shipping_details?.service_name ? ` (${shipping_details.service_name})` : shipping_method ? ` (${shipping_method})` : ''}:
+              ${shipping_details?.packages && shipping_details.packages.length > 0 ? `<br><span style="font-size: 12px; color: #9ca3af;">Ships in ${shipping_details.packages.length} package${shipping_details.packages.length > 1 ? 's' : ''}</span>` : ''}
+            </td>
             <td style="text-align: right; padding: 8px 0;">${shipping_cost === 0 ? 'FREE' : `$${shipping_cost.toFixed(2)}`}</td>
           </tr>
           ${tax_amount && tax_amount > 0 ? `<tr>
@@ -204,6 +221,31 @@ export function generateOrderConfirmationEmail(orderData: {
           ${shipping_address.country}
         </div>
       </div>
+
+      ${shipping_details?.packages && shipping_details.packages.length > 0 ? `
+      <!-- Shipping Details -->
+      <div style="margin-bottom: 30px;">
+        <h3 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 18px;">Shipping Details</h3>
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 16px;">
+          <div style="color: #166534; font-weight: 600; margin-bottom: 8px;">
+            ${shipping_details.service_name || shipping_method || 'Standard Shipping'}
+          </div>
+          <div style="color: #15803d; font-size: 14px; margin-bottom: 12px;">
+            Estimated Delivery: ${shipping_details.estimated_delivery || estimated_delivery || '5-7 business days'}
+          </div>
+          <div style="color: #166534; font-size: 14px; margin-bottom: 8px;">
+            <strong>Package${shipping_details.packages.length > 1 ? 's' : ''} (${shipping_details.packages.length}):</strong>
+          </div>
+          ${shipping_details.packages.map((pkg, index) => `
+            <div style="background: white; border: 1px solid #d1fae5; border-radius: 4px; padding: 8px; margin-bottom: 6px; font-size: 13px; color: #166534;">
+              Package ${index + 1}: ${pkg.package_type} (${pkg.dimensions})<br>
+              <span style="color: #9ca3af;">Utilization: ${Math.round(pkg.utilization)}% • Weight: ${pkg.weight.toFixed(1)} lbs</span>
+            </div>
+          `).join('')}
+          ${shipping_details.is_fallback ? `<div style="color: #92400e; font-size: 12px; margin-top: 8px;"><em>Rate calculated using our standard shipping chart</em></div>` : ''}
+        </div>
+      </div>
+      ` : ''}
 
       <!-- What's Next -->
       <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 20px; margin-bottom: 30px;">
@@ -270,14 +312,21 @@ ${items.map(item => {
 
 ORDER SUMMARY:
 Subtotal: $${subtotal.toFixed(2)}
-Shipping: $${shipping_cost.toFixed(2)}
-Total: $${total_amount.toFixed(2)}
+Shipping: $${shipping_cost.toFixed(2)}${shipping_details?.service_name ? ` (${shipping_details.service_name})` : shipping_method ? ` (${shipping_method})` : ''}${shipping_details?.packages && shipping_details.packages.length > 0 ? `\n  Ships in ${shipping_details.packages.length} package${shipping_details.packages.length > 1 ? 's' : ''}` : ''}
+${tax_amount && tax_amount > 0 ? `Tax: $${tax_amount.toFixed(2)}\n` : ''}Total: $${total_amount.toFixed(2)}
 
 SHIPPING TO:
 ${shipping_address.first_name} ${shipping_address.last_name}
 ${shipping_address.address_line_1}
 ${shipping_address.address_line_2 ? shipping_address.address_line_2 + '\n' : ''}${shipping_address.city}, ${shipping_address.state} ${shipping_address.postal_code}
 ${shipping_address.country}
+
+${shipping_details?.packages && shipping_details.packages.length > 0 ? `SHIPPING DETAILS:
+Service: ${shipping_details.service_name || shipping_method || 'Standard Shipping'}
+Estimated Delivery: ${shipping_details.estimated_delivery || estimated_delivery || '5-7 business days'}
+Packages: ${shipping_details.packages.length} package${shipping_details.packages.length > 1 ? 's' : ''}
+${shipping_details.packages.map((pkg, index) => `  Package ${index + 1}: ${pkg.package_type} (${pkg.dimensions}) - ${pkg.weight.toFixed(1)} lbs`).join('\n')}
+${shipping_details.is_fallback ? 'Rate calculated using our standard shipping chart\n' : ''}` : ''}
 
 WHAT'S NEXT:
 • Order review and preparation
