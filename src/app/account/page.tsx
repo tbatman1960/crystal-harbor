@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '@/store/authStore'
 // Account data fetched via API routes (not direct Supabase) due to RLS
-import { PencilIcon, MapPinIcon, CheckIcon, XMarkIcon, EnvelopeIcon, ChatBubbleLeftIcon, ArrowPathIcon, XCircleIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, MapPinIcon, CheckIcon, XMarkIcon, EnvelopeIcon, ChatBubbleLeftIcon, ArrowPathIcon, XCircleIcon, ShoppingCartIcon } from '@heroicons/react/24/outline'
+import { useCartStore } from '@/store/cartStore'
 
 interface Order {
   id: string
@@ -324,6 +325,8 @@ ${user.firstName} ${user.lastName}`)
   }
 
   const [cancellingOrder, setCancellingOrder] = useState<string | null>(null)
+  const [reorderingOrder, setReorderingOrder] = useState<string | null>(null)
+  const { addItem } = useCartStore()
 
   const handleCancelOrder = async (order: Order) => {
     if (order.status === 'pending') {
@@ -381,6 +384,68 @@ ${user.firstName} ${user.lastName}`)
     }
   }
 
+  const handleReorder = async (order: Order) => {
+    setReorderingOrder(order.id)
+    try {
+      // Fetch order details with items
+      const res = await fetch(`/api/orders/${order.order_number}`)
+      if (!res.ok) {
+        alert('Could not load order details. Please try again.')
+        return
+      }
+      const data = await res.json()
+      const orderItems = data.order_items || []
+
+      if (orderItems.length === 0) {
+        alert('No items found in this order.')
+        return
+      }
+
+      // Fetch product details for each item
+      const productsRes = await fetch('/api/products')
+      const productsData = await productsRes.json()
+      const products = productsData.products || []
+
+      let addedCount = 0
+      for (const item of orderItems) {
+        // Find the matching product by name (product_id may not be in the order items response)
+        const product = products.find((p: any) => p.name === item.product_name)
+        if (product) {
+          addItem({
+            id: `reorder-${product.id}-${item.selected_size || ''}-${item.selected_color || ''}-${Date.now()}`,
+            product_id: product.id,
+            product_name: product.name,
+            product_slug: product.slug,
+            category_slug: product.category?.slug || '',
+            selected_size: item.selected_size || '',
+            selected_color: item.selected_color || '',
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            line_total: item.unit_price * item.quantity,
+            tier_applied: item.tier_applied || '',
+            uploaded_file: null,
+            custom_text: item.custom_text || null,
+            selected_design: null,
+            image_url: product.image_url || null,
+          })
+          addedCount++
+        }
+      }
+
+      if (addedCount > 0) {
+        router.push('/cart')
+      } else {
+        alert('Some products may no longer be available. Please browse our products to reorder.')
+        router.push('/products')
+      }
+    } catch (error) {
+      console.error('Error reordering:', error)
+      alert('An error occurred. Please try again.')
+    } finally {
+      setReorderingOrder(null)
+    }
+  }
+
   if (!isAuthenticated || !user) {
     return (
       <div className="section-padding bg-background-50 min-h-screen flex items-center justify-center">
@@ -397,13 +462,19 @@ ${user.firstName} ${user.lastName}`)
   return (
     <div className="section-padding bg-background-50 min-h-screen">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-8">
-          <h1 className="font-display font-bold text-3xl text-primary-600 mb-2">
-            My Account
-          </h1>
-          <p className="text-secondary-600">
-            Welcome back, {user.firstName} {user.lastName}
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="font-display font-bold text-3xl text-primary-600 mb-2">
+              My Account
+            </h1>
+            <p className="text-secondary-600">
+              Welcome back, {user.firstName} {user.lastName}
+            </p>
+          </div>
+          <Link href="/products" className="btn-primary flex items-center">
+            <ShoppingCartIcon className="w-5 h-5 mr-2" />
+            Start Shopping
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -775,6 +846,15 @@ ${user.firstName} ${user.lastName}`)
                           View Details →
                         </Link>
                         <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => handleReorder(order)}
+                            disabled={reorderingOrder === order.id}
+                            className="inline-flex items-center px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 hover:text-blue-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
+                            title="Add these items to cart"
+                          >
+                            <ShoppingCartIcon className="w-3 h-3 mr-1" />
+                            {reorderingOrder === order.id ? 'Adding...' : 'Reorder'}
+                          </button>
                           {order.status === 'cancelled' ? (
                             <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
                               ✓ Refund processed — no further refunds or returns available
