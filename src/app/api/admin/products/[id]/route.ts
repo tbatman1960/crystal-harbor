@@ -43,17 +43,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('product_id', id)
       .order('min_quantity')
 
-    // Separate sizes and colors
-    const sizes = options?.filter(opt => opt.option_type === 'size') || []
-    const colors = options?.filter(opt => opt.option_type === 'color') || []
+    // Separate options by type
+    const allOptions = options || []
+    const sizes = allOptions.filter(opt => opt.option_type === 'size')
+    const colors = allOptions.filter(opt => opt.option_type === 'color')
+    
+    // Group custom options (non-size/color) by type
+    const custom_options: Record<string, Array<{ id: string; value: string; price_adjustment: number }>> = {}
+    allOptions
+      .filter(opt => opt.option_type !== 'size' && opt.option_type !== 'color')
+      .forEach(opt => {
+        if (!custom_options[opt.option_type]) {
+          custom_options[opt.option_type] = []
+        }
+        custom_options[opt.option_type].push({
+          id: opt.id,
+          value: opt.option_value,
+          price_adjustment: opt.price_adjustment || 0
+        })
+      })
 
     console.log('Product fetched successfully:', product?.name)
 
     return NextResponse.json({
       product: {
         ...product,
-        sizes: sizes.map(s => ({ id: s.id, value: s.option_value })),
-        colors: colors.map(c => ({ id: c.id, value: c.option_value })),
+        sizes: sizes.map(s => ({ id: s.id, value: s.option_value, price_adjustment: s.price_adjustment || 0 })),
+        colors: colors.map(c => ({ id: c.id, value: c.option_value, price_adjustment: c.price_adjustment || 0 })),
+        custom_options,
         pricing_tiers: pricingTiers || []
       }
     })
@@ -83,6 +100,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       regenerate_pricing_tiers = false,
       sizes = [],
       colors = [],
+      custom_options = {},
       size_class,
       shipping_method,
     } = body
@@ -167,6 +185,42 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       if (colorsError) {
         console.error('Error updating colors:', colorsError)
+      }
+    }
+
+    // Add custom options (keyed by option_type)
+    // custom_options format: { "Finish": [{ value: "Matte", price_adjustment: 0 }, ...], ... }
+    if (custom_options && typeof custom_options === 'object') {
+      const customRows: Array<{
+        id: string
+        product_id: string
+        option_type: string
+        option_value: string
+        price_adjustment: number
+      }> = []
+
+      for (const [optionType, values] of Object.entries(custom_options)) {
+        if (Array.isArray(values)) {
+          values.forEach((item: any, index: number) => {
+            customRows.push({
+              id: uuidv4(),
+              product_id: id,
+              option_type: optionType,
+              option_value: typeof item === 'string' ? item : item.value,
+              price_adjustment: typeof item === 'object' ? (item.price_adjustment || 0) : 0
+            })
+          })
+        }
+      }
+
+      if (customRows.length > 0) {
+        const { error: customError } = await supabase
+          .from('product_options')
+          .insert(customRows)
+
+        if (customError) {
+          console.error('Error adding custom options:', customError)
+        }
       }
     }
 

@@ -4,6 +4,16 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PhotoIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
+interface OptionValue {
+  value: string
+  price_adjustment: number
+}
+
+interface CustomOptionGroup {
+  type: string
+  values: OptionValue[]
+}
+
 interface EditProductPageProps {
   params: {
     id: string
@@ -37,6 +47,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [colors, setColors] = useState<string[]>([])
   const [newSize, setNewSize] = useState('')
   const [newColor, setNewColor] = useState('')
+  const [customOptionGroups, setCustomOptionGroups] = useState<CustomOptionGroup[]>([])
+  const [newOptionType, setNewOptionType] = useState('')
+  const [newOptionValues, setNewOptionValues] = useState<Record<string, string>>({})
+  const [newOptionPrices, setNewOptionPrices] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<string[]>([])
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [pricingTiers, setPricingTiers] = useState<any[]>([])
@@ -101,6 +115,20 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       setColors(product.colors?.map((c: any) => c.value) || [])
       setPricingTiers(product.pricing_tiers || [])
 
+      // Load custom options
+      if (product.custom_options && typeof product.custom_options === 'object') {
+        const groups: CustomOptionGroup[] = Object.entries(product.custom_options).map(
+          ([type, values]: [string, any]) => ({
+            type,
+            values: (values as any[]).map((v: any) => ({
+              value: v.value,
+              price_adjustment: v.price_adjustment || 0
+            }))
+          })
+        )
+        setCustomOptionGroups(groups)
+      }
+
       if (product.image_url) {
         setPhotos([product.image_url])
       }
@@ -134,6 +162,53 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
   const removeColor = (color: string) => {
     setColors(colors.filter(c => c !== color))
+  }
+
+  const addOptionType = () => {
+    const trimmed = newOptionType.trim()
+    if (!trimmed) return
+    const reserved = ['size', 'color']
+    if (reserved.includes(trimmed.toLowerCase())) {
+      setError('Size and Color are built-in options. Use the fields above.')
+      return
+    }
+    if (customOptionGroups.some(g => g.type.toLowerCase() === trimmed.toLowerCase())) {
+      setError(`Option type "${trimmed}" already exists.`)
+      return
+    }
+    setCustomOptionGroups([...customOptionGroups, { type: trimmed, values: [] }])
+    setNewOptionType('')
+    setError('')
+  }
+
+  const removeOptionType = (type: string) => {
+    setCustomOptionGroups(customOptionGroups.filter(g => g.type !== type))
+    const updatedValues = { ...newOptionValues }
+    const updatedPrices = { ...newOptionPrices }
+    delete updatedValues[type]
+    delete updatedPrices[type]
+    setNewOptionValues(updatedValues)
+    setNewOptionPrices(updatedPrices)
+  }
+
+  const addOptionValue = (type: string) => {
+    const val = (newOptionValues[type] || '').trim()
+    if (!val) return
+    const price = parseFloat(newOptionPrices[type] || '0') || 0
+    setCustomOptionGroups(customOptionGroups.map(g => {
+      if (g.type !== type) return g
+      if (g.values.some(v => v.value.toLowerCase() === val.toLowerCase())) return g
+      return { ...g, values: [...g.values, { value: val, price_adjustment: price }] }
+    }))
+    setNewOptionValues({ ...newOptionValues, [type]: '' })
+    setNewOptionPrices({ ...newOptionPrices, [type]: '' })
+  }
+
+  const removeOptionValue = (type: string, value: string) => {
+    setCustomOptionGroups(customOptionGroups.map(g => {
+      if (g.type !== type) return g
+      return { ...g, values: g.values.filter(v => v.value !== value) }
+    }))
   }
 
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,6 +281,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           height_inches: formData.height_inches || null,
           sizes,
           colors,
+          custom_options: customOptionGroups.reduce((acc, g) => {
+            if (g.values.length > 0) acc[g.type] = g.values
+            return acc
+          }, {} as Record<string, OptionValue[]>),
           size_class: formData.size_class,
           shipping_method: formData.shipping_method,
         })
@@ -640,6 +719,100 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 placeholder="Add a color (e.g., Red, Blue, Black)"
               />
               <button type="button" onClick={addColor} className="btn-secondary">Add</button>
+            </div>
+          </div>
+
+          {/* Custom Options */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Custom Options</h3>
+            <p className="text-xs text-gray-500 mb-4">Add custom option types beyond Size and Color. Each value can have an optional price adjustment.</p>
+
+            {customOptionGroups.map((group) => (
+              <div key={group.type} className="mb-4 bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-800">{group.type}</h4>
+                  <button
+                    type="button"
+                    onClick={() => removeOptionType(group.type)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    Remove Option
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {group.values.map((v) => (
+                    <span
+                      key={v.value}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800"
+                    >
+                      {v.value}
+                      {v.price_adjustment !== 0 && (
+                        <span className="ml-1 text-purple-600">
+                          ({v.price_adjustment > 0 ? '+' : ''}${v.price_adjustment.toFixed(2)})
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeOptionValue(group.type, v.value)}
+                        className="ml-2 text-purple-600 hover:text-purple-800"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={newOptionValues[group.type] || ''}
+                    onChange={(e) => setNewOptionValues({ ...newOptionValues, [group.type]: e.target.value })}
+                    className="input-field flex-1"
+                    placeholder={`Add a ${group.type} value`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); addOptionValue(group.type) }
+                    }}
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newOptionPrices[group.type] || ''}
+                    onChange={(e) => setNewOptionPrices({ ...newOptionPrices, [group.type]: e.target.value })}
+                    className="input-field w-28"
+                    placeholder="$ +/-"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => addOptionValue(group.type)}
+                    className="btn-secondary px-3 py-2"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Price adjustment: positive to add, negative to subtract, blank for $0</p>
+              </div>
+            ))}
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={newOptionType}
+                onChange={(e) => setNewOptionType(e.target.value)}
+                className="input-field flex-1"
+                placeholder="New option type name (e.g., Finish, Font, Rush)"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
+                }}
+              />
+              <button
+                type="button"
+                onClick={addOptionType}
+                className="btn-secondary px-4 py-2"
+                disabled={!newOptionType.trim()}
+              >
+                Add Option Type
+              </button>
             </div>
           </div>
 

@@ -7,6 +7,16 @@ import { useForm } from 'react-hook-form'
 import { ArrowLeftIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useAdminStore } from '@/store/adminStore'
 
+interface OptionValue {
+  value: string
+  price_adjustment: number
+}
+
+interface CustomOptionGroup {
+  type: string
+  values: OptionValue[]
+}
+
 interface ProductFormData {
   name: string
   description: string
@@ -44,6 +54,10 @@ export default function AddProductPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [newSize, setNewSize] = useState('')
   const [newColor, setNewColor] = useState('')
+  const [customOptionGroups, setCustomOptionGroups] = useState<CustomOptionGroup[]>([])
+  const [newOptionType, setNewOptionType] = useState('')
+  const [newOptionValues, setNewOptionValues] = useState<Record<string, string>>({})
+  const [newOptionPrices, setNewOptionPrices] = useState<Record<string, string>>({})
   
   const router = useRouter()
 
@@ -126,15 +140,70 @@ export default function AddProductPage() {
     setValue('colors', watchedColors.filter(color => color !== colorToRemove))
   }
 
+  const addOptionType = () => {
+    const trimmed = newOptionType.trim()
+    if (!trimmed) return
+    // Prevent duplicates and reserved types
+    const reserved = ['size', 'color']
+    if (reserved.includes(trimmed.toLowerCase())) {
+      setMessage({ type: 'error', text: 'Size and Color are built-in options. Use the fields above.' })
+      return
+    }
+    if (customOptionGroups.some(g => g.type.toLowerCase() === trimmed.toLowerCase())) {
+      setMessage({ type: 'error', text: `Option type "${trimmed}" already exists.` })
+      return
+    }
+    setCustomOptionGroups([...customOptionGroups, { type: trimmed, values: [] }])
+    setNewOptionType('')
+  }
+
+  const removeOptionType = (type: string) => {
+    setCustomOptionGroups(customOptionGroups.filter(g => g.type !== type))
+    const updatedValues = { ...newOptionValues }
+    const updatedPrices = { ...newOptionPrices }
+    delete updatedValues[type]
+    delete updatedPrices[type]
+    setNewOptionValues(updatedValues)
+    setNewOptionPrices(updatedPrices)
+  }
+
+  const addOptionValue = (type: string) => {
+    const val = (newOptionValues[type] || '').trim()
+    if (!val) return
+    const price = parseFloat(newOptionPrices[type] || '0') || 0
+    setCustomOptionGroups(customOptionGroups.map(g => {
+      if (g.type !== type) return g
+      if (g.values.some(v => v.value.toLowerCase() === val.toLowerCase())) return g
+      return { ...g, values: [...g.values, { value: val, price_adjustment: price }] }
+    }))
+    setNewOptionValues({ ...newOptionValues, [type]: '' })
+    setNewOptionPrices({ ...newOptionPrices, [type]: '' })
+  }
+
+  const removeOptionValue = (type: string, value: string) => {
+    setCustomOptionGroups(customOptionGroups.map(g => {
+      if (g.type !== type) return g
+      return { ...g, values: g.values.filter(v => v.value !== value) }
+    }))
+  }
+
   const onSubmit = async (data: ProductFormData) => {
     setSaving(true)
     setMessage(null)
     
     try {
+      // Build custom_options payload
+      const custom_options: Record<string, OptionValue[]> = {}
+      customOptionGroups.forEach(group => {
+        if (group.values.length > 0) {
+          custom_options[group.type] = group.values
+        }
+      })
+
       const response = await fetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({ ...data, custom_options })
       })
 
       const result = await response.json()
@@ -443,6 +512,104 @@ export default function AddProductPage() {
                     </button>
                   </span>
                 ))}
+              </div>
+            </div>
+
+            {/* Custom Options */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-1">Custom Options</h3>
+              <p className="text-xs text-gray-500 mb-4">Add custom option types beyond Size and Color (e.g., Finish, Font, Rush Processing). Each value can have an optional price adjustment.</p>
+
+              {/* Existing custom option groups */}
+              {customOptionGroups.map((group) => (
+                <div key={group.type} className="mb-4 bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-800">{group.type}</h4>
+                    <button
+                      type="button"
+                      onClick={() => removeOptionType(group.type)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      Remove Option
+                    </button>
+                  </div>
+
+                  {/* Existing values */}
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {group.values.map((v) => (
+                      <span
+                        key={v.value}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800"
+                      >
+                        {v.value}
+                        {v.price_adjustment !== 0 && (
+                          <span className="ml-1 text-purple-600">
+                            ({v.price_adjustment > 0 ? '+' : ''}${v.price_adjustment.toFixed(2)})
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeOptionValue(group.type, v.value)}
+                          className="ml-2 text-purple-600 hover:text-purple-800"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Add value input */}
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={newOptionValues[group.type] || ''}
+                      onChange={(e) => setNewOptionValues({ ...newOptionValues, [group.type]: e.target.value })}
+                      className="input-field flex-1"
+                      placeholder={`Add a ${group.type} value`}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); addOptionValue(group.type) }
+                      }}
+                    />
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newOptionPrices[group.type] || ''}
+                      onChange={(e) => setNewOptionPrices({ ...newOptionPrices, [group.type]: e.target.value })}
+                      className="input-field w-28"
+                      placeholder="$ +/-"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => addOptionValue(group.type)}
+                      className="btn-primary px-3 py-2"
+                    >
+                      <PlusIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Price adjustment: enter a positive number to add to the price, negative to subtract, or leave blank for $0</p>
+                </div>
+              ))}
+
+              {/* Add new option type */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newOptionType}
+                  onChange={(e) => setNewOptionType(e.target.value)}
+                  className="input-field flex-1"
+                  placeholder="New option type name (e.g., Finish, Font, Rush)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={addOptionType}
+                  className="btn-secondary px-4 py-2"
+                  disabled={!newOptionType.trim()}
+                >
+                  Add Option Type
+                </button>
               </div>
             </div>
 

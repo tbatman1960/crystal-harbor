@@ -50,6 +50,7 @@ const getColorHex = (colorName: string): string => {
 export default function ProductDetailClient({ product, category }: ProductDetailClientProps) {
   const [selectedSize, setSelectedSize] = useState('')
   const [selectedColor, setSelectedColor] = useState('')
+  const [selectedCustomOptions, setSelectedCustomOptions] = useState<Record<string, string>>({})
   const [quantity, setQuantity] = useState(1)
   const [priceData, setPriceData] = useState({
     pricePerUnit: 0,
@@ -84,6 +85,14 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   // Get available designs and product settings
   const availableDesigns = getDesignsByProduct(product.slug)
   const productSettings = getProductSettings(product.slug)
+
+  // Calculate total price adjustment from selected custom options
+  const customOptions = product.custom_options || {}
+  const optionPriceAdjustment = Object.entries(selectedCustomOptions).reduce((total, [type, value]) => {
+    const options = customOptions[type] || []
+    const selected = options.find(o => o.option_value === value)
+    return total + (selected?.price_adjustment || 0)
+  }, 0)
   
   // Mock product gallery images - in production these would come from the database
   const productGalleryImages = [
@@ -129,6 +138,14 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       return
     }
 
+    // Validate custom options — each type requires a selection
+    for (const [type, options] of Object.entries(customOptions)) {
+      if (options.length > 0 && !selectedCustomOptions[type]) {
+        setError(`Please select a ${type}`)
+        return
+      }
+    }
+
     // Check if design is required (only if product requires it AND no options are provided)
     if (productSettings.requiresDesign && !uploadedFile && !customText.trim() && !selectedDesign) {
       setError('Please upload an image, add custom text, or select a design')
@@ -137,6 +154,10 @@ export default function ProductDetailClient({ product, category }: ProductDetail
 
     // Get selected design info
     const selectedDesignInfo = selectedDesign ? availableDesigns.find(d => d.id === selectedDesign) : null
+
+    // Calculate adjusted unit price (base tier price + option adjustments)
+    const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
+    const adjustedTotal = adjustedUnitPrice * quantity
 
     // Create cart item
     const cartItem = {
@@ -147,9 +168,11 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       category_slug: category.slug,
       selected_size: selectedSize,
       selected_color: selectedColor,
+      selected_custom_options: Object.keys(selectedCustomOptions).length > 0 ? selectedCustomOptions : null,
+      option_price_adjustment: optionPriceAdjustment,
       quantity,
-      unit_price: priceData.pricePerUnit,
-      line_total: priceData.totalPrice,
+      unit_price: adjustedUnitPrice,
+      line_total: adjustedTotal,
       tier_applied: priceData.tierName,
       uploaded_file: uploadedFile,
       custom_text: customText.trim() || null,
@@ -321,6 +344,38 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               </div>
             )}
 
+            {/* Custom Options (dynamic) */}
+            {Object.entries(customOptions).map(([type, options]) => (
+              options.length > 0 && (
+                <div key={type}>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-2">
+                    {type} *
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {options.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setSelectedCustomOptions(prev => ({ ...prev, [type]: option.option_value }))}
+                        className={`p-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${
+                          selectedCustomOptions[type] === option.option_value
+                            ? 'border-accent-coral-500 bg-accent-coral-50 text-accent-coral-700'
+                            : 'border-gray-300 hover:border-gray-400 text-gray-800 hover:text-gray-900'
+                        }`}
+                      >
+                        <span>{option.option_value}</span>
+                        {option.price_adjustment !== 0 && (
+                          <span className="block text-xs mt-1 text-secondary-500">
+                            {option.price_adjustment > 0 ? '+' : ''}${option.price_adjustment.toFixed(2)}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            ))}
+
             {/* Customization Options */}
             <div className="space-y-6">
               <div>
@@ -475,7 +530,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               onClick={handleAddToCart}
               className="btn-primary w-full text-lg py-4"
             >
-              Add to Cart - ${priceData.totalPrice.toFixed(2)}
+              Add to Cart - ${(priceData.totalPrice + optionPriceAdjustment * quantity).toFixed(2)}
             </button>
 
             {/* Go to Cart Link */}

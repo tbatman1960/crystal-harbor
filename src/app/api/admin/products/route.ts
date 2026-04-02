@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       enable_volume_pricing = false,
       sizes = [],
       colors = [],
+      custom_options = {},
       size_class = 'small',
       shipping_method = 'flat_rate',
     } = body
@@ -156,6 +157,41 @@ export async function POST(request: NextRequest) {
 
       if (colorsError) {
         console.error('Error adding colors:', colorsError)
+      }
+    }
+
+    // Add custom options (keyed by option_type)
+    if (custom_options && typeof custom_options === 'object') {
+      const customRows: Array<{
+        id: string
+        product_id: string
+        option_type: string
+        option_value: string
+        price_adjustment: number
+      }> = []
+
+      for (const [optionType, values] of Object.entries(custom_options)) {
+        if (Array.isArray(values)) {
+          values.forEach((item: any) => {
+            customRows.push({
+              id: uuidv4(),
+              product_id: product.id,
+              option_type: optionType,
+              option_value: typeof item === 'string' ? item : item.value,
+              price_adjustment: typeof item === 'object' ? (item.price_adjustment || 0) : 0
+            })
+          })
+        }
+      }
+
+      if (customRows.length > 0) {
+        const { error: customError } = await supabase
+          .from('product_options')
+          .insert(customRows)
+
+        if (customError) {
+          console.error('Error adding custom options:', customError)
+        }
       }
     }
 
