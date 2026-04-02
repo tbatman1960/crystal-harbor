@@ -21,7 +21,8 @@ interface ProductFormData {
   height_inches: string
   sizes: string[]
   colors: string[]
-  shipping_methods: string[]
+  size_class: string
+  shipping_method: string
 }
 
 interface Category {
@@ -29,18 +30,15 @@ interface Category {
   name: string
 }
 
-interface ShippingMethod {
-  id: string
+interface SizeClassOption {
   name: string
-  description: string | null
-  method_type: string
-  active: boolean
+  label: string
 }
 
 export default function AddProductPage() {
   const { isAuthenticated } = useAdminStore()
   const [categories, setCategories] = useState<Category[]>([])
-  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([])
+  const [sizeClasses, setSizeClasses] = useState<SizeClassOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -71,13 +69,15 @@ export default function AddProductPage() {
       height_inches: '',
       sizes: [],
       colors: [],
-      shipping_methods: []
+      size_class: 'small',
+      shipping_method: 'flat_rate',
     }
   })
 
   const watchedSizes = watch('sizes')
   const watchedColors = watch('colors')
-  const watchedShippingMethods = watch('shipping_methods')
+  const watchedSizeClass = watch('size_class')
+  const watchedShippingMethod = watch('shipping_method')
   const watchedVolumePricing = watch('enable_volume_pricing')
   const watchedBasePrice = watch('base_price')
 
@@ -89,16 +89,16 @@ export default function AddProductPage() {
 
   const loadData = async () => {
     try {
-      const [categoriesRes, shippingData] = await Promise.all([
+      const [categoriesRes, sizeClassData] = await Promise.all([
         fetch('/api/admin/categories').then(res => res.json()),
-        fetch('/api/admin/shipping-methods').then(res => res.json())
+        fetch('/api/admin/shipping/size-classes').then(res => res.json())
       ])
       
       setCategories(categoriesRes.categories || [])
-      setShippingMethods(shippingData.shipping_methods || [])
+      setSizeClasses(sizeClassData.size_classes || [])
     } catch (error) {
       console.error('Error loading data:', error)
-      setMessage({ type: 'error', text: 'Failed to load categories and shipping methods' })
+      setMessage({ type: 'error', text: 'Failed to load categories and size classes' })
     } finally {
       setLoading(false)
     }
@@ -124,15 +124,6 @@ export default function AddProductPage() {
 
   const removeColor = (colorToRemove: string) => {
     setValue('colors', watchedColors.filter(color => color !== colorToRemove))
-  }
-
-  const toggleShippingMethod = (methodId: string) => {
-    const current = watchedShippingMethods
-    if (current.includes(methodId)) {
-      setValue('shipping_methods', current.filter(id => id !== methodId))
-    } else {
-      setValue('shipping_methods', [...current, methodId])
-    }
   }
 
   const onSubmit = async (data: ProductFormData) => {
@@ -455,52 +446,46 @@ export default function AddProductPage() {
               </div>
             </div>
 
-            {/* Shipping Methods */}
-            <div>
-              <label className="form-label">Available Shipping Methods</label>
-              <p className="text-sm text-gray-500 mb-3">
-                Select which shipping methods are available for this product
-              </p>
-              
-              <div className="space-y-3">
-                {shippingMethods
-                  .filter(method => method.active)
-                  .map(method => (
-                  <label
-                    key={method.id}
-                    className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+            {/* Shipping */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <h3 className="font-medium text-gray-900 mb-3">Shipping</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-group">
+                  <label className="form-label">Size Class</label>
+                  <select
+                    className="input-field"
+                    value={watchedSizeClass}
+                    onChange={(e) => setValue('size_class', e.target.value)}
                   >
-                    <input
-                      type="checkbox"
-                      checked={watchedShippingMethods.includes(method.id)}
-                      onChange={() => toggleShippingMethod(method.id)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="text-sm font-medium text-gray-900">
-                        {method.name}
-                      </div>
-                      {method.description && (
-                        <div className="text-sm text-gray-500">
-                          {method.description}
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-400 capitalize">
-                      {method.method_type.replace('_', ' ')}
-                    </span>
-                  </label>
-                ))}
+                    {sizeClasses.length > 0 ? (
+                      sizeClasses.map(sc => (
+                        <option key={sc.name} value={sc.name}>{sc.label}</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                      </>
+                    )}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Determines which flat rate shipping tiers apply</p>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Shipping Method</label>
+                  <select
+                    className="input-field"
+                    value={watchedShippingMethod}
+                    onChange={(e) => setValue('shipping_method', e.target.value)}
+                  >
+                    <option value="flat_rate">Flat Rate</option>
+                    <option value="usps">USPS</option>
+                    <option value="fedex" disabled>FedEx (coming soon)</option>
+                    <option value="ups" disabled>UPS (coming soon)</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">How shipping cost is calculated for this product</p>
+                </div>
               </div>
-              
-              {shippingMethods.filter(m => m.active).length === 0 && (
-                <p className="text-sm text-gray-500 italic">
-                  No active shipping methods available. 
-                  <Link href="/admin/shipping" className="text-blue-600 hover:underline ml-1">
-                    Create shipping methods
-                  </Link>
-                </p>
-              )}
             </div>
           </div>
 

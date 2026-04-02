@@ -28,7 +28,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     length_inches: '',
     width_inches: '',
     height_inches: '',
+    size_class: 'small',
+    shipping_method: 'flat_rate',
   })
+  const [sizeClasses, setSizeClasses] = useState<Array<{ name: string; label: string }>>([])
+
   const [sizes, setSizes] = useState<string[]>([])
   const [colors, setColors] = useState<string[]>([])
   const [newSize, setNewSize] = useState('')
@@ -41,7 +45,18 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   useEffect(() => {
     loadCategories()
     loadProduct()
+    loadSizeClasses()
   }, [])
+
+  const loadSizeClasses = async () => {
+    try {
+      const res = await fetch('/api/admin/shipping/size-classes')
+      const data = await res.json()
+      if (data.size_classes) setSizeClasses(data.size_classes)
+    } catch (error) {
+      console.error('Error loading size classes:', error)
+    }
+  }
 
   const loadCategories = async () => {
     try {
@@ -78,6 +93,8 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         length_inches: product.length_inches?.toString() || '',
         width_inches: product.width_inches?.toString() || '',
         height_inches: product.height_inches?.toString() || '',
+        size_class: product.size_class || 'small',
+        shipping_method: product.shipping_method || 'flat_rate',
       })
 
       setSizes(product.sizes?.map((s: any) => s.value) || [])
@@ -188,7 +205,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           width_inches: formData.width_inches || null,
           height_inches: formData.height_inches || null,
           sizes,
-          colors
+          colors,
+          size_class: formData.size_class,
+          shipping_method: formData.shipping_method,
         })
       })
 
@@ -526,6 +545,48 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                   onChange={(e) => setFormData({ ...formData, height_inches: e.target.value })}
                   placeholder="1"
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Shipping */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-3">Shipping</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="form-group">
+                <label className="form-label">Size Class</label>
+                <select
+                  className="input-field"
+                  value={formData.size_class}
+                  onChange={(e) => setFormData({ ...formData, size_class: e.target.value })}
+                >
+                  {sizeClasses.length > 0 ? (
+                    sizeClasses.map(sc => (
+                      <option key={sc.name} value={sc.name}>{sc.label}</option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="small">Small</option>
+                      <option value="medium">Medium</option>
+                      <option value="large">Large</option>
+                    </>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Determines which flat rate shipping tiers apply</p>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Shipping Method</label>
+                <select
+                  className="input-field"
+                  value={formData.shipping_method}
+                  onChange={(e) => setFormData({ ...formData, shipping_method: e.target.value })}
+                >
+                  <option value="flat_rate">Flat Rate</option>
+                  <option value="usps">USPS</option>
+                  <option value="fedex" disabled>FedEx (coming soon)</option>
+                  <option value="ups" disabled>UPS (coming soon)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">How shipping cost is calculated for this product</p>
               </div>
             </div>
           </div>
