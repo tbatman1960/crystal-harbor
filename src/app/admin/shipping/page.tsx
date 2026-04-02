@@ -1,44 +1,77 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { TruckIcon, PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline'
+import { TruckIcon, PlusIcon, TrashIcon, PencilIcon, CheckIcon, XMarkIcon, Cog6ToothIcon, CalculatorIcon } from '@heroicons/react/24/outline'
 import { useAdminStore } from '@/store/adminStore'
 
-interface SizeClass {
+interface PackageType {
   id: string
   name: string
-  label: string
-  description: string | null
-  display_order: number
+  capacity_units: number
+  max_weight_lbs: number
+  length_inches: number
+  width_inches: number
+  height_inches: number
+  empty_weight_lbs: number
+  fallback_rate: number
+  active: boolean
+  sort_order: number
 }
 
-interface RateTier {
+interface Product {
   id: string
-  size_class_name: string
-  min_quantity: number
-  max_quantity: number | null
-  rate: number
-  display_order: number
+  name: string
+  packing_units: number
+  packed_weight_lbs: number
+}
+
+interface CarrierStatus {
+  usps: { available: boolean; configured: boolean }
+  fedex: { available: boolean; configured: boolean }
+  ups: { available: boolean; configured: boolean }
+}
+
+interface SiteSettings {
+  shipping_origin_zip: string
+  shipping_fallback_min_per_package: string
+  shipping_fallback_markup_pct: string
+}
+
+interface TestItem {
+  product_name: string
+  quantity: number
+  packing_units: number
+  packed_weight_lbs: number
 }
 
 export default function AdminShippingPage() {
   const { isAuthenticated } = useAdminStore()
-  const [sizeClasses, setSizeClasses] = useState<SizeClass[]>([])
-  const [rateTiers, setRateTiers] = useState<RateTier[]>([])
+  const [activeTab, setActiveTab] = useState<'packages' | 'settings' | 'products' | 'test'>('packages')
+  
+  // Package management
+  const [packages, setPackages] = useState<PackageType[]>([])
+  const [editingPackage, setEditingPackage] = useState<PackageType | null>(null)
+  const [showAddPackage, setShowAddPackage] = useState(false)
+  
+  // Settings
+  const [settings, setSettings] = useState<SiteSettings>({
+    shipping_origin_zip: '46143',
+    shipping_fallback_min_per_package: '4.99',
+    shipping_fallback_markup_pct: '0'
+  })
+  const [carrierStatus, setCarrierStatus] = useState<CarrierStatus | null>(null)
+  
+  // Products quick editor
+  const [products, setProducts] = useState<Product[]>([])
+  const [editingProduct, setEditingProduct] = useState<string | null>(null)
+  
+  // Test calculator
+  const [testItems, setTestItems] = useState<TestItem[]>([])
+  const [testDestZip, setTestDestZip] = useState('90210')
+  const [testResult, setTestResult] = useState<any>(null)
+  
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [shipFromZip, setShipFromZip] = useState('46143')
-  const [savingZip, setSavingZip] = useState(false)
-
-  // Editing state for rate tiers
-  const [editingTiers, setEditingTiers] = useState<{ [sizeClass: string]: RateTier[] }>({})
-  const [isEditing, setIsEditing] = useState<string | null>(null) // which size class is being edited
-
-  // New size class form
-  const [showAddSizeClass, setShowAddSizeClass] = useState(false)
-  const [newSizeClass, setNewSizeClass] = useState({ name: '', label: '', description: '' })
-  const [savingSizeClass, setSavingSizeClass] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -48,25 +81,13 @@ export default function AdminShippingPage() {
 
   const loadData = async () => {
     try {
-      const [scRes, rtRes, zipRes] = await Promise.all([
-        fetch('/api/admin/shipping/size-classes'),
-        fetch('/api/admin/shipping/rate-tiers'),
-        fetch('/api/admin/site-settings?key=ship_from_zip')
+      setLoading(true)
+      await Promise.all([
+        loadPackages(),
+        loadSettings(),
+        loadCarrierStatus(),
+        loadProducts()
       ])
-
-      const scData = await scRes.json()
-      const rtData = await rtRes.json()
-      const zipData = await zipRes.json()
-
-      setSizeClasses(scData.size_classes || [])
-      setRateTiers(rtData.rate_tiers || [])
-
-      if (zipData.settings) {
-        const zipSetting = Array.isArray(zipData.settings)
-          ? zipData.settings.find((s: any) => s.key === 'ship_from_zip')
-          : zipData.settings
-        if (zipSetting?.value) setShipFromZip(zipSetting.value)
-      }
     } catch (error) {
       console.error('Error loading shipping data:', error)
       setMessage({ type: 'error', text: 'Failed to load shipping data' })
@@ -75,188 +96,168 @@ export default function AdminShippingPage() {
     }
   }
 
-  const saveShipFromZip = async () => {
-    setSavingZip(true)
-    try {
-      const res = await fetch('/api/admin/site-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: 'ship_from_zip', value: shipFromZip })
-      })
-      if (res.ok) {
-        setMessage({ type: 'success', text: 'Ship-from ZIP code saved' })
-      } else {
-        setMessage({ type: 'error', text: 'Failed to save ZIP code' })
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save ZIP code' })
-    } finally {
-      setSavingZip(false)
+  const loadPackages = async () => {
+    const response = await fetch('/api/admin/shipping/packages')
+    const data = await response.json()
+    if (data.packages) {
+      setPackages(data.packages.sort((a: PackageType, b: PackageType) => a.sort_order - b.sort_order))
     }
   }
 
-  // --- Size Class Management ---
+  const loadSettings = async () => {
+    const response = await fetch('/api/admin/site-settings')
+    const data = await response.json()
+    if (data.settings) {
+      const settingsMap = new Map(data.settings.map((s: any) => [s.key, s.value]))
+      setSettings({
+        shipping_origin_zip: (settingsMap.get('shipping_origin_zip') || settingsMap.get('ship_from_zip') || '46143') as string,
+        shipping_fallback_min_per_package: (settingsMap.get('shipping_fallback_min_per_package') || '4.99') as string,
+        shipping_fallback_markup_pct: (settingsMap.get('shipping_fallback_markup_pct') || '0') as string
+      })
+    }
+  }
 
-  const handleAddSizeClass = async () => {
-    if (!newSizeClass.name || !newSizeClass.label) {
-      setMessage({ type: 'error', text: 'Name and label are required' })
+  const loadCarrierStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/shipping/carrier-status')
+      const data = await response.json()
+      setCarrierStatus(data.carriers)
+    } catch (error) {
+      console.log('Carrier status not available')
+    }
+  }
+
+  const loadProducts = async () => {
+    const response = await fetch('/api/admin/products?limit=100')
+    const data = await response.json()
+    if (data.products) {
+      setProducts(data.products.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        packing_units: p.packing_units || 1.0,
+        packed_weight_lbs: p.packed_weight_lbs || 0.5
+      })))
+    }
+  }
+
+  const savePackage = async (packageData: Partial<PackageType>) => {
+    try {
+      const url = editingPackage ? `/api/admin/shipping/packages/${editingPackage.id}` : '/api/admin/shipping/packages'
+      const method = editingPackage ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(packageData)
+      })
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: `Package ${editingPackage ? 'updated' : 'created'} successfully` })
+        setEditingPackage(null)
+        setShowAddPackage(false)
+        loadPackages()
+      } else {
+        const error = await response.json()
+        setMessage({ type: 'error', text: error.error || 'Failed to save package' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to save package' })
+    }
+  }
+
+  const deletePackage = async (packageId: string) => {
+    if (!confirm('Are you sure you want to delete this package type?')) return
+
+    try {
+      const response = await fetch(`/api/admin/shipping/packages/${packageId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Package deleted successfully' })
+        loadPackages()
+      } else {
+        setMessage({ type: 'error', text: 'Failed to delete package' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to delete package' })
+    }
+  }
+
+  const updateSetting = async (key: string, value: string) => {
+    try {
+      const response = await fetch('/api/admin/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      })
+
+      if (response.ok) {
+        setSettings({ ...settings, [key]: value })
+        setMessage({ type: 'success', text: 'Setting updated successfully' })
+      } else {
+        setMessage({ type: 'error', text: 'Failed to update setting' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to update setting' })
+    }
+  }
+
+  const updateProductPacking = async (productId: string, updates: Partial<Product>) => {
+    try {
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      })
+
+      if (response.ok) {
+        setProducts(products.map(p => 
+          p.id === productId ? { ...p, ...updates } : p
+        ))
+        setEditingProduct(null)
+        setMessage({ type: 'success', text: 'Product packing data updated' })
+      } else {
+        setMessage({ type: 'error', text: 'Failed to update product' })
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to update product' })
+    }
+  }
+
+  const runTestCalculation = async () => {
+    if (testItems.length === 0 || !testDestZip) {
+      setMessage({ type: 'error', text: 'Please add test items and destination zip' })
       return
     }
-    setSavingSizeClass(true)
+
     try {
-      const res = await fetch('/api/admin/shipping/size-classes', {
+      const response = await fetch('/api/shipping/available', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: newSizeClass.name.toLowerCase().replace(/\s+/g, '-'),
-          label: newSizeClass.label,
-          description: newSizeClass.description || null,
-          display_order: sizeClasses.length + 1
-        })
-      })
-      if (res.ok) {
-        setMessage({ type: 'success', text: `Size class "${newSizeClass.label}" created` })
-        setNewSizeClass({ name: '', label: '', description: '' })
-        setShowAddSizeClass(false)
-        await loadData()
-      } else {
-        const err = await res.json()
-        setMessage({ type: 'error', text: err.error || 'Failed to create size class' })
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to create size class' })
-    } finally {
-      setSavingSizeClass(false)
-    }
-  }
-
-  const handleDeleteSizeClass = async (sc: SizeClass) => {
-    if (!confirm(`Delete size class "${sc.label}"? This will also remove its shipping rate tiers.`)) return
-    try {
-      const res = await fetch(`/api/admin/shipping/size-classes?id=${sc.id}`, { method: 'DELETE' })
-      if (res.ok) {
-        setMessage({ type: 'success', text: `Size class "${sc.label}" deleted` })
-        await loadData()
-      } else {
-        setMessage({ type: 'error', text: 'Failed to delete size class' })
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to delete size class' })
-    }
-  }
-
-  // --- Rate Tier Editing ---
-
-  const getTiersForClass = (sizeClassName: string) => {
-    if (isEditing === sizeClassName && editingTiers[sizeClassName]) {
-      return editingTiers[sizeClassName]
-    }
-    return rateTiers.filter(t => t.size_class_name === sizeClassName)
-  }
-
-  const startEditingTiers = (sizeClassName: string) => {
-    const currentTiers = rateTiers.filter(t => t.size_class_name === sizeClassName)
-    setEditingTiers({ ...editingTiers, [sizeClassName]: currentTiers.length > 0 ? [...currentTiers] : [
-      { id: 'new-1', size_class_name: sizeClassName, min_quantity: 1, max_quantity: 5, rate: 0, display_order: 1 }
-    ]})
-    setIsEditing(sizeClassName)
-  }
-
-  const cancelEditing = () => {
-    setIsEditing(null)
-    setEditingTiers({})
-  }
-
-  const updateEditingTier = (sizeClassName: string, index: number, field: string, value: any) => {
-    const tiers = [...(editingTiers[sizeClassName] || [])]
-    tiers[index] = { ...tiers[index], [field]: value }
-    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
-  }
-
-  const addEditingTier = (sizeClassName: string) => {
-    const tiers = [...(editingTiers[sizeClassName] || [])]
-    const lastTier = tiers[tiers.length - 1]
-    const newMin = lastTier ? (lastTier.max_quantity || lastTier.min_quantity) + 1 : 1
-    tiers.push({
-      id: `new-${Date.now()}`,
-      size_class_name: sizeClassName,
-      min_quantity: newMin,
-      max_quantity: null,
-      rate: 0,
-      display_order: tiers.length + 1
-    })
-    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
-  }
-
-  const removeEditingTier = (sizeClassName: string, index: number) => {
-    const tiers = [...(editingTiers[sizeClassName] || [])]
-    tiers.splice(index, 1)
-    setEditingTiers({ ...editingTiers, [sizeClassName]: tiers })
-  }
-
-  const saveEditingTiers = async (sizeClassName: string) => {
-    const tiers = editingTiers[sizeClassName]
-    if (!tiers || tiers.length === 0) {
-      setMessage({ type: 'error', text: 'At least one tier is required' })
-      return
-    }
-
-    // Validate tiers
-    for (const tier of tiers) {
-      if (tier.min_quantity < 1) {
-        setMessage({ type: 'error', text: 'Min quantity must be at least 1' })
-        return
-      }
-      if (tier.rate < 0) {
-        setMessage({ type: 'error', text: 'Rate cannot be negative' })
-        return
-      }
-    }
-
-    try {
-      const res = await fetch('/api/admin/shipping/rate-tiers', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          size_class_name: sizeClassName,
-          tiers: tiers.map((t, i) => ({
-            size_class_name: sizeClassName,
-            min_quantity: t.min_quantity,
-            max_quantity: t.max_quantity,
-            rate: t.rate,
-            display_order: i + 1
-          }))
+          items: testItems.map((item, index) => ({
+            product_id: `test-${index}`,
+            product_name: item.product_name,
+            quantity: item.quantity
+          })),
+          destination_zip: testDestZip
         })
       })
 
-      if (res.ok) {
-        setMessage({ type: 'success', text: `Shipping rates updated for ${sizeClassName}` })
-        setIsEditing(null)
-        setEditingTiers({})
-        await loadData()
-      } else {
-        const err = await res.json()
-        setMessage({ type: 'error', text: err.error || 'Failed to save rates' })
-      }
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to save rates' })
+      const data = await response.json()
+      setTestResult(data)
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Test calculation failed' })
     }
   }
-
-  // --- Carrier API Status ---
-
-  const carrierStatus = [
-    { name: 'USPS', code: 'usps', status: 'placeholder', label: 'Placeholder — mock rates active' },
-    { name: 'FedEx', code: 'fedex', status: 'coming_soon', label: 'Coming soon' },
-    { name: 'UPS', code: 'ups', status: 'coming_soon', label: 'Coming soon' },
-  ]
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <Link href="/admin/login" className="text-blue-600 hover:underline">Please log in</Link>
+          <p className="text-gray-600">Please log in to access the admin panel</p>
         </div>
       </div>
     )
@@ -267,261 +268,371 @@ export default function AdminShippingPage() {
       <div className="p-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          <div className="space-y-4">{[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded"></div>)}</div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-          <TruckIcon className="h-7 w-7 mr-3 text-blue-600" />
-          Shipping Configuration
+          <TruckIcon className="h-8 w-8 mr-3" />
+          Shipping Management
         </h1>
-        <p className="text-gray-600 mt-1">Manage shipping size classes, flat rate tiers, and carrier integrations</p>
+        <p className="text-gray-600 mt-1">Manage package types, shipping settings, and test the new packing system</p>
       </div>
 
+      {/* Status Message */}
       {message && (
-        <div className={`mb-4 p-3 rounded-lg text-sm ${
+        <div className={`mb-4 p-4 rounded-lg ${
           message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
         }`}>
           {message.text}
-          <button onClick={() => setMessage(null)} className="ml-3 underline text-xs">Dismiss</button>
+          <button 
+            onClick={() => setMessage(null)} 
+            className="ml-4 text-sm underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
-      {/* Ship-From ZIP */}
-      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
-        <h2 className="font-semibold text-gray-900 mb-3">Shipping Origin</h2>
-        <div className="flex items-end gap-3">
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'packages', label: 'Package Types', icon: TruckIcon },
+            { id: 'settings', label: 'Settings', icon: Cog6ToothIcon },
+            { id: 'products', label: 'Product Packing', icon: PencilIcon },
+            { id: 'test', label: 'Test Calculator', icon: CalculatorIcon }
+          ].map(tab => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm flex items-center`}
+              >
+                <Icon className="h-4 w-4 mr-2" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Package Types Tab */}
+      {activeTab === 'packages' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-lg font-medium">Package Types</h2>
+            <button
+              onClick={() => {
+                setShowAddPackage(true)
+                setEditingPackage(null)
+              }}
+              className="btn-primary flex items-center"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Add Package Type
+            </button>
+          </div>
+
+          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Package</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capacity</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dimensions</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weight</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fallback Rate</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {packages.map(pkg => (
+                  <tr key={pkg.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{pkg.name}</div>
+                        <div className="text-xs text-gray-500">Order: {pkg.sort_order}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {pkg.capacity_units} units
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {pkg.length_inches}"×{pkg.width_inches}"×{pkg.height_inches}"
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      Max: {pkg.max_weight_lbs} lbs<br />
+                      <span className="text-xs text-gray-500">Empty: {pkg.empty_weight_lbs} lbs</span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      ${pkg.fallback_rate.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        pkg.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {pkg.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <button
+                        onClick={() => {
+                          setEditingPackage(pkg)
+                          setShowAddPackage(true)
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deletePackage(pkg.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Add/Edit Package Modal */}
+          {showAddPackage && (
+            <PackageFormModal
+              package={editingPackage}
+              onSave={savePackage}
+              onCancel={() => {
+                setShowAddPackage(false)
+                setEditingPackage(null)
+              }}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Other tabs will be implemented in following parts... */}
+      {activeTab === 'settings' && (
+        <div className="text-gray-500">Settings tab - Coming next...</div>
+      )}
+      
+      {activeTab === 'products' && (
+        <div className="text-gray-500">Products packing editor - Coming next...</div>
+      )}
+      
+      {activeTab === 'test' && (
+        <div className="text-gray-500">Test calculator - Coming next...</div>
+      )}
+    </div>
+  )
+}
+
+// Package Form Modal Component
+function PackageFormModal({ 
+  package: pkg, 
+  onSave, 
+  onCancel 
+}: {
+  package: PackageType | null
+  onSave: (data: Partial<PackageType>) => void
+  onCancel: () => void
+}) {
+  const [formData, setFormData] = useState({
+    name: pkg?.name || '',
+    capacity_units: pkg?.capacity_units?.toString() || '',
+    max_weight_lbs: pkg?.max_weight_lbs?.toString() || '',
+    length_inches: pkg?.length_inches?.toString() || '',
+    width_inches: pkg?.width_inches?.toString() || '',
+    height_inches: pkg?.height_inches?.toString() || '',
+    empty_weight_lbs: pkg?.empty_weight_lbs?.toString() || '0',
+    fallback_rate: pkg?.fallback_rate?.toString() || '',
+    active: pkg?.active ?? true,
+    sort_order: pkg?.sort_order?.toString() || ''
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSave({
+      ...formData,
+      capacity_units: parseFloat(formData.capacity_units),
+      max_weight_lbs: parseFloat(formData.max_weight_lbs),
+      length_inches: parseFloat(formData.length_inches),
+      width_inches: parseFloat(formData.width_inches),
+      height_inches: parseFloat(formData.height_inches),
+      empty_weight_lbs: parseFloat(formData.empty_weight_lbs),
+      fallback_rate: parseFloat(formData.fallback_rate),
+      sort_order: parseInt(formData.sort_order) || 0
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <h3 className="text-lg font-medium mb-4">
+          {pkg ? 'Edit Package Type' : 'Add Package Type'}
+        </h3>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Ship-From ZIP Code</label>
+            <label className="form-label">Package Name *</label>
             <input
               type="text"
-              value={shipFromZip}
-              onChange={(e) => setShipFromZip(e.target.value)}
-              className="input-field w-36"
-              placeholder="46143"
-              maxLength={5}
+              required
+              className="input-field"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g., Small Box"
             />
           </div>
-          <button onClick={saveShipFromZip} disabled={savingZip} className="btn-primary h-10 text-sm">
-            {savingZip ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-2">Used for carrier rate calculations (USPS, FedEx, UPS)</p>
-      </div>
 
-      {/* Size Classes */}
-      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="font-semibold text-gray-900">Size Classes</h2>
-          <button
-            onClick={() => setShowAddSizeClass(!showAddSizeClass)}
-            className="text-sm text-blue-600 hover:text-blue-800 flex items-center"
-          >
-            <PlusIcon className="h-4 w-4 mr-1" />
-            Add Size Class
-          </button>
-        </div>
-
-        {showAddSizeClass && (
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Name (slug)</label>
-                <input
-                  type="text"
-                  value={newSizeClass.name}
-                  onChange={(e) => setNewSizeClass({ ...newSizeClass, name: e.target.value })}
-                  className="input-field text-sm"
-                  placeholder="e.g., extra-large"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Label</label>
-                <input
-                  type="text"
-                  value={newSizeClass.label}
-                  onChange={(e) => setNewSizeClass({ ...newSizeClass, label: e.target.value })}
-                  className="input-field text-sm"
-                  placeholder="e.g., Extra Large"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={newSizeClass.description}
-                  onChange={(e) => setNewSizeClass({ ...newSizeClass, description: e.target.value })}
-                  className="input-field text-sm"
-                  placeholder="e.g., Oversized banners"
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">Capacity (units) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                className="input-field"
+                value={formData.capacity_units}
+                onChange={(e) => setFormData({ ...formData, capacity_units: e.target.value })}
+                placeholder="8"
+              />
             </div>
-            <div className="flex gap-2">
-              <button onClick={handleAddSizeClass} disabled={savingSizeClass} className="btn-primary text-sm">
-                {savingSizeClass ? 'Creating...' : 'Create'}
-              </button>
-              <button onClick={() => setShowAddSizeClass(false)} className="btn-secondary text-sm">Cancel</button>
+            <div>
+              <label className="form-label">Max Weight (lbs) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                className="input-field"
+                value={formData.max_weight_lbs}
+                onChange={(e) => setFormData({ ...formData, max_weight_lbs: e.target.value })}
+                placeholder="10"
+              />
             </div>
           </div>
-        )}
 
-        <div className="space-y-2">
-          {sizeClasses.map(sc => (
-            <div key={sc.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded">
-              <div>
-                <span className="font-medium text-gray-900">{sc.label}</span>
-                <span className="text-gray-400 text-xs ml-2">({sc.name})</span>
-                {sc.description && <span className="text-gray-500 text-sm ml-3">— {sc.description}</span>}
-              </div>
-              <button
-                onClick={() => handleDeleteSizeClass(sc)}
-                className="text-red-500 hover:text-red-700 p-1"
-                title="Delete"
-              >
-                <TrashIcon className="h-4 w-4" />
-              </button>
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="form-label">Length (in) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                required
+                className="input-field"
+                value={formData.length_inches}
+                onChange={(e) => setFormData({ ...formData, length_inches: e.target.value })}
+                placeholder="14"
+              />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Flat Rate Tiers — one section per size class */}
-      <div className="bg-white shadow-sm rounded-lg p-5 mb-6 border border-gray-200">
-        <h2 className="font-semibold text-gray-900 mb-4">Flat Rate Shipping Tiers</h2>
-        <p className="text-sm text-gray-500 mb-4">Set shipping rates by quantity bracket for each size class. These rates apply to all products assigned that size class.</p>
-
-        {sizeClasses.map(sc => {
-          const tiers = getTiersForClass(sc.name)
-          const editing = isEditing === sc.name
-
-          return (
-            <div key={sc.name} className="mb-6 last:mb-0">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-semibold text-gray-700">{sc.label}</h3>
-                {!editing ? (
-                  <button onClick={() => startEditingTiers(sc.name)} className="text-sm text-blue-600 hover:text-blue-800 flex items-center">
-                    <PencilIcon className="h-3.5 w-3.5 mr-1" /> Edit
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button onClick={() => saveEditingTiers(sc.name)} className="text-sm text-green-600 hover:text-green-800 flex items-center">
-                      <CheckIcon className="h-3.5 w-3.5 mr-1" /> Save
-                    </button>
-                    <button onClick={cancelEditing} className="text-sm text-gray-500 hover:text-gray-700 flex items-center">
-                      <XMarkIcon className="h-3.5 w-3.5 mr-1" /> Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-gray-500 uppercase">
-                    <th className="pb-1 pr-3">Qty Min</th>
-                    <th className="pb-1 pr-3">Qty Max</th>
-                    <th className="pb-1 pr-3">Rate</th>
-                    {editing && <th className="pb-1 w-10"></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {tiers.length === 0 ? (
-                    <tr>
-                      <td colSpan={editing ? 4 : 3} className="py-3 text-gray-400 text-center italic">
-                        No tiers configured
-                      </td>
-                    </tr>
-                  ) : (
-                    tiers.map((tier, idx) => (
-                      <tr key={tier.id || idx} className="border-t border-gray-100">
-                        <td className="py-1.5 pr-3">
-                          {editing ? (
-                            <input
-                              type="number"
-                              min={1}
-                              value={tier.min_quantity}
-                              onChange={(e) => updateEditingTier(sc.name, idx, 'min_quantity', parseInt(e.target.value) || 1)}
-                              className="input-field w-20 text-sm"
-                            />
-                          ) : tier.min_quantity}
-                        </td>
-                        <td className="py-1.5 pr-3">
-                          {editing ? (
-                            <input
-                              type="number"
-                              min={1}
-                              value={tier.max_quantity ?? ''}
-                              placeholder="∞"
-                              onChange={(e) => updateEditingTier(sc.name, idx, 'max_quantity', e.target.value ? parseInt(e.target.value) : null)}
-                              className="input-field w-20 text-sm"
-                            />
-                          ) : (tier.max_quantity ?? '∞')}
-                        </td>
-                        <td className="py-1.5 pr-3">
-                          {editing ? (
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-1">$</span>
-                              <input
-                                type="number"
-                                min={0}
-                                step={0.01}
-                                value={tier.rate}
-                                onChange={(e) => updateEditingTier(sc.name, idx, 'rate', parseFloat(e.target.value) || 0)}
-                                className="input-field w-24 text-sm"
-                              />
-                            </div>
-                          ) : `$${Number(tier.rate).toFixed(2)}`}
-                        </td>
-                        {editing && (
-                          <td className="py-1.5">
-                            <button onClick={() => removeEditingTier(sc.name, idx)} className="text-red-400 hover:text-red-600">
-                              <TrashIcon className="h-4 w-4" />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-
-              {editing && (
-                <button
-                  onClick={() => addEditingTier(sc.name)}
-                  className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  <PlusIcon className="h-3.5 w-3.5 mr-1" /> Add Bracket
-                </button>
-              )}
+            <div>
+              <label className="form-label">Width (in) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                required
+                className="input-field"
+                value={formData.width_inches}
+                onChange={(e) => setFormData({ ...formData, width_inches: e.target.value })}
+                placeholder="12"
+              />
             </div>
-          )
-        })}
-      </div>
-
-      {/* Carrier API Status */}
-      <div className="bg-white shadow-sm rounded-lg p-5 border border-gray-200">
-        <h2 className="font-semibold text-gray-900 mb-3">Carrier API Status</h2>
-        <div className="space-y-2">
-          {carrierStatus.map(carrier => (
-            <div key={carrier.code} className="flex items-center gap-3 py-1.5">
-              <div className={`w-2.5 h-2.5 rounded-full ${
-                carrier.status === 'connected' ? 'bg-green-400' :
-                carrier.status === 'placeholder' ? 'bg-yellow-400' :
-                'bg-gray-300'
-              }`} />
-              <span className="text-sm font-medium text-gray-700 w-16">{carrier.name}</span>
-              <span className="text-sm text-gray-500">{carrier.label}</span>
+            <div>
+              <label className="form-label">Height (in) *</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0.1"
+                required
+                className="input-field"
+                value={formData.height_inches}
+                onChange={(e) => setFormData({ ...formData, height_inches: e.target.value })}
+                placeholder="6"
+              />
             </div>
-          ))}
-        </div>
-        <p className="text-xs text-gray-400 mt-3">
-          Configure carrier API credentials in Netlify environment variables to enable live rates.
-        </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">Empty Weight (lbs)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className="input-field"
+                value={formData.empty_weight_lbs}
+                onChange={(e) => setFormData({ ...formData, empty_weight_lbs: e.target.value })}
+                placeholder="0.5"
+              />
+            </div>
+            <div>
+              <label className="form-label">Fallback Rate ($) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                className="input-field"
+                value={formData.fallback_rate}
+                onChange={(e) => setFormData({ ...formData, fallback_rate: e.target.value })}
+                placeholder="12.99"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="form-label">Sort Order</label>
+              <input
+                type="number"
+                min="0"
+                className="input-field"
+                value={formData.sort_order}
+                onChange={(e) => setFormData({ ...formData, sort_order: e.target.value })}
+                placeholder="0"
+              />
+            </div>
+            <div className="flex items-center pt-6">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                checked={formData.active}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+              />
+              <label className="ml-2 text-sm text-gray-900">Active</label>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+            <button type="button" onClick={onCancel} className="btn-outline">
+              Cancel
+            </button>
+            <button type="submit" className="btn-primary">
+              {pkg ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
