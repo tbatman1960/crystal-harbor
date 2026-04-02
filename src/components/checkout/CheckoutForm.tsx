@@ -36,6 +36,12 @@ interface ShippingOption {
   is_mock?: boolean
   is_fallback?: boolean
   needs_zip?: boolean
+  packages?: Array<{
+    package_type: string
+    utilization: number
+    weight: number
+    dimensions: string
+  }>
 }
 
 interface CheckoutFormProps {
@@ -280,6 +286,20 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
         subtotal,
         shipping_cost: shippingCost,
         shipping_method: selectedShipping?.name || 'Standard Shipping',
+        shipping_details: selectedShipping ? {
+          method_id: selectedShipping.method_id,
+          service_name: selectedShipping.name,
+          cost: selectedShipping.cost,
+          estimated_delivery: selectedShipping.estimated_delivery,
+          description: selectedShipping.description,
+          type: selectedShipping.type,
+          is_mock: selectedShipping.is_mock,
+          is_fallback: selectedShipping.is_fallback,
+          packages: selectedShipping.packages || [],
+          carrier: selectedShipping.carrier,
+          service_code: selectedShipping.service_code,
+          created_at: new Date().toISOString()
+        } : null,
         tax_amount: taxAmount,
         total_amount: total,
         stripe_payment_intent_id: paymentIntentId,

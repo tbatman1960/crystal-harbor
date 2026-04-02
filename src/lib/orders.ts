@@ -38,6 +38,7 @@ export interface CreateOrderData {
   subtotal: number
   shipping_cost: number
   shipping_method?: string
+  shipping_details?: any // JSON data with package breakdown, carrier info, etc.
   tax_amount?: number
   total_amount: number
   stripe_payment_intent_id: string
@@ -98,6 +99,7 @@ export async function createOrder(data: CreateOrderData): Promise<{
           subtotal: data.subtotal,
           shipping_cost: data.shipping_cost,
           shipping_method: data.shipping_method || 'Standard Shipping',
+          shipping_details: data.shipping_details || null,
           tax_amount: tax_amount,
           total_amount: final_total,
           stripe_payment_intent_id: data.stripe_payment_intent_id,
