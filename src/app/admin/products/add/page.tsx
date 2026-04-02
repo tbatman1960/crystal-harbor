@@ -14,6 +14,7 @@ interface OptionValue {
 
 interface CustomOptionGroup {
   type: string
+  description: string
   values: OptionValue[]
 }
 
@@ -56,6 +57,7 @@ export default function AddProductPage() {
   const [newColor, setNewColor] = useState('')
   const [customOptionGroups, setCustomOptionGroups] = useState<CustomOptionGroup[]>([])
   const [newOptionType, setNewOptionType] = useState('')
+  const [newOptionDescription, setNewOptionDescription] = useState('')
   const [newOptionValues, setNewOptionValues] = useState<Record<string, string>>({})
   const [newOptionPrices, setNewOptionPrices] = useState<Record<string, string>>({})
   
@@ -153,8 +155,9 @@ export default function AddProductPage() {
       setMessage({ type: 'error', text: `Option type "${trimmed}" already exists.` })
       return
     }
-    setCustomOptionGroups([...customOptionGroups, { type: trimmed, values: [] }])
+    setCustomOptionGroups([...customOptionGroups, { type: trimmed, description: newOptionDescription.trim(), values: [] }])
     setNewOptionType('')
+    setNewOptionDescription('')
   }
 
   const removeOptionType = (type: string) => {
@@ -193,10 +196,10 @@ export default function AddProductPage() {
     
     try {
       // Build custom_options payload
-      const custom_options: Record<string, OptionValue[]> = {}
+      const custom_options: Record<string, { description: string; values: OptionValue[] }> = {}
       customOptionGroups.forEach(group => {
         if (group.values.length > 0) {
-          custom_options[group.type] = group.values
+          custom_options[group.type] = { description: group.description, values: group.values }
         }
       })
 
@@ -523,7 +526,7 @@ export default function AddProductPage() {
               {/* Existing custom option groups */}
               {customOptionGroups.map((group) => (
                 <div key={group.type} className="mb-4 bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-1">
                     <h4 className="font-medium text-gray-800">{group.type}</h4>
                     <button
                       type="button"
@@ -533,6 +536,17 @@ export default function AddProductPage() {
                       Remove Option
                     </button>
                   </div>
+                  <input
+                    type="text"
+                    className="input-field mb-3 text-sm"
+                    placeholder="Description shown to customers (e.g., Choose your preferred finish)"
+                    value={group.description}
+                    onChange={(e) => {
+                      setCustomOptionGroups(customOptionGroups.map(g =>
+                        g.type === group.type ? { ...g, description: e.target.value } : g
+                      ))
+                    }}
+                  />
 
                   {/* Existing values */}
                   <div className="flex flex-wrap gap-2 mb-3">
@@ -591,25 +605,36 @@ export default function AddProductPage() {
               ))}
 
               {/* Add new option type */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={newOptionType}
-                  onChange={(e) => setNewOptionType(e.target.value)}
-                  className="input-field flex-1"
-                  placeholder="New option type name (e.g., Finish, Font, Rush)"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={addOptionType}
-                  className="btn-secondary px-4 py-2"
-                  disabled={!newOptionType.trim()}
-                >
-                  Add Option Type
-                </button>
+              <div className="space-y-2 bg-white border border-dashed border-gray-300 rounded-lg p-3">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={newOptionType}
+                    onChange={(e) => setNewOptionType(e.target.value)}
+                    className="input-field flex-1"
+                    placeholder="Option name (e.g., Finish, Font, Rush Processing)"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={addOptionType}
+                    className="btn-secondary px-4 py-2"
+                    disabled={!newOptionType.trim()}
+                  >
+                    Add Option Type
+                  </button>
+                </div>
+                {newOptionType.trim() && (
+                  <input
+                    type="text"
+                    value={newOptionDescription}
+                    onChange={(e) => setNewOptionDescription(e.target.value)}
+                    className="input-field text-sm"
+                    placeholder="Description (e.g., Choose the surface finish for your product)"
+                  />
+                )}
               </div>
             </div>
 

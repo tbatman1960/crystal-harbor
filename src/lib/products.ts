@@ -14,6 +14,7 @@ export interface ProductOption {
   product_id: string
   option_type: string
   option_value: string
+  option_description: string
   price_adjustment: number
   display_order: number
   active: boolean
@@ -50,7 +51,7 @@ export interface Product {
 export interface ProductWithOptions extends Product {
   sizes: ProductOption[]
   colors: ProductOption[]
-  custom_options: Record<string, ProductOption[]>
+  custom_options: Record<string, { description: string; values: ProductOption[] }>
   pricing_tiers: PricingTier[]
 }
 
@@ -179,15 +180,15 @@ export async function getProductBySlug(slug: string): Promise<ProductWithOptions
     const sizes = allOptions.filter(option => option.option_type === 'size')
     const colors = allOptions.filter(option => option.option_type === 'color')
     
-    // Group non-size/color options by type
-    const custom_options: Record<string, ProductOption[]> = {}
+    // Group non-size/color options by type with description
+    const custom_options: Record<string, { description: string; values: ProductOption[] }> = {}
     allOptions
       .filter(option => option.option_type !== 'size' && option.option_type !== 'color')
       .forEach(option => {
         if (!custom_options[option.option_type]) {
-          custom_options[option.option_type] = []
+          custom_options[option.option_type] = { description: option.option_description || '', values: [] }
         }
-        custom_options[option.option_type].push(option)
+        custom_options[option.option_type].values.push(option)
       })
 
     return {

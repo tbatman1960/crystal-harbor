@@ -87,10 +87,21 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   const productSettings = getProductSettings(product.slug)
 
   // Calculate total price adjustment from selected custom options
-  const customOptions = product.custom_options || {}
+  // custom_options format from API: { "Type": { description: "...", values: [...] } } or legacy { "Type": [...] }
+  const rawCustomOptions = product.custom_options || {}
+  const customOptions: Record<string, { description: string; options: Array<{ id: string; option_value: string; price_adjustment: number }> }> = {}
+  for (const [type, data] of Object.entries(rawCustomOptions)) {
+    if (Array.isArray(data)) {
+      customOptions[type] = { description: '', options: data }
+    } else {
+      customOptions[type] = { description: (data as any).description || '', options: (data as any).values || [] }
+    }
+  }
+  
   const optionPriceAdjustment = Object.entries(selectedCustomOptions).reduce((total, [type, value]) => {
-    const options = customOptions[type] || []
-    const selected = options.find(o => o.option_value === value)
+    const group = customOptions[type]
+    if (!group) return total
+    const selected = group.options.find(o => o.option_value === value)
     return total + (selected?.price_adjustment || 0)
   }, 0)
   
@@ -139,8 +150,8 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     }
 
     // Validate custom options — each type requires a selection
-    for (const [type, options] of Object.entries(customOptions)) {
-      if (options.length > 0 && !selectedCustomOptions[type]) {
+    for (const [type, group] of Object.entries(customOptions)) {
+      if (group.options.length > 0 && !selectedCustomOptions[type]) {
         setError(`Please select a ${type}`)
         return
       }
@@ -345,16 +356,19 @@ export default function ProductDetailClient({ product, category }: ProductDetail
             )}
 
             {/* Custom Options (dynamic) */}
-            {Object.entries(customOptions).map(([type, options]) => (
-              options.length > 0 && (
+            {Object.entries(customOptions).map(([type, group]) => (
+              group.options.length > 0 && (
                 <div key={type}>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-2">
+                  <label className="block text-sm font-semibold text-neutral-700 mb-1">
                     {type} *
                   </label>
+                  {group.description && (
+                    <p className="text-sm text-secondary-500 mb-2">{group.description}</p>
+                  )}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {options.map((option) => (
+                    {group.options.map((option) => (
                       <button
-                        key={option.id}
+                        key={option.id || option.option_value}
                         type="button"
                         onClick={() => setSelectedCustomOptions(prev => ({ ...prev, [type]: option.option_value }))}
                         className={`p-3 text-sm font-medium rounded-lg border-2 transition-all duration-200 ${

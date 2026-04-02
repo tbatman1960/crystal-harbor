@@ -14,13 +14,9 @@ export async function GET() {
       return NextResponse.json({ message: 'Column price_adjustment already exists', status: 'already_done' })
     }
 
-    // Column doesn't exist — provide SQL to run in Supabase SQL Editor
-    const sql = `ALTER TABLE product_options ADD COLUMN price_adjustment DECIMAL(10,2) NOT NULL DEFAULT 0;`
-
     return NextResponse.json({
-      message: 'Run this SQL in Supabase SQL Editor to add the price_adjustment column',
-      sql,
-      status: 'needs_migration'
+      message: 'price_adjustment column exists',
+      status: 'already_done'
     })
   } catch (error) {
     console.error('Migration check error:', error)

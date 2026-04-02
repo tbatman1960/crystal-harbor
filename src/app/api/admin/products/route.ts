@@ -167,10 +167,15 @@ export async function POST(request: NextRequest) {
         product_id: string
         option_type: string
         option_value: string
+        option_description: string
         price_adjustment: number
       }> = []
 
-      for (const [optionType, values] of Object.entries(custom_options)) {
+      for (const [optionType, data] of Object.entries(custom_options)) {
+        const optionData = data as any
+        const description = optionData.description || ''
+        const values = Array.isArray(optionData) ? optionData : (optionData.values || [])
+        
         if (Array.isArray(values)) {
           values.forEach((item: any) => {
             customRows.push({
@@ -178,6 +183,7 @@ export async function POST(request: NextRequest) {
               product_id: product.id,
               option_type: optionType,
               option_value: typeof item === 'string' ? item : item.value,
+              option_description: description,
               price_adjustment: typeof item === 'object' ? (item.price_adjustment || 0) : 0
             })
           })

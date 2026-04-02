@@ -11,6 +11,7 @@ interface OptionValue {
 
 interface CustomOptionGroup {
   type: string
+  description: string
   values: OptionValue[]
 }
 
@@ -49,6 +50,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const [newColor, setNewColor] = useState('')
   const [customOptionGroups, setCustomOptionGroups] = useState<CustomOptionGroup[]>([])
   const [newOptionType, setNewOptionType] = useState('')
+  const [newOptionDescription, setNewOptionDescription] = useState('')
   const [newOptionValues, setNewOptionValues] = useState<Record<string, string>>({})
   const [newOptionPrices, setNewOptionPrices] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<string[]>([])
@@ -118,9 +120,10 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       // Load custom options
       if (product.custom_options && typeof product.custom_options === 'object') {
         const groups: CustomOptionGroup[] = Object.entries(product.custom_options).map(
-          ([type, values]: [string, any]) => ({
+          ([type, data]: [string, any]) => ({
             type,
-            values: (values as any[]).map((v: any) => ({
+            description: data.description || '',
+            values: (data.values || data).map((v: any) => ({
               value: v.value,
               price_adjustment: v.price_adjustment || 0
             }))
@@ -176,8 +179,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
       setError(`Option type "${trimmed}" already exists.`)
       return
     }
-    setCustomOptionGroups([...customOptionGroups, { type: trimmed, values: [] }])
+    setCustomOptionGroups([...customOptionGroups, { type: trimmed, description: newOptionDescription.trim(), values: [] }])
     setNewOptionType('')
+    setNewOptionDescription('')
     setError('')
   }
 
@@ -282,9 +286,9 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           sizes,
           colors,
           custom_options: customOptionGroups.reduce((acc, g) => {
-            if (g.values.length > 0) acc[g.type] = g.values
+            if (g.values.length > 0) acc[g.type] = { description: g.description, values: g.values }
             return acc
-          }, {} as Record<string, OptionValue[]>),
+          }, {} as Record<string, { description: string; values: OptionValue[] }>),
           size_class: formData.size_class,
           shipping_method: formData.shipping_method,
         })
@@ -729,7 +733,7 @@ export default function EditProductPage({ params }: EditProductPageProps) {
 
             {customOptionGroups.map((group) => (
               <div key={group.type} className="mb-4 bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-1">
                   <h4 className="font-medium text-gray-800">{group.type}</h4>
                   <button
                     type="button"
@@ -739,6 +743,17 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                     Remove Option
                   </button>
                 </div>
+                <input
+                  type="text"
+                  className="input-field mb-3 text-sm"
+                  placeholder="Description shown to customers (e.g., Choose your preferred finish)"
+                  value={group.description}
+                  onChange={(e) => {
+                    setCustomOptionGroups(customOptionGroups.map(g =>
+                      g.type === group.type ? { ...g, description: e.target.value } : g
+                    ))
+                  }}
+                />
 
                 <div className="flex flex-wrap gap-2 mb-3">
                   {group.values.map((v) => (
@@ -794,25 +809,36 @@ export default function EditProductPage({ params }: EditProductPageProps) {
               </div>
             ))}
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={newOptionType}
-                onChange={(e) => setNewOptionType(e.target.value)}
-                className="input-field flex-1"
-                placeholder="New option type name (e.g., Finish, Font, Rush)"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
-                }}
-              />
-              <button
-                type="button"
-                onClick={addOptionType}
-                className="btn-secondary px-4 py-2"
-                disabled={!newOptionType.trim()}
-              >
-                Add Option Type
-              </button>
+            <div className="space-y-2 bg-white border border-dashed border-gray-300 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newOptionType}
+                  onChange={(e) => setNewOptionType(e.target.value)}
+                  className="input-field flex-1"
+                  placeholder="Option name (e.g., Finish, Font, Rush Processing)"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); addOptionType() }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={addOptionType}
+                  className="btn-secondary px-4 py-2"
+                  disabled={!newOptionType.trim()}
+                >
+                  Add Option Type
+                </button>
+              </div>
+              {newOptionType.trim() && (
+                <input
+                  type="text"
+                  value={newOptionDescription}
+                  onChange={(e) => setNewOptionDescription(e.target.value)}
+                  className="input-field text-sm"
+                  placeholder="Description (e.g., Choose the surface finish for your product)"
+                />
+              )}
             </div>
           </div>
 
