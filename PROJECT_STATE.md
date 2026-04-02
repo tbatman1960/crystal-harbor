@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-03-30
+**Last Updated:** 2026-03-31
 
 ---
 
@@ -172,7 +172,7 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | `customers` | id (uuid), email, password_hash, first_name, last_name, phone, address_line_1, address_line_2, city, state, postal_code, country, active (boolean), created_at, updated_at | Customer accounts |
 | `admin_users` | id, email, password_hash, first_name, last_name, role, active, last_login, created_at, updated_at | Admin accounts (separate from customers) |
 | `categories` | id, name, slug, description, display_order, active, created_at, updated_at | Product categories (t-shirts, blankets, flags, banners) |
-| `products` | id, category_id (FK→categories), name, slug, description, material, base_price, active, image_url, created_at, updated_at | Product listings |
+| `products` | id, category_id (FK→categories), name, slug, description, material, base_price, active, image_url, size_class (default 'small'), shipping_method (default 'flat_rate'), created_at, updated_at | Product listings |
 | `product_options` | id, product_id (FK→products), option_type ('size'\|'color'), option_value, display_order, active | Size/color options per product |
 | `pricing_tiers` | id, product_id (FK→products), tier_name, min_quantity, max_quantity, price_per_unit, discount_percentage | Volume pricing tiers |
 | `orders` | id, order_number, customer_id (FK→customers, nullable), guest_email, status, subtotal, shipping_cost, total_amount, stripe_payment_intent_id, shipping_address (JSONB), special_instructions, large_order_alert_sent, created_at, updated_at | Orders |
@@ -188,7 +188,9 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | `password_reset_tokens` | id (uuid), customer_id (FK→customers), token (unique), expires_at, used, created_at | Password reset tokens (1hr expiry) |
 | `refund_policies` | id, status, refund_percentage, conditions, processing_fee_percentage, restocking_fee_percentage | Refund rules by order status |
 | `refund_requests` | id, order_id, order_number, requested_amount, refund_reason, refund_type, status, processed_amount, stripe_refund_id, admin_notes, created_at, processed_at | Refund tracking |
-| `shipping_methods` | Configurable shipping options | Shipping method configuration |
+| `shipping_methods` | (DEPRECATED — data wiped, replaced by v2 system) | Legacy table, empty |
+| `shipping_size_classes` | id, name (unique), label, description, display_order | Size classes for shipping tiers (small/medium/large) |
+| `shipping_rate_tiers` | id, size_class_name, min_quantity, max_quantity, rate, display_order | Flat rate shipping by quantity bracket × size class |
 | `site_settings` | key, value, category, updated_at | Key-value site configuration |
 | `uploaded_images` | (exists in DB) | Image uploads |
 | `design_catalog` | (exists in DB) | Design catalog |
