@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-04-02
 
 ---
 
@@ -172,10 +172,10 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | `customers` | id (uuid), email, password_hash, first_name, last_name, phone, address_line_1, address_line_2, city, state, postal_code, country, active (boolean), created_at, updated_at | Customer accounts |
 | `admin_users` | id, email, password_hash, first_name, last_name, role, active, last_login, created_at, updated_at | Admin accounts (separate from customers) |
 | `categories` | id, name, slug, description, display_order, active, created_at, updated_at | Product categories (t-shirts, blankets, flags, banners) |
-| `products` | id, category_id (FK→categories), name, slug, description, material, base_price, active, image_url, size_class (default 'small'), shipping_method (default 'flat_rate'), created_at, updated_at | Product listings |
-| `product_options` | id, product_id (FK→products), option_type ('size'\|'color'), option_value, display_order, active | Size/color options per product |
+| `products` | id, category_id (FK→categories), name, slug, description, material, base_price, active, image_url, size_class (default 'small'), shipping_method (default 'flat_rate'), packing_units (default 1.0), packed_weight_lbs (default 0.5), created_at, updated_at | Product listings |
+| `product_options` | id, product_id (FK→products), option_type (string — 'size', 'color', or any custom type), option_value, option_description, price_adjustment (default 0), display_order, active | Product options (size/color + custom) |
 | `pricing_tiers` | id, product_id (FK→products), tier_name, min_quantity, max_quantity, price_per_unit, discount_percentage | Volume pricing tiers |
-| `orders` | id, order_number, customer_id (FK→customers, nullable), guest_email, status, subtotal, shipping_cost, total_amount, stripe_payment_intent_id, shipping_address (JSONB), special_instructions, large_order_alert_sent, created_at, updated_at | Orders |
+| `orders` | id, order_number, customer_id (FK→customers, nullable), guest_email, status, subtotal, shipping_cost, total_amount, stripe_payment_intent_id, shipping_address (JSONB), shipping_details (JSONB), special_instructions, large_order_alert_sent, created_at, updated_at | Orders |
 | `order_items` | id, order_id (FK→orders), product_id, product_name, quantity, unit_price, line_total, selected_size, selected_color, custom_text, tier_applied | Line items |
 
 ### Supporting Tables
@@ -188,9 +188,11 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | `password_reset_tokens` | id (uuid), customer_id (FK→customers), token (unique), expires_at, used, created_at | Password reset tokens (1hr expiry) |
 | `refund_policies` | id, status, refund_percentage, conditions, processing_fee_percentage, restocking_fee_percentage | Refund rules by order status |
 | `refund_requests` | id, order_id, order_number, requested_amount, refund_reason, refund_type, status, processed_amount, stripe_refund_id, admin_notes, created_at, processed_at | Refund tracking |
-| `shipping_methods` | (DEPRECATED — data wiped, replaced by v2 system) | Legacy table, empty |
-| `shipping_size_classes` | id, name (unique), label, description, display_order | Size classes for shipping tiers (small/medium/large) |
-| `shipping_rate_tiers` | id, size_class_name, min_quantity, max_quantity, rate, display_order | Flat rate shipping by quantity bracket × size class |
+| `shipping_methods` | (DEPRECATED — data wiped, replaced by v3 package system) | Legacy table, empty |
+| `shipping_size_classes` | (DEPRECATED — superseded by shipping_packages) | Legacy from v2 |
+| `shipping_rate_tiers` | (DEPRECATED — superseded by shipping_packages) | Legacy from v2 |
+| `shipping_packages` | id (uuid), name, capacity_units, max_weight_lbs, length/width/height_inches, empty_weight_lbs, fallback_rate, active, sort_order, created_at, updated_at | Package types for packing algorithm (Poly Mailer through Extra Large Box) |
+| `shipping_labels` | id (uuid), order_id (FK→orders), package_index, package_name, tracking_number, carrier, service_name, label_data (base64 PDF), label_format, cost, status, created_at, updated_at | Generated shipping labels per package |
 | `site_settings` | key, value, category, updated_at | Key-value site configuration |
 | `uploaded_images` | (exists in DB) | Image uploads |
 | `design_catalog` | (exists in DB) | Design catalog |
@@ -342,14 +344,18 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Cancelled order UX (2026-03-30):** Customer account page hides Return/Cancel buttons for cancelled orders, shows "Refund processed" message instead.
 - **Shipping v2 (2026-03-31):** Complete shipping system rewrite. Old system (flat_rate/weight_based/calculated/free methods, product_shipping_methods join table, ShipStation scaffolding) replaced with size-class + quantity-bracket flat rate tiers. New tables: `shipping_size_classes`, `shipping_rate_tiers`. Products have `size_class` and `shipping_method` columns. Admin shipping page: size class CRUD, inline tier editor, ship-from ZIP, carrier API status. Product add/edit pages: size class dropdown, shipping method dropdown (flat_rate, USPS, FedEx coming soon, UPS coming soon). Mixed carts sum per-item shipping. USPS falls back to flat rate silently.
 - **Account page enhancements (2026-03-31):** "Start Shopping" button at top right of account page. "Reorder" button on every order — fetches order items, matches to current products, adds to cart, redirects to cart page.
+- **Custom product options (2026-04-02):** Arbitrary option types beyond size/color (e.g., Finish, Font, Rush Processing). Each option type has a name, description, and multiple values with optional price adjustments. Uses existing `product_options` table with new `price_adjustment` and `option_description` columns. Admin can add/edit on both Add and Edit product pages. Customers see options on product page with price adjustments displayed. Adjusted prices flow into cart.
+- **Shipping v3 — Package-based packing (2026-04-02):** Complete shipping rewrite from per-item to package-based system. Products have `packing_units` and `packed_weight_lbs`. Package types defined in admin (Poly Mailer through Extra Large Box). Packing algorithm finds optimal box combination by both capacity and weight. Carrier API rates (USPS) with fallback to utilization-based flat rates. Admin shipping page with 4 tabs: Package Types, Settings, Product Packing, Test Calculator. Test calculator lets admin simulate orders to verify pricing.
+- **USPS REST API integration (2026-04-02):** Rewrote carrier integration for new USPS developer portal APIs (developers.usps.com). OAuth2 client credentials flow. Domestic Prices v3 for rates, Domestic Labels v3 for shipping labels, Tracking v3 for package tracking. Mock rates/labels work perfectly without credentials. Seamless switch to live when credentials added.
+- **Shipping label generation (2026-04-02):** Admin order detail has "Create Shipping Labels" button. Generates labels per package using packing algorithm. Mock labels via jsPDF (4×6" PDF with barcode pattern). Labels stored in `shipping_labels` table. Print/track buttons per package. Tracking numbers included in customer shipping emails.
 
 ### In Progress
-- **USPS shipping API integration:** Tim has no ShipStation account (doesn't want monthly subscription). Plan is to integrate USPS API directly (free). Waiting on Tim to register for USPS Web Tools account and provide User ID. UPS/FedEx can be added later.
+- **USPS API credentials:** Tim registering at developers.usps.com. Needs to enroll in "USPS Ship" via COP portal (cop.usps.com) and set up Enterprise Payment Account before API app creation is available. Select "Ship with APIs" option. Once enrolled, get Consumer Key + Consumer Secret, add as USPS_CLIENT_ID and USPS_CLIENT_SECRET env vars.
 
 ### Known Issues
 - **Footer newsletter input:** Email input may appear cut off on some viewports
 - **Order detail PDF:** Admin order detail page has TODO for PDF generation
-- **Calculated shipping method:** `src/lib/shipping-methods.ts` has TODO — `calculated` type exists in UI but doesn't call any shipping API yet. Will be wired to USPS.
+- **Calculated shipping method:** Replaced by package-based packing system (v3). Old shipping-methods.ts still exists but is superseded by packing.ts + carriers/.
 - **No email verification:** Customer registration doesn't verify email addresses
 - **No rate limiting:** API routes have no rate limiting or abuse prevention
 - **Auth is client-side only:** No server-side session validation — anyone with a valid user ID in localStorage can access protected pages
@@ -362,7 +368,7 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Custom domain:** Point `crystalharbortc.com` to Netlify via DNS
 - **Real GA4 measurement ID:** Replace `G-XXXXXXXXXX` placeholder
 - **Real product images:** Current images are stock photos (Unsplash) — need actual product photography
-- **USPS shipping rates:** Pending USPS Web Tools registration
+- **USPS live rates/labels:** Code complete, pending USPS developer portal credentials from Tim
 - **Inventory management:** No stock tracking system exists
 - **Coupon/promo code system:** Discount codes are generated but there's no redemption flow in checkout
 - **Customer reviews/ratings:** Not implemented
@@ -428,6 +434,12 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 
 28. **Reorder from order history (2026-03-31):** Reorder button on account page fetches order items via `/api/orders/{orderNumber}`, matches to current products by name via `/api/products`, adds to cart with generated IDs, redirects to cart. Falls back to products page if items no longer exist. Product matching is by name since `order_items` doesn't store `product_slug` or `category_slug`.
 
+29. **Custom product options via generic option_type (2026-04-02):** Rather than adding separate tables for each option type, custom options reuse the existing `product_options` table with any string as `option_type`. New columns `price_adjustment` and `option_description` support pricing and customer-facing descriptions. Size and color remain built-in types; custom types are grouped by `option_type` in the API response.
+
+30. **Package-based shipping v3 (2026-04-02):** Replaced per-item shipping (v2 size-class tiers) with a unit-based packing system. Products have `packing_units` (space consumed) and `packed_weight_lbs`. Package types define capacity, dimensions, weight limits, and fallback rates. Packing algorithm finds cheapest box combination satisfying both unit and weight constraints. Carrier API rates are primary; utilization-based fallback rates activate only when API unavailable. Mixed-product orders combine into shared packing units.
+
+31. **USPS new REST APIs over old Web Tools (2026-04-02):** USPS deprecated Web Tools. New integration uses developers.usps.com OAuth2 APIs (Domestic Prices v3, Domestic Labels v3, Tracking v3). Labels require USPS Ship enrollment + Enterprise Payment Account. Mock rates/labels work seamlessly without credentials.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -451,6 +463,7 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Google Analytics 4** | Website analytics | `.env.local` (NEXT_PUBLIC_GA_MEASUREMENT_ID) — placeholder value | `src/components/GoogleAnalytics.tsx`, `src/lib/analytics.ts` |
 | **Netlify** | Hosting + CDN + auto-deploy | `netlify.toml`, Netlify dashboard env vars | GitHub webhook triggers deploy on push to `main` |
 | **GitHub** | Source code repository | `https://github.com/tbatman1960/crystal-harbor` | Remote: origin |
+| **USPS** | Shipping rates, labels, tracking | `.env.local` (USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ENV) — not yet configured | `src/lib/carriers/usps.ts`, `src/lib/carriers/index.ts` — mock fallback when unconfigured |
 
 ## Credentials & Access (SENSITIVE)
 
@@ -465,6 +478,24 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-04-02
+- **Worked on:** Custom product options, shipping system overhaul (v3), USPS API integration, shipping label generation
+- **Key changes:**
+  - Custom product options: arbitrary option types with descriptions and per-value price adjustments. New columns: `price_adjustment`, `option_description` on `product_options`. Updated admin add/edit pages, API routes, and public ProductDetailClient.
+  - Shipping v3: Complete rewrite from per-item to package-based packing. New `shipping_packages` table, new product columns (`packing_units`, `packed_weight_lbs`), packing algorithm in `src/lib/packing.ts`, carrier integration in `src/lib/carriers/`. Admin shipping page rebuilt with 4 tabs: Package Types, Settings, Product Packing, Test Calculator.
+  - USPS REST API integration: Rewrote `src/lib/carriers/usps.ts` for OAuth2 (developers.usps.com). Domestic Prices v3, Domestic Labels v3, Tracking v3. Mock rates/labels when unconfigured.
+  - Shipping labels: New `shipping_labels` table, label generation endpoints, "Create Shipping Labels" button on admin order detail, mock PDF labels via jsPDF, print/track per package.
+  - New API routes: `/api/admin/shipping/packages` (CRUD), `/api/admin/shipping/test-calculate`, `/api/admin/shipping/carrier-status`, `/api/admin/orders/[id]/labels`, `/api/admin/orders/[id]/tracking`
+- **Decisions made:**
+  - Custom options reuse `product_options` table with any string as `option_type`
+  - Package-based packing replaces per-item shipping — products have packing units, packages have capacity
+  - USPS new REST APIs (OAuth2) replace old Web Tools
+  - Labels API requires USPS Ship enrollment + Enterprise Payment Account
+  - Mock labels/rates work without credentials for testing and initial launch
+- **Open threads:**
+  - Tim in process of registering at USPS developer portal (developers.usps.com) — needs to enroll in "Ship with APIs" via COP portal, set up Enterprise Payment Account
+  - Env vars needed when ready: USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ENV
 
 ### 2026-03-31
 - **Worked on:** Complete shipping system rewrite (v2), account page enhancements
