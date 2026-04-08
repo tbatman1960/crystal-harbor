@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { useCartStore } from '@/store/cartStore'
 import { AuthUser } from '@/lib/auth'
@@ -583,6 +584,20 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
             >
               {isSubmitting ? 'Validating...' : `Continue to Payment — $${total.toFixed(2)}`}
             </button>
+
+            <div className="flex items-center justify-center space-x-4 mt-4">
+              <Link href="/products" className="text-sm text-accent-coral-500 hover:text-accent-coral-600 font-medium">
+                ← Continue Shopping
+              </Link>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={() => { clearCart(); router.push('/products') }}
+                className="text-sm text-red-500 hover:text-red-600 font-medium"
+              >
+                Cancel Order
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -661,6 +676,20 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
               onError={(error) => setError(error)}
               isProcessing={isProcessing}
             />
+          </div>
+
+          <div className="flex items-center justify-center space-x-4 mt-6">
+            <Link href="/products" className="text-sm text-accent-coral-500 hover:text-accent-coral-600 font-medium">
+              ← Continue Shopping
+            </Link>
+            <span className="text-gray-300">|</span>
+            <button
+              type="button"
+              onClick={() => { clearCart(); router.push('/products') }}
+              className="text-sm text-red-500 hover:text-red-600 font-medium"
+            >
+              Cancel Order
+            </button>
           </div>
         </div>
       )}
