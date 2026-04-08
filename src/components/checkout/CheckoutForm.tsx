@@ -595,7 +595,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
                 onClick={() => { clearCart(); router.push('/products') }}
                 className="text-sm text-red-500 hover:text-red-600 font-medium"
               >
-                Cancel Order
+                Clear Cart
               </button>
             </div>
           </form>
@@ -688,7 +688,7 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
               onClick={() => { clearCart(); router.push('/products') }}
               className="text-sm text-red-500 hover:text-red-600 font-medium"
             >
-              Cancel Order
+              Clear Cart
             </button>
           </div>
         </div>
