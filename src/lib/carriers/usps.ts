@@ -141,64 +141,59 @@ export async function getUSPSRates(request: USPSShippingRequest): Promise<USPSRa
       return getMockUSPSRates(request);
     }
 
-    const priceRequest = {
+    const baseRequest = {
       originZIPCode: request.originZip,
       destinationZIPCode: request.destinationZip,
       weight: mainPackage.weight,
       length: mainPackage.length,
       width: mainPackage.width,
       height: mainPackage.height,
-      mailClass: 'PRIORITY_MAIL',
       processingCategory: 'MACHINABLE',
       rateIndicator: 'DR',
       destinationEntryFacilityType: 'NONE',
       priceType: 'COMMERCIAL'
     };
 
-    const response = await fetch(`${baseUrl}/prices/v3/domestic/price`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(priceRequest),
+    // Fetch rates for all three service levels in parallel
+    const serviceClasses = [
+      { mailClass: 'USPS_GROUND_ADVANTAGE', name: 'USPS Ground Advantage', tier: 'ground' as const },
+      { mailClass: 'PRIORITY_MAIL', name: 'USPS Priority Mail', tier: 'priority' as const },
+      { mailClass: 'PRIORITY_MAIL_EXPRESS', name: 'USPS Priority Mail Express', tier: 'express' as const },
+    ];
+
+    const ratePromises = serviceClasses.map(async (svc) => {
+      try {
+        const response = await fetch(`${baseUrl}/prices/v3/base-rates/search`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...baseRequest, mailClass: svc.mailClass }),
+        });
+
+        if (!response.ok) {
+          console.error(`USPS ${svc.name} rate error:`, response.status);
+          return null;
+        }
+
+        const data = await response.json();
+        if (data.totalBasePrice) {
+          return {
+            service_name: svc.name,
+            cost: Number(parseFloat(data.totalBasePrice).toFixed(2)),
+            estimated_days: getEstimatedDays(svc.tier, request.originZip, request.destinationZip)
+          };
+        }
+        return null;
+      } catch (err) {
+        console.error(`USPS ${svc.name} rate fetch error:`, err);
+        return null;
+      }
     });
 
-    if (!response.ok) {
-      console.error('USPS Rates API error:', response.status, response.statusText);
-      return getMockUSPSRates(request);
-    }
-
-    const data = await response.json();
-    
-    // Convert USPS response to our rate format
-    const rates: USPSRate[] = [];
-    
-    // Add the requested service
-    if (data.totalPrice) {
-      rates.push({
-        service_name: 'USPS Priority Mail',
-        cost: parseFloat(data.totalPrice),
-        estimated_days: getEstimatedDays('priority', request.originZip, request.destinationZip)
-      });
-    }
-
-    // Add additional service estimates based on the priority mail price
-    if (data.totalPrice) {
-      const priorityPrice = parseFloat(data.totalPrice);
-      
-      rates.push({
-        service_name: 'USPS Ground Advantage',
-        cost: Math.max(priorityPrice * 0.7, 5.50),
-        estimated_days: getEstimatedDays('ground', request.originZip, request.destinationZip)
-      });
-      
-      rates.push({
-        service_name: 'USPS Priority Mail Express',
-        cost: priorityPrice * 2.5,
-        estimated_days: getEstimatedDays('express', request.originZip, request.destinationZip)
-      });
-    }
+    const results = await Promise.all(ratePromises);
+    const rates: USPSRate[] = results.filter((r): r is USPSRate => r !== null);
 
     return rates.length > 0 ? rates : getMockUSPSRates(request);
 

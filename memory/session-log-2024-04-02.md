@@ -86,10 +86,33 @@ Next steps:
 4. ✅ Create shipping label API endpoints
 
 **NEXT STEPS:**
-5. Create shipping_labels table (SQL provided)
-6. Add shipping labels UI to admin order detail page
-7. Update email.ts for tracking numbers
-8. Test end-to-end functionality
+5. ✅ Create shipping_labels table (SQL provided) - Tim needs to run
+6. ✅ Add shipping labels UI to admin order detail page
+7. ✅ Update email.ts for tracking numbers (ALREADY IMPLEMENTED)
+8. Final testing and summary
+
+### [007] — Added Shipping Labels UI (COMPLETE)
+- **What:** Added comprehensive shipping labels section to admin order detail page
+- **Approach:** Added state management, API calls, and UI components in the sidebar
+- **Result:** Successfully built and committed
+- **Key features:**
+  - Shows "No labels" state with "Create Shipping Labels" button
+  - Shows "Labels created" state with package list, tracking numbers, and actions
+  - "Print Label" button opens PDF in new tab
+  - "Track Package" button links to USPS tracking
+  - "Refresh Tracking" loads latest tracking status and events
+  - Mock label indicator when USPS credentials not configured
+  - Handles loading states and error scenarios
+
+### [008] — Email Tracking Support (ALREADY DONE)
+- **What:** Checked email system for tracking number support
+- **Finding:** The generateOrderStatusEmail function already supports tracking numbers!
+- **Features already implemented:**
+  - Tracking numbers shown in status details section
+  - Special "Track Your Package" section when tracking provided
+  - "What's Next" guidance for shipped orders
+  - Order status update API accepts trackingNumber parameter
+- **Result:** No changes needed - functionality already exists
 
 **SQL FOR TIM TO RUN:**
 ```sql
