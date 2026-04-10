@@ -226,6 +226,29 @@ export default function CartPage() {
                       </button>
                     </div>
 
+                    {/* Edit Design Button - only show for customized items */}
+                    {item.customization_data && (
+                      <button
+                        onClick={() => {
+                          // Store editing data in sessionStorage
+                          const editData = {
+                            cartItemId: item.id,
+                            customizationData: item.customization_data,
+                            isEditing: true,
+                            returnToCart: true
+                          }
+                          sessionStorage.setItem('crystal-harbor-edit-design', JSON.stringify(editData))
+                          
+                          // Navigate to product page
+                          window.location.href = `/products/${item.category_slug}/${item.product_slug}`
+                        }}
+                        className="text-blue-600 hover:text-blue-700 transition-colors duration-200 text-xs font-medium"
+                        title="Edit this custom design"
+                      >
+                        ✏️ Edit Design
+                      </button>
+                    )}
+
                     {/* Remove Button */}
                     <button
                       onClick={() => removeItem(item.id)}

@@ -27,12 +27,13 @@
 - [x] Updated OrderDetails interface to include customization_data
 - [x] Build successful - committed as 201ed8e
 
-### Step 6: Save and Resume Designs
-- [ ] Create migration SQL
-- [ ] Create API at /api/account/designs/route.ts
-- [ ] Add Save/Load buttons to customization tool
-- [ ] Add My Designs to customer account
-- [ ] Handle guest storage in sessionStorage
+### Step 6: Save and Resume Designs ✅
+- [x] Created migration SQL at docs/migrations/add-saved-designs-table.sql
+- [x] Created API at /api/account/designs/route.ts (GET, POST, DELETE, PUT)
+- [x] Added useSavedDesigns hook with auth & guest support
+- [x] Updated CustomizationEditor with Save/Load buttons and modals
+- [x] Guest designs stored in sessionStorage with account signup prompts
+- [x] Build successful - committed as a6ee54d
 
 ### Step 7: Edit Design from Cart
 - [ ] Add Edit Design button on cart page

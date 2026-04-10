@@ -66,7 +66,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   const [isMobile, setIsMobile] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   
-  const { addItem } = useCartStore()
+  const { addItem, updateItem } = useCartStore()
   
   // Detect mobile device
   useEffect(() => {
@@ -83,6 +83,30 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       price: product.base_price
     })
   }, [product.id, product.name, category.name, product.base_price])
+
+  // Check for design editing mode on mount
+  useEffect(() => {
+    const editDataString = sessionStorage.getItem('crystal-harbor-edit-design')
+    if (editDataString) {
+      try {
+        const editData = JSON.parse(editDataString)
+        if (editData.isEditing && editData.customizationData && editData.customizationData.productId === product.id) {
+          // Set the product configuration to match the existing design
+          setSelectedSize(editData.customizationData.selectedSize || '')
+          setSelectedColor(editData.customizationData.selectedColor || '')
+          
+          // Open the customization modal with pre-loaded design
+          setShowCustomizationModal(true)
+          
+          console.log('Editing mode detected, opening customization modal with design:', editData.customizationData)
+        }
+      } catch (error) {
+        console.error('Error parsing edit design data:', error)
+        // Clear invalid data
+        sessionStorage.removeItem('crystal-harbor-edit-design')
+      }
+    }
+  }, [product.id])
   
   // Get available designs and product settings
   const availableDesigns = getDesignsByProduct(product.slug)
@@ -138,36 +162,79 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   }
 
   const handleCustomizationAddToCart = (designSpec: DesignSpecification) => {
-    // Create cart item with customization data
     const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
     
-    const cartItem = {
-      id: `${product.id}-${selectedSize}-${selectedColor}-custom-${Date.now()}`,
-      product_id: product.id,
-      product_name: product.name,
-      product_slug: product.slug,
-      category_slug: category.slug,
-      selected_size: selectedSize,
-      selected_color: selectedColor,
-      selected_custom_options: Object.keys(selectedCustomOptions).length > 0 ? selectedCustomOptions : null,
-      option_price_adjustment: optionPriceAdjustment,
-      quantity,
-      unit_price: adjustedUnitPrice,
-      customization_fee: designSpec.fees.total,
-      line_total: (adjustedUnitPrice + designSpec.fees.total) * quantity,
-      tier_applied: priceData.tierName,
-      uploaded_file: null,
-      custom_text: null,
-      selected_design: null,
-      customization_data: designSpec,
-      image_url: product.image_url,
-    }
-
-    addItem(cartItem)
-    setShowCustomizationModal(false)
+    // Check if we're in editing mode
+    const editDataString = sessionStorage.getItem('crystal-harbor-edit-design')
+    let isEditing = false
+    let cartItemId = null
     
-    // Show success message
-    alert(`Added customized ${product.name} to cart!`)
+    if (editDataString) {
+      try {
+        const editData = JSON.parse(editDataString)
+        if (editData.isEditing && editData.cartItemId) {
+          isEditing = true
+          cartItemId = editData.cartItemId
+        }
+      } catch (error) {
+        console.error('Error parsing edit design data:', error)
+      }
+    }
+    
+    if (isEditing && cartItemId) {
+      // Update existing cart item
+      const updates = {
+        selected_size: selectedSize,
+        selected_color: selectedColor,
+        selected_custom_options: Object.keys(selectedCustomOptions).length > 0 ? selectedCustomOptions : null,
+        option_price_adjustment: optionPriceAdjustment,
+        quantity,
+        unit_price: adjustedUnitPrice,
+        customization_fee: designSpec.fees.total,
+        customization_data: designSpec,
+        // line_total will be recalculated automatically by updateItem
+      }
+      
+      updateItem(cartItemId, updates)
+      
+      // Clear editing data
+      sessionStorage.removeItem('crystal-harbor-edit-design')
+      
+      setShowCustomizationModal(false)
+      
+      // Show success message and redirect to cart
+      alert(`Updated your customized ${product.name}!`)
+      window.location.href = '/cart'
+    } else {
+      // Add new cart item (existing behavior)
+      const cartItem = {
+        id: `${product.id}-${selectedSize}-${selectedColor}-custom-${Date.now()}`,
+        product_id: product.id,
+        product_name: product.name,
+        product_slug: product.slug,
+        category_slug: category.slug,
+        selected_size: selectedSize,
+        selected_color: selectedColor,
+        selected_custom_options: Object.keys(selectedCustomOptions).length > 0 ? selectedCustomOptions : null,
+        option_price_adjustment: optionPriceAdjustment,
+        quantity,
+        unit_price: adjustedUnitPrice,
+        customization_fee: designSpec.fees.total,
+        line_total: (adjustedUnitPrice + designSpec.fees.total) * quantity,
+        tier_applied: priceData.tierName,
+        uploaded_file: null,
+        custom_text: null,
+        selected_design: null,
+        customization_data: designSpec,
+        image_url: product.image_url,
+      }
+
+      addItem(cartItem)
+      setShowCustomizationModal(false)
+      
+      // Show success message
+      alert(`Added customized ${product.name} to cart!`)
+    }
   }
 
   const handleAddToCart = () => {

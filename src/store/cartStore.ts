@@ -38,6 +38,7 @@ interface CartStore {
   
   // Actions
   addItem: (item: CartItem) => void
+  updateItem: (itemId: string, updates: Partial<CartItem>) => void
   removeItem: (itemId: string) => void
   updateQuantity: (itemId: string, quantity: number) => void
   clearCart: () => void
@@ -116,6 +117,37 @@ export const useCartStore = create<CartStore>()(
             quantity: newItem.quantity,
             price: newItem.unit_price
           })
+
+          return { 
+            items: updatedItems,
+            totalItems: newTotalItems,
+            subtotal: newSubtotal
+          }
+        })
+      },
+
+      updateItem: (itemId, updates) => {
+        set((state) => {
+          const updatedItems = state.items.map((item) => {
+            if (item.id === itemId) {
+              const updatedItem = { ...item, ...updates }
+              // Recalculate line total if price-related fields changed
+              if (updates.unit_price !== undefined || updates.customization_fee !== undefined || updates.quantity !== undefined) {
+                updatedItem.line_total = (updatedItem.unit_price + (updatedItem.customization_fee || 0)) * updatedItem.quantity
+              }
+              return updatedItem
+            }
+            return item
+          })
+
+          // Calculate updated totals
+          const newTotalItems = calculateTotalItems(updatedItems)
+          const newSubtotal = calculateSubtotal(updatedItems)
+
+          // Trigger cart update event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('cartUpdated'))
+          }
 
           return { 
             items: updatedItems,
