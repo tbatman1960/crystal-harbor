@@ -86,6 +86,7 @@ export interface ImageLayer extends BaseLayer {
   originalWidth: number     // pixels
   originalHeight: number
   dpiAtCurrentSize: number  // computed based on physical area
+  lowResolutionFlag: boolean // true if image was flagged as insufficient DPI at upload
 }
 
 export interface CatalogDesignLayer extends BaseLayer {

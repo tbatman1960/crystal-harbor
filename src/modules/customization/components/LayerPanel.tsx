@@ -5,17 +5,21 @@ import type { DesignLayer } from '../types'
 interface LayerPanelProps {
   layers: DesignLayer[]
   selectedLayerId: string | null
+  hiddenLayerIds: Set<string>
   onSelectLayer: (id: string) => void
   onRemoveLayer: () => void
   onMoveLayer: (direction: 'up' | 'down') => void
+  onToggleVisibility: (id: string) => void
 }
 
 export function LayerPanel({
   layers,
   selectedLayerId,
+  hiddenLayerIds,
   onSelectLayer,
   onRemoveLayer,
   onMoveLayer,
+  onToggleVisibility,
 }: LayerPanelProps) {
   if (layers.length === 0) {
     return (
@@ -93,8 +97,16 @@ export function LayerPanel({
                 : 'bg-gray-50 border border-transparent text-gray-700 hover:bg-gray-100'
             }`}
           >
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id) }}
+              className="text-gray-400 hover:text-gray-700 flex-shrink-0"
+              title={hiddenLayerIds.has(layer.id) ? 'Show' : 'Hide'}
+            >
+              {hiddenLayerIds.has(layer.id) ? '👁️‍🗨️' : '👁️'}
+            </button>
             <span>{typeIcon(layer.type)}</span>
-            <span className="truncate flex-1">{typeLabel(layer)}</span>
+            <span className={`truncate flex-1 ${hiddenLayerIds.has(layer.id) ? 'opacity-40 line-through' : ''}`}>{typeLabel(layer)}</span>
           </button>
         ))}
       </div>

@@ -176,6 +176,7 @@ export function useCanvasEditor(options: UseCanvasEditorOptions) {
           originalWidth: obj.originalWidth || 0,
           originalHeight: obj.originalHeight || 0,
           dpiAtCurrentSize: obj.dpiAtCurrentSize || 0,
+          lowResolutionFlag: obj.lowResolutionFlag || false,
         } as ImageLayer)
       } else if (obj.layerType === 'catalog-design') {
         layers.push({
@@ -268,9 +269,11 @@ export function useCanvasEditor(options: UseCanvasEditorOptions) {
       ;(img as any).originalWidth = originalWidth
       ;(img as any).originalHeight = originalHeight
 
-      // Calculate DPI
+      // Calculate DPI and flag low-res
       const physicalScaleW = (img.getScaledWidth() / area.width) * physicalDimensions.widthInches
-      ;(img as any).dpiAtCurrentSize = physicalScaleW > 0 ? Math.round(originalWidth / physicalScaleW) : 0
+      const initialDpi = physicalScaleW > 0 ? Math.round(originalWidth / physicalScaleW) : 0
+      ;(img as any).dpiAtCurrentSize = initialDpi
+      ;(img as any).lowResolutionFlag = initialDpi > 0 && initialDpi < 150
 
       img.on('moving', () => constrainToArea(img))
       img.on('scaling', () => {
@@ -437,6 +440,31 @@ export function useCanvasEditor(options: UseCanvasEditorOptions) {
     })
   }, [physicalDimensions, printableArea, canvasWidth])
 
+  // Clear all design elements
+  const clearAll = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const toRemove = canvas.getObjects().filter((o: any) => o.layerId)
+    toRemove.forEach(obj => canvas.remove(obj))
+    canvas.discardActiveObject()
+    canvas.renderAll()
+    syncLayersFromCanvas(canvas)
+    setSelectedObjectId(null)
+  }, [syncLayersFromCanvas])
+
+  // Toggle layer visibility
+  const toggleLayerVisibility = useCallback((layerId: string) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const obj = canvas.getObjects().find((o: any) => o.layerId === layerId)
+    if (obj) {
+      obj.set('visible', !obj.visible)
+      canvas.renderAll()
+    }
+  }, [])
+
   // Cleanup
   const dispose = useCallback(() => {
     if (canvasRef.current) {
@@ -478,7 +506,9 @@ export function useCanvasEditor(options: UseCanvasEditorOptions) {
     addCatalogDesign,
     updateTextProperties,
     removeSelected,
+    clearAll,
     moveLayer,
+    toggleLayerVisibility,
     exportPreview,
     exportPrintReady,
     getSelectedObject,

@@ -55,6 +55,9 @@ export function CustomizationEditor({
   const [selectedColor, setSelectedColor] = useState(
     config.templates[0]?.colorName || ''
   )
+  const [showPreview, setShowPreview] = useState(false)
+  const [previewDataUrl, setPreviewDataUrl] = useState<string>('')
+  const [hiddenLayerIds, setHiddenLayerIds] = useState<Set<string>>(new Set())
 
   const currentTemplate = config.templates.find(t => t.colorName === selectedColor) || config.templates[0]
 
@@ -96,7 +99,7 @@ export function CustomizationEditor({
         e.preventDefault()
         undo()
       }
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || ((e.key === 'z' || e.key === 'Z') && e.shiftKey))) {
         e.preventDefault()
         redo()
       }
@@ -115,8 +118,29 @@ export function CustomizationEditor({
 
   const selectedObj = editor.getSelectedObject()
 
+  const handlePreview = () => {
+    const dataUrl = editor.exportPreview(1.0)
+    setPreviewDataUrl(dataUrl)
+    setShowPreview(true)
+  }
+
+  const handleClear = () => {
+    if (!confirm('Are you sure? This will remove all your design work.')) return
+    editor.clearAll()
+  }
+
+  const handleToggleVisibility = (layerId: string) => {
+    editor.toggleLayerVisibility(layerId)
+    setHiddenLayerIds(prev => {
+      const next = new Set(prev)
+      if (next.has(layerId)) next.delete(layerId)
+      else next.add(layerId)
+      return next
+    })
+  }
+
   const handleAddToCart = () => {
-    const previewDataUrl = editor.exportPreview()
+    const preview = editor.exportPreview()
     const fees = calculateFees(layers, config.pricing)
 
     const spec: DesignSpecification = {
@@ -124,7 +148,7 @@ export function CustomizationEditor({
       templateId: currentTemplate?.id || '',
       selectedColor,
       layers,
-      previewImageDataUrl: previewDataUrl,
+      previewImageDataUrl: preview,
       customizationFees: fees,
     }
 
@@ -269,8 +293,8 @@ export function CustomizationEditor({
             <LayerPanel
               layers={layers}
               selectedLayerId={editor.selectedObjectId}
+              hiddenLayerIds={hiddenLayerIds}
               onSelectLayer={(id) => {
-                // Select the object on canvas
                 const canvas = (editor as any).canvasRef?.current
                 if (canvas) {
                   const obj = canvas.getObjects().find((o: any) => o.layerId === id)
@@ -282,6 +306,7 @@ export function CustomizationEditor({
               }}
               onRemoveLayer={editor.removeSelected}
               onMoveLayer={editor.moveLayer}
+              onToggleVisibility={handleToggleVisibility}
             />
           )}
         </div>
@@ -292,6 +317,13 @@ export function CustomizationEditor({
           pricing={config.pricing}
           baseProductPrice={basePrice}
         />
+
+        {/* Low-res warnings */}
+        {layers.some(l => l.type === 'image' && l.lowResolutionFlag) && (
+          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+            ⚠️ One or more images may not print clearly at this size. We&apos;ll offer image enhancement options soon.
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="space-y-2 pt-2 border-t border-gray-200">
@@ -305,13 +337,89 @@ export function CustomizationEditor({
           </button>
           <button
             type="button"
-            onClick={onCancel}
-            className="w-full py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            onClick={handlePreview}
+            disabled={layers.length === 0}
+            className="w-full py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            Cancel
+            👁️ Preview
           </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={layers.length === 0}
+              className="flex-1 py-2 border border-red-300 rounded-lg text-sm text-red-600 hover:bg-red-50 disabled:opacity-30 transition-colors"
+            >
+              Clear All
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+          {/* Placeholder for future buttons */}
+          <div className="flex gap-2 opacity-40 pointer-events-none">
+            <button
+              type="button"
+              disabled
+              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-400"
+            >
+              💾 Save Design
+            </button>
+            <button
+              type="button"
+              disabled
+              className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-400"
+            >
+              🔗 Share Design
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Preview modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowPreview(false)} />
+          <div className="relative bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Design Preview</h3>
+            <img
+              src={previewDataUrl}
+              alt="Design preview"
+              className="w-full rounded-lg border border-gray-200"
+            />
+            {layers.some(l => l.type === 'image' && l.lowResolutionFlag) && (
+              <p className="text-xs text-amber-600 mt-2">
+                ⚠️ Some images are low resolution and may appear blurry when printed.
+              </p>
+            )}
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  const link = document.createElement('a')
+                  link.download = `${productName.replace(/\s+/g, '-').toLowerCase()}-preview.png`
+                  link.href = previewDataUrl
+                  link.click()
+                }}
+                className="flex-1 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900"
+              >
+                📥 Download Preview
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPreview(false)}
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
