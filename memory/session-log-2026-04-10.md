@@ -19,11 +19,13 @@
 
 ## Steps to Complete
 
-### Step 5: Manufacturer PDF Updates ⏳
+### Step 5: Manufacturer PDF Updates ✅
 - [x] Found existing PDF generation at `src/lib/pdf-generator.ts`
-- [ ] Update generateOrderPDF to include customization section
-- [ ] Add preview image, print file reference, design specs
-- [ ] Show product details, print area dimensions
+- [x] Updated generateOrderPDF to include customization section
+- [x] Added preview image, print file reference, design specs  
+- [x] Shows product details, print area dimensions, layer details
+- [x] Updated OrderDetails interface to include customization_data
+- [x] Build successful - committed as 201ed8e
 
 ### Step 6: Save and Resume Designs
 - [ ] Create migration SQL
