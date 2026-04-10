@@ -9,9 +9,10 @@ export const metadata = {
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { redirectTo?: string }
+  searchParams: { redirectTo?: string; reason?: string }
 }) {
   const redirectTo = searchParams.redirectTo || '/'
+  const reason = searchParams.reason
 
   return (
     <div className="section-padding bg-background-50 min-h-screen">
@@ -23,6 +24,14 @@ export default function LoginPage({
             </span>
           </Link>
         </div>
+
+        {reason === 'customization' && (
+          <div className="max-w-md mx-auto mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-blue-800 text-sm font-medium">
+              Please sign in or create an account to customize your product. We need your account to save your design.
+            </p>
+          </div>
+        )}
 
         <LoginForm redirectTo={redirectTo} showRegisterLink={true} />
 

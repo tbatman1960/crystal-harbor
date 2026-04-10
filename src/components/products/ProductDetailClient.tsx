@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ProductWithOptions, Category } from '@/lib/products'
 import PricingDisplay from './PricingDisplay'
 import { useCartStore } from '@/store/cartStore'
+import { useAuthStore } from '@/store/authStore'
 import { PhotoIcon, DocumentArrowUpIcon, ShoppingCartIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { SwipeableGallery } from '@/components/mobile/TouchGestures'
 import { getDeviceInfo } from '@/lib/mobile-detection'
@@ -67,6 +68,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   
   const { addItem, updateItem } = useCartStore()
+  const { isAuthenticated } = useAuthStore()
   
   // Detect mobile device
   useEffect(() => {
@@ -657,6 +659,12 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               <button
                 onClick={() => {
                   // Validate required selections first
+                  if (!isAuthenticated) {
+                    // Require login for customization
+                    sessionStorage.setItem('crystal-harbor-redirect-after-login', window.location.pathname)
+                    window.location.href = `/auth/login?redirectTo=${encodeURIComponent(window.location.pathname)}&reason=customization`
+                    return
+                  }
                   if (product.sizes.length > 0 && !selectedSize) {
                     setError('Please select a size first')
                     return
