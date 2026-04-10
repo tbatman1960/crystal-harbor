@@ -370,32 +370,164 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
               
               <div className="space-y-4">
                 {order.order_items?.map((item: any, index: number) => (
-                  <div key={index} className="flex items-center space-x-4 p-4 bg-background-50 rounded-lg">
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <span className="text-2xl">📦</span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-neutral-700">{item.product_name}</h3>
-                      <div className="text-sm text-secondary-600 space-x-4">
-                        <span>Size: {item.selected_size}</span>
-                        <span>Color: {item.selected_color}</span>
-                        <span>Qty: {item.quantity}</span>
+                  <div key={index} className="p-4 bg-background-50 rounded-lg">
+                    <div className="flex items-start space-x-4">
+                      {/* Product Image / Preview */}
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center relative">
+                        {item.customization_data?.previewImageUrl ? (
+                          <>
+                            <img 
+                              src={item.customization_data.previewImageUrl}
+                              alt="Custom Design Preview"
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                            <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent-coral-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs">🎨</span>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-2xl">📦</span>
+                        )}
                       </div>
-                      {item.custom_text && (
-                        <div className="text-sm text-secondary-600 mt-1">
-                          <strong>Custom Text:</strong> {item.custom_text}
+                      
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-neutral-700">{item.product_name}</h3>
+                        <div className="text-sm text-secondary-600 space-x-4">
+                          <span>Size: {item.selected_size}</span>
+                          <span>Color: {item.selected_color}</span>
+                          <span>Qty: {item.quantity}</span>
                         </div>
-                      )}
-                      {item.tier_applied && (
-                        <div className="text-xs text-accent-lime-600 mt-1">
-                          {item.tier_applied}
+                        {item.custom_text && (
+                          <div className="text-sm text-secondary-600 mt-1">
+                            <strong>Custom Text:</strong> {item.custom_text}
+                          </div>
+                        )}
+                        {item.tier_applied && (
+                          <div className="text-xs text-accent-lime-600 mt-1">
+                            {item.tier_applied}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="font-semibold">${item.unit_price.toFixed(2)} base</div>
+                        {item.customization_fee > 0 && (
+                          <div className="text-sm text-accent-coral-600">
+                            +${item.customization_fee.toFixed(2)} custom
+                          </div>
+                        )}
+                        <div className="text-lg font-bold text-primary-600">${item.line_total.toFixed(2)}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Customization Details */}
+                    {item.customization_data && (
+                      <div className="mt-4 p-3 border border-accent-coral-200 bg-accent-coral-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-accent-coral-800 flex items-center space-x-2">
+                            <span>🎨</span>
+                            <span>Custom Design Specifications</span>
+                            {item.customization_data.lowResWarnings?.length > 0 && (
+                              <span className="text-yellow-600" title="Low resolution warnings">⚠️</span>
+                            )}
+                          </h4>
+                          <div className="flex space-x-2">
+                            {item.customization_data.previewImageUrl && (
+                              <button
+                                onClick={() => window.open(item.customization_data.previewImageUrl, '_blank')}
+                                className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Download Preview
+                              </button>
+                            )}
+                            {item.customization_data.printFileUrl && (
+                              <button
+                                onClick={() => window.open(item.customization_data.printFileUrl, '_blank')}
+                                className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                              >
+                                Download Print File
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${item.unit_price.toFixed(2)} each</div>
-                      <div className="text-lg font-bold text-primary-600">${item.line_total.toFixed(2)}</div>
-                    </div>
+                        
+                        {/* Design Elements */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <h5 className="font-medium text-accent-coral-700 mb-2">Design Elements ({item.customization_data.layers?.length || 0})</h5>
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                              {item.customization_data.layers?.map((layer: any, layerIndex: number) => (
+                                <div key={layerIndex} className="text-xs bg-white p-2 rounded border">
+                                  <div className="font-medium text-gray-800">
+                                    {layer.type === 'text' ? '📝' : layer.type === 'image' ? '🖼️' : '🎨'} 
+                                    {layer.type.charAt(0).toUpperCase() + layer.type.slice(1)} Layer
+                                  </div>
+                                  {layer.type === 'text' && layer.data && (
+                                    <div className="mt-1 space-y-1">
+                                      <div><strong>Text:</strong> "{layer.data.text}"</div>
+                                      <div><strong>Font:</strong> {layer.data.fontFamily} ({layer.data.fontSize}px)</div>
+                                      <div><strong>Color:</strong> {layer.data.fontColor}</div>
+                                      <div><strong>Alignment:</strong> {layer.data.alignment}</div>
+                                      <div><strong>Style:</strong> {layer.data.bold ? 'Bold ' : ''}{layer.data.italic ? 'Italic' : ''}</div>
+                                    </div>
+                                  )}
+                                  {layer.type === 'image' && layer.data && (
+                                    <div className="mt-1 space-y-1">
+                                      <div><strong>File:</strong> {layer.data.originalFilename}</div>
+                                      <div><strong>Size:</strong> {layer.data.originalWidth}×{layer.data.originalHeight}px</div>
+                                      <div><strong>DPI:</strong> {Math.round(layer.data.dpiAtCurrentSize)}</div>
+                                      {layer.data.lowResolutionFlag && (
+                                        <div className="text-yellow-600"><strong>⚠️ Low Resolution</strong></div>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="mt-1 text-gray-600">
+                                    Position: {Math.round(layer.x)}%, {Math.round(layer.y)}% 
+                                    ({Math.round(layer.width)}×{Math.round(layer.height)}%)
+                                  </div>
+                                </div>
+                              )) || <div className="text-gray-500">No layers found</div>}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h5 className="font-medium text-accent-coral-700 mb-2">Fees & Warnings</h5>
+                            <div className="space-y-2 text-xs">
+                              <div className="bg-white p-2 rounded border">
+                                <div><strong>Base Fee:</strong> ${item.customization_data.fees?.baseFee?.toFixed(2) || '0.00'}</div>
+                                <div><strong>Text Fees:</strong> ${item.customization_data.fees?.textFees?.toFixed(2) || '0.00'}</div>
+                                <div><strong>Image Fees:</strong> ${item.customization_data.fees?.imageFees?.toFixed(2) || '0.00'}</div>
+                                <div className="border-t pt-1 mt-1">
+                                  <strong>Total:</strong> ${item.customization_data.fees?.total?.toFixed(2) || '0.00'}
+                                </div>
+                              </div>
+                              
+                              {item.customization_data.lowResWarnings?.length > 0 && (
+                                <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
+                                  <div className="font-medium text-yellow-800 mb-1">⚠️ Resolution Warnings</div>
+                                  {item.customization_data.lowResWarnings.map((warning: any, warnIndex: number) => (
+                                    <div key={warnIndex} className="text-yellow-700">
+                                      <div><strong>{warning.filename}</strong></div>
+                                      <div>{warning.currentDpi} DPI (needs {warning.recommendedDpi} DPI)</div>
+                                      <div className="italic">{warning.message}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Metadata */}
+                        {item.customization_data.metadata && (
+                          <div className="mt-3 pt-2 border-t border-accent-coral-200 text-xs text-accent-coral-600">
+                            Created: {new Date(item.customization_data.metadata.createdAt).toLocaleString()} | 
+                            Editor: {item.customization_data.metadata.editorVersion} | 
+                            Design ID: {item.customization_data.designId}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
