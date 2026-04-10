@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { PhotoIcon, PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline'
 
 interface OptionValue {
@@ -968,12 +969,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
             )}
 
             {formData.is_customizable && (
-              <a
+              <Link
                 href={`/admin/customization/${params.id}`}
                 className="inline-flex items-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
                 ⚙️ Configure Templates, Print Areas & Pricing →
-              </a>
+              </Link>
             )}
           </div>
 

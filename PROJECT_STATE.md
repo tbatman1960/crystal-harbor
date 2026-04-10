@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-04-02
+**Last Updated:** 2026-04-07
 
 ---
 
@@ -348,9 +348,13 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Shipping v3 — Package-based packing (2026-04-02):** Complete shipping rewrite from per-item to package-based system. Products have `packing_units` and `packed_weight_lbs`. Package types defined in admin (Poly Mailer through Extra Large Box). Packing algorithm finds optimal box combination by both capacity and weight. Carrier API rates (USPS) with fallback to utilization-based flat rates. Admin shipping page with 4 tabs: Package Types, Settings, Product Packing, Test Calculator. Test calculator lets admin simulate orders to verify pricing.
 - **USPS REST API integration (2026-04-02):** Rewrote carrier integration for new USPS developer portal APIs (developers.usps.com). OAuth2 client credentials flow. Domestic Prices v3 for rates, Domestic Labels v3 for shipping labels, Tracking v3 for package tracking. Mock rates/labels work perfectly without credentials. Seamless switch to live when credentials added.
 - **Shipping label generation (2026-04-02):** Admin order detail has "Create Shipping Labels" button. Generates labels per package using packing algorithm. Mock labels via jsPDF (4×6" PDF with barcode pattern). Labels stored in `shipping_labels` table. Print/track buttons per package. Tracking numbers included in customer shipping emails.
+- **USPS live rates (2026-04-07):** API credentials configured (MC2 Consulting LLC account). Fixed endpoint from `/prices/v3/domestic/price` to `/prices/v3/base-rates/search`. Fixed mail class `GROUND_ADVANTAGE` to `USPS_GROUND_ADVANTAGE`. Now fetches all 3 service levels (Ground Advantage, Priority Mail, Priority Mail Express) in parallel with real USPS pricing. Falls back to mock rates on API failure. USPS_ENV=testing (TEM sandbox).
+- **Checkout UX improvements (2026-04-07):** Added "Continue Shopping" link and "Clear Cart" button below submit buttons on both checkout steps (shipping form and payment form). Keeps navigation options visible throughout checkout flow.
 
 ### In Progress
-- **USPS API credentials:** Tim registering at developers.usps.com. Needs to enroll in "USPS Ship" via COP portal (cop.usps.com) and set up Enterprise Payment Account before API app creation is available. Select "Ship with APIs" option. Once enrolled, get Consumer Key + Consumer Secret, add as USPS_CLIENT_ID and USPS_CLIENT_SECRET env vars.
+- **USPS Labels API access:** Rates and tracking work with live API. Labels API returns 401 (insufficient OAuth scope) — app only has "Public Access" product, needs Shipping Suite/Labels product added. Tim contacted USPS support; they need account details to grant access. CRID: 55939760, MIDs: 904153252/904155410, EPS: 1000420021/1000419844/1000419846. Pending USPS response.
+- **USPS env vars on Netlify:** Need to add USPS_CLIENT_ID, USPS_CLIENT_SECRET, and USPS_ENV=testing to Netlify environment variables for live site to use USPS rates.
+- **USPS production switch:** Currently using TEM sandbox (apis-tem.usps.com). Switch USPS_ENV to "production" after thorough testing.
 
 ### Known Issues
 - **Footer newsletter input:** Email input may appear cut off on some viewports
@@ -478,6 +482,24 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-04-07
+- **Worked on:** USPS API credentials setup, live rate integration fix, checkout UX improvements, Labels API investigation
+- **Key changes:**
+  - Added USPS Consumer Key/Secret to .env.local (MC2 Consulting LLC account, TEM sandbox)
+  - Fixed USPS rates endpoint: `/prices/v3/domestic/price` → `/prices/v3/base-rates/search`
+  - Fixed mail class enum: `GROUND_ADVANTAGE` → `USPS_GROUND_ADVANTAGE`
+  - Rewrote rate fetching to query all 3 service levels in parallel (Ground Advantage, Priority Mail, Express)
+  - Added "Continue Shopping" and "Clear Cart" links to both checkout steps (shipping + payment)
+  - Tested Labels API — returns 401 insufficient scope, needs USPS to grant Labels product access
+- **Decisions made:**
+  - USPS_ENV stays as "testing" until thorough testing complete
+  - "Cancel Order" renamed to "Clear Cart" on checkout — no order exists yet, clearer UX
+  - Labels API requires USPS support to enable — portal too confusing for self-service
+- **Open threads:**
+  - Tim contacted USPS support for Labels API access — provided CRID/MID/EPS from token
+  - Need to add USPS env vars to Netlify
+  - Product weights/packing units still at defaults — Tim to check real weights
 
 ### 2026-04-02
 - **Worked on:** Custom product options, shipping system overhaul (v3), USPS API integration, shipping label generation
