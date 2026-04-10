@@ -84,6 +84,12 @@ export async function POST(request: NextRequest) {
       custom_options = {},
       size_class = 'small',
       shipping_method = 'flat_rate',
+      is_customizable = false,
+      customization_allow_text = false,
+      customization_allow_image_upload = false,
+      customization_allow_catalog_designs = false,
+      customization_allow_ai_generation = false,
+      customization_allow_style_transfer = false,
     } = body
 
     // Validate required fields
@@ -119,6 +125,12 @@ export async function POST(request: NextRequest) {
         packed_weight_lbs: packed_weight_lbs != null ? parseFloat(packed_weight_lbs) : 0.5,
         size_class: size_class || 'small',
         shipping_method: shipping_method || 'flat_rate',
+        is_customizable,
+        customization_allow_text,
+        customization_allow_image_upload,
+        customization_allow_catalog_designs,
+        customization_allow_ai_generation,
+        customization_allow_style_transfer,
       }])
       .select()
       .single()

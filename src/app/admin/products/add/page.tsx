@@ -36,6 +36,12 @@ interface ProductFormData {
   colors: string[]
   size_class: string
   shipping_method: string
+  is_customizable: boolean
+  customization_allow_text: boolean
+  customization_allow_image_upload: boolean
+  customization_allow_catalog_designs: boolean
+  customization_allow_ai_generation: boolean
+  customization_allow_style_transfer: boolean
 }
 
 interface Category {
@@ -91,6 +97,12 @@ export default function AddProductPage() {
       colors: [],
       size_class: 'small',
       shipping_method: 'flat_rate',
+      is_customizable: false,
+      customization_allow_text: false,
+      customization_allow_image_upload: false,
+      customization_allow_catalog_designs: false,
+      customization_allow_ai_generation: false,
+      customization_allow_style_transfer: false,
     }
   })
 
@@ -727,6 +739,68 @@ export default function AddProductPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Customization */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Customization</h3>
+            <p className="text-xs text-gray-500 mb-4">Allow customers to customize this product with text, images, or designs.</p>
+
+            <label className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                {...register('is_customizable')}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-900">Enable customization for this product</span>
+            </label>
+
+            {watch('is_customizable') && (
+              <div className="ml-6 space-y-3 border-l-2 border-blue-200 pl-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    {...register('customization_allow_text')}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow text customization</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    {...register('customization_allow_image_upload')}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow image upload</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    {...register('customization_allow_catalog_designs')}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow catalog design selection</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    {...register('customization_allow_ai_generation')}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow AI image generation</span>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Coming soon</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    {...register('customization_allow_style_transfer')}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow style transfer</span>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Coming soon</span>
+                </label>
+              </div>
+            )}
           </div>
 
           {/* Settings */}

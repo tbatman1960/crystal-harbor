@@ -43,6 +43,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
     packed_weight_lbs: '0.5',
     size_class: 'small',
     shipping_method: 'flat_rate',
+    is_customizable: false,
+    customization_allow_text: false,
+    customization_allow_image_upload: false,
+    customization_allow_catalog_designs: false,
+    customization_allow_ai_generation: false,
+    customization_allow_style_transfer: false,
   })
   const [sizeClasses, setSizeClasses] = useState<Array<{ name: string; label: string }>>([])
 
@@ -115,6 +121,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         packed_weight_lbs: product.packed_weight_lbs?.toString() || '0.5',
         size_class: product.size_class || 'small',
         shipping_method: product.shipping_method || 'flat_rate',
+        is_customizable: product.is_customizable ?? false,
+        customization_allow_text: product.customization_allow_text ?? false,
+        customization_allow_image_upload: product.customization_allow_image_upload ?? false,
+        customization_allow_catalog_designs: product.customization_allow_catalog_designs ?? false,
+        customization_allow_ai_generation: product.customization_allow_ai_generation ?? false,
+        customization_allow_style_transfer: product.customization_allow_style_transfer ?? false,
       })
 
       setSizes(product.sizes?.map((s: any) => s.value) || [])
@@ -295,6 +307,12 @@ export default function EditProductPage({ params }: EditProductPageProps) {
           }, {} as Record<string, { description: string; values: OptionValue[] }>),
           size_class: formData.size_class,
           shipping_method: formData.shipping_method,
+          is_customizable: formData.is_customizable,
+          customization_allow_text: formData.customization_allow_text,
+          customization_allow_image_upload: formData.customization_allow_image_upload,
+          customization_allow_catalog_designs: formData.customization_allow_catalog_designs,
+          customization_allow_ai_generation: formData.customization_allow_ai_generation,
+          customization_allow_style_transfer: formData.customization_allow_style_transfer,
         })
       })
 
@@ -880,6 +898,74 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 />
               )}
             </div>
+          </div>
+
+          {/* Customization */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-gray-900 mb-1">Customization</h3>
+            <p className="text-xs text-gray-500 mb-4">Allow customers to customize this product with text, images, or designs.</p>
+
+            <label className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                checked={formData.is_customizable}
+                onChange={(e) => setFormData({ ...formData, is_customizable: e.target.checked })}
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-900">Enable customization for this product</span>
+            </label>
+
+            {formData.is_customizable && (
+              <div className="ml-6 space-y-3 border-l-2 border-blue-200 pl-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.customization_allow_text}
+                    onChange={(e) => setFormData({ ...formData, customization_allow_text: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow text customization</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.customization_allow_image_upload}
+                    onChange={(e) => setFormData({ ...formData, customization_allow_image_upload: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow image upload</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.customization_allow_catalog_designs}
+                    onChange={(e) => setFormData({ ...formData, customization_allow_catalog_designs: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow catalog design selection</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.customization_allow_ai_generation}
+                    onChange={(e) => setFormData({ ...formData, customization_allow_ai_generation: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow AI image generation</span>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Coming soon</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.customization_allow_style_transfer}
+                    onChange={(e) => setFormData({ ...formData, customization_allow_style_transfer: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Allow style transfer</span>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Coming soon</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="form-group">

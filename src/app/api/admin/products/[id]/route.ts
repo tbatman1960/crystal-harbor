@@ -105,6 +105,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       custom_options = {},
       size_class,
       shipping_method,
+      is_customizable,
+      customization_allow_text,
+      customization_allow_image_upload,
+      customization_allow_catalog_designs,
+      customization_allow_ai_generation,
+      customization_allow_style_transfer,
     } = body
 
     // Validate required fields
@@ -139,6 +145,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...(packed_weight_lbs !== undefined && { packed_weight_lbs: parseFloat(packed_weight_lbs) }),
         ...(size_class !== undefined && { size_class }),
         ...(shipping_method !== undefined && { shipping_method }),
+        ...(is_customizable !== undefined && { is_customizable }),
+        ...(customization_allow_text !== undefined && { customization_allow_text }),
+        ...(customization_allow_image_upload !== undefined && { customization_allow_image_upload }),
+        ...(customization_allow_catalog_designs !== undefined && { customization_allow_catalog_designs }),
+        ...(customization_allow_ai_generation !== undefined && { customization_allow_ai_generation }),
+        ...(customization_allow_style_transfer !== undefined && { customization_allow_style_transfer }),
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
