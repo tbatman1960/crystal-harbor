@@ -2,6 +2,7 @@ import { supabaseAdmin as supabase } from './supabase'
 import { calculateSalesTax } from './sales-tax'
 import { sendEmail as sendEmailFn, generateOrderConfirmationEmail, generateOrderStatusEmail } from './email'
 import { v4 as uuidv4 } from 'uuid'
+import type { DesignSpecification } from '@/modules/customization'
 
 export interface OrderItem {
   product_id: string
@@ -10,11 +11,13 @@ export interface OrderItem {
   selected_color: string
   quantity: number
   unit_price: number
+  customization_fee?: number
   line_total: number
   tier_applied: string
   custom_text?: string | null
   uploaded_file?: File | null
   selected_design?: { name: string } | null
+  customization_data?: DesignSpecification | null
 }
 
 export interface ShippingAddress {
@@ -125,14 +128,42 @@ export async function createOrder(data: CreateOrderData): Promise<{
       selected_color: item.selected_color,
       quantity: item.quantity,
       unit_price: item.unit_price,
+      customization_fee: item.customization_fee || 0,
       line_total: item.line_total,
       tier_applied: item.tier_applied,
       custom_text: item.custom_text,
+      customization_data: item.customization_data || null,
     }))
 
-    const { error: itemsError } = await supabase
+    // Try to insert order items with customization data first
+    let { error: itemsError } = await supabase
       .from('order_items')
       .insert(orderItems)
+
+    // If insertion fails due to missing customization columns, try without them
+    if (itemsError && itemsError.message?.includes('customization')) {
+      console.warn('Customization columns not yet available, inserting without customization data')
+      
+      const fallbackItems = data.items.map((item) => ({
+        id: uuidv4(),
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        selected_size: item.selected_size,
+        selected_color: item.selected_color,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        line_total: item.line_total,
+        tier_applied: item.tier_applied,
+        custom_text: item.custom_text,
+      }))
+
+      const { error: fallbackError } = await supabase
+        .from('order_items')
+        .insert(fallbackItems)
+      
+      itemsError = fallbackError
+    }
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError)
