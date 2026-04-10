@@ -86,9 +86,17 @@ export default function CartPage() {
             {items.map((item) => (
               <div key={item.id} className="card p-6">
                 <div className="flex items-start space-x-4">
-                  {/* Product Image */}
-                  <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    {item.image_url ? (
+                  {/* Product Image - use customization preview if available */}
+                  <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 relative">
+                    {item.customization_data?.previewImageUrl ? (
+                      <Image
+                        src={item.customization_data.previewImageUrl}
+                        alt={`${item.product_name} - Custom Design`}
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : item.image_url ? (
                       <Image
                         src={item.image_url}
                         alt={item.product_name}
@@ -99,6 +107,13 @@ export default function CartPage() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-secondary-100 to-secondary-200">
                         <div className="text-secondary-400 text-lg">📷</div>
+                      </div>
+                    )}
+                    
+                    {/* Custom Design Badge */}
+                    {item.customization_data && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent-coral-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs">🎨</span>
                       </div>
                     )}
                   </div>
@@ -129,22 +144,46 @@ export default function CartPage() {
 
                     {/* Customizations */}
                     <div className="mt-2 space-y-1">
-                      {item.selected_design && (
-                        <div className="text-xs text-secondary-600 flex items-center space-x-1">
-                          <span>🎨</span>
-                          <span><span className="font-medium">Design:</span> {item.selected_design.name}</span>
-                        </div>
-                      )}
-                      {item.uploaded_file && (
-                        <div className="text-xs text-secondary-600 flex items-center space-x-1">
-                          <span>📎</span>
-                          <span>Custom image: {item.uploaded_file.name}</span>
-                        </div>
-                      )}
-                      {item.custom_text && (
-                        <div className="text-xs text-secondary-600">
-                          <span className="font-medium">Custom text:</span> "{item.custom_text}"
-                        </div>
+                      {item.customization_data ? (
+                        <>
+                          <div className="text-xs text-accent-coral-600 font-medium flex items-center space-x-1">
+                            <span>🎨</span>
+                            <span>Custom Design</span>
+                            {item.customization_data.lowResWarnings.length > 0 && (
+                              <span className="text-yellow-600" title="Low resolution warning">
+                                ⚠️
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-secondary-600">
+                            {item.customization_data.layers.length} design element{item.customization_data.layers.length !== 1 ? 's' : ''}
+                            {item.customization_data.fees.total > 0 && (
+                              <span className="text-accent-coral-600 ml-2">
+                                +${item.customization_data.fees.total.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          {item.selected_design && (
+                            <div className="text-xs text-secondary-600 flex items-center space-x-1">
+                              <span>🎨</span>
+                              <span><span className="font-medium">Design:</span> {item.selected_design.name}</span>
+                            </div>
+                          )}
+                          {item.uploaded_file && (
+                            <div className="text-xs text-secondary-600 flex items-center space-x-1">
+                              <span>📎</span>
+                              <span>Custom image: {item.uploaded_file.name}</span>
+                            </div>
+                          )}
+                          {item.custom_text && (
+                            <div className="text-xs text-secondary-600">
+                              <span className="font-medium">Custom text:</span> "{item.custom_text}"
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -157,7 +196,12 @@ export default function CartPage() {
                         ${item.line_total.toFixed(2)}
                       </div>
                       <div className="text-sm text-secondary-600">
-                        ${item.unit_price.toFixed(2)} each
+                        ${item.unit_price.toFixed(2)} base
+                        {item.customization_fee > 0 && (
+                          <div className="text-accent-coral-600">
+                            +${item.customization_fee.toFixed(2)} customization
+                          </div>
+                        )}
                       </div>
                     </div>
 
