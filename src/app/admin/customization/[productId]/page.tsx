@@ -60,11 +60,15 @@ export default function CustomizationSettingsPage({
   const fileRef = useRef<HTMLInputElement>(null)
 
   // Printable area visual editor state
+  type DragMode = 'draw' | 'move' | 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw'
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [dragMode, setDragMode] = useState<DragMode>('draw')
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
   const [dragArea, setDragArea] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
+  const [origArea, setOrigArea] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const previewImgRef = useRef<HTMLImageElement>(null)
+  const HANDLE_PCT = 4 // hit-target size in % for edges/corners
 
   // Settings
   const [settings, setSettings] = useState<Settings>({
@@ -234,7 +238,7 @@ export default function CustomizationSettingsPage({
     }
   }
 
-  // Unified pointer helpers for draw-to-define printable area (mouse + touch)
+  // Unified pointer helpers for draw/move/resize printable area (mouse + touch)
   const getPointerPercent = (e: React.MouseEvent | React.TouchEvent, container: HTMLElement) => {
     const rect = container.getBoundingClientRect()
     const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
@@ -245,48 +249,109 @@ export default function CustomizationSettingsPage({
     }
   }
 
+  // Determine what the user tapped: a corner, edge, inside the rect, or empty space
+  const hitTest = (px: number, py: number, tpl: Template): DragMode => {
+    const { printable_area_x: ax, printable_area_y: ay, printable_area_width: aw, printable_area_height: ah } = tpl
+    if (aw < 1 || ah < 1) return 'draw'
+    const h = HANDLE_PCT
+    const nearL = Math.abs(px - ax) < h
+    const nearR = Math.abs(px - (ax + aw)) < h
+    const nearT = Math.abs(py - ay) < h
+    const nearB = Math.abs(py - (ay + ah)) < h
+    const inX = px > ax - h && px < ax + aw + h
+    const inY = py > ay - h && py < ay + ah + h
+    // corners first
+    if (nearT && nearL && inX && inY) return 'nw'
+    if (nearT && nearR && inX && inY) return 'ne'
+    if (nearB && nearL && inX && inY) return 'sw'
+    if (nearB && nearR && inX && inY) return 'se'
+    // edges
+    if (nearT && inX) return 'n'
+    if (nearB && inX) return 's'
+    if (nearL && inY) return 'w'
+    if (nearR && inY) return 'e'
+    // inside → move
+    if (px > ax && px < ax + aw && py > ay && py < ay + ah) return 'move'
+    return 'draw'
+  }
+
   const handleAreaStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, templateId: string) => {
-    e.preventDefault() // prevent scroll on touch
+    e.preventDefault()
     const { x, y } = getPointerPercent(e, e.currentTarget)
+    const tpl = templates.find(t => t.id === templateId)!
+    const mode = hitTest(x, y, tpl)
     setEditingTemplateId(templateId)
     setIsDragging(true)
+    setDragMode(mode)
     setDragStart({ x, y })
-    setDragArea({ x, y, w: 0, h: 0 })
+    const cur = { x: tpl.printable_area_x, y: tpl.printable_area_y, w: tpl.printable_area_width, h: tpl.printable_area_height }
+    setOrigArea(cur)
+    if (mode === 'draw') {
+      setDragArea({ x, y, w: 0, h: 0 })
+    } else {
+      setDragArea(cur)
+    }
   }
 
   const handleAreaMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, templateId: string) => {
-    if (!isDragging || editingTemplateId !== templateId || !dragStart) return
+    if (!isDragging || editingTemplateId !== templateId || !dragStart || !origArea) return
     e.preventDefault()
     const { x, y } = getPointerPercent(e, e.currentTarget)
-    setDragArea({
-      x: Math.round(Math.min(dragStart.x, x) * 10) / 10,
-      y: Math.round(Math.min(dragStart.y, y) * 10) / 10,
-      w: Math.round(Math.abs(x - dragStart.x) * 10) / 10,
-      h: Math.round(Math.abs(y - dragStart.y) * 10) / 10,
+    const dx = x - dragStart.x
+    const dy = y - dragStart.y
+    const r = (v: number) => Math.round(v * 10) / 10
+    const clamp = (v: number) => Math.max(0, Math.min(100, v))
+
+    if (dragMode === 'draw') {
+      setDragArea({
+        x: r(Math.min(dragStart.x, x)),
+        y: r(Math.min(dragStart.y, y)),
+        w: r(Math.abs(dx)),
+        h: r(Math.abs(dy)),
+      })
+    } else if (dragMode === 'move') {
+      let nx = clamp(origArea.x + dx)
+      let ny = clamp(origArea.y + dy)
+      if (nx + origArea.w > 100) nx = 100 - origArea.w
+      if (ny + origArea.h > 100) ny = 100 - origArea.h
+      setDragArea({ x: r(nx), y: r(ny), w: origArea.w, h: origArea.h })
+    } else {
+      // Resize from edge/corner
+      let { x: nx, y: ny, w: nw, h: nh } = origArea
+      if (dragMode.includes('n')) { ny = clamp(origArea.y + dy); nh = origArea.h - dy }
+      if (dragMode.includes('s')) { nh = origArea.h + dy }
+      if (dragMode.includes('w')) { nx = clamp(origArea.x + dx); nw = origArea.w - dx }
+      if (dragMode.includes('e')) { nw = origArea.w + dx }
+      // Enforce minimums
+      if (nw < 3) { nw = 3; if (dragMode.includes('w')) nx = origArea.x + origArea.w - 3 }
+      if (nh < 3) { nh = 3; if (dragMode.includes('n')) ny = origArea.y + origArea.h - 3 }
+      if (nx + nw > 100) nw = 100 - nx
+      if (ny + nh > 100) nh = 100 - ny
+      setDragArea({ x: r(nx), y: r(ny), w: r(nw), h: r(nh) })
+    }
+  }
+
+  const commitArea = (templateId: string, area: { x: number; y: number; w: number; h: number }) => {
+    handleUpdateTemplate(templateId, {
+      printable_area_x: area.x,
+      printable_area_y: area.y,
+      printable_area_width: area.w,
+      printable_area_height: area.h,
     })
+    setTemplates(prev => prev.map(t => t.id === templateId ? {
+      ...t, printable_area_x: area.x, printable_area_y: area.y,
+      printable_area_width: area.w, printable_area_height: area.h,
+    } : t))
   }
 
   const handleAreaEnd = () => {
     if (editingTemplateId && dragArea && dragArea.w > 1 && dragArea.h > 1) {
-      // Save to server only on release
-      handleUpdateTemplate(editingTemplateId, {
-        printable_area_x: dragArea.x,
-        printable_area_y: dragArea.y,
-        printable_area_width: dragArea.w,
-        printable_area_height: dragArea.h,
-      })
-      // Also update local state immediately
-      setTemplates(prev => prev.map(t => t.id === editingTemplateId ? {
-        ...t,
-        printable_area_x: dragArea.x,
-        printable_area_y: dragArea.y,
-        printable_area_width: dragArea.w,
-        printable_area_height: dragArea.h,
-      } : t))
+      commitArea(editingTemplateId, dragArea)
     }
     setIsDragging(false)
     setDragStart(null)
     setDragArea(null)
+    setOrigArea(null)
     setEditingTemplateId(null)
   }
 
@@ -402,34 +467,39 @@ export default function CustomizationSettingsPage({
                     className="w-full max-w-md max-h-96 block"
                     draggable={false}
                   />
-                  {/* Live drag rectangle while drawing */}
-                  {isDragging && editingTemplateId === tpl.id && dragArea && (
-                    <div
-                      className="absolute border-2 border-dashed border-blue-400 bg-blue-400/20 pointer-events-none"
-                      style={{
-                        left: `${dragArea.x}%`,
-                        top: `${dragArea.y}%`,
-                        width: `${dragArea.w}%`,
-                        height: `${dragArea.h}%`,
-                      }}
-                    />
-                  )}
-                  {/* Saved printable area rectangle (hidden while actively drawing on this template) */}
-                  {!(isDragging && editingTemplateId === tpl.id) && tpl.printable_area_width > 0 && tpl.printable_area_height > 0 && (
-                    <div
-                      className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
-                      style={{
-                        left: `${tpl.printable_area_x}%`,
-                        top: `${tpl.printable_area_y}%`,
-                        width: `${tpl.printable_area_width}%`,
-                        height: `${tpl.printable_area_height}%`,
-                      }}
-                    >
-                      <span className="absolute -top-5 left-0 text-xs text-blue-600 bg-white px-1 rounded whitespace-nowrap">
-                        Printable Area
-                      </span>
-                    </div>
-                  )}
+                  {/* Show rectangle: live drag area if dragging, otherwise saved area */}
+                  {(() => {
+                    const active = isDragging && editingTemplateId === tpl.id && dragArea
+                    const area = active ? dragArea : (tpl.printable_area_width > 0 && tpl.printable_area_height > 0 ? {
+                      x: tpl.printable_area_x, y: tpl.printable_area_y, w: tpl.printable_area_width, h: tpl.printable_area_height,
+                    } : null)
+                    if (!area) return null
+                    return (
+                      <div
+                        className={`absolute pointer-events-none ${active ? 'border-2 border-dashed border-blue-400 bg-blue-400/20' : 'border-2 border-blue-500 bg-blue-500/10'}`}
+                        style={{
+                          left: `${area.x}%`, top: `${area.y}%`,
+                          width: `${area.w}%`, height: `${area.h}%`,
+                        }}
+                      >
+                        {!active && (
+                          <span className="absolute -top-5 left-0 text-xs text-blue-600 bg-white px-1 rounded whitespace-nowrap">
+                            Printable Area — drag to move, edges to resize
+                          </span>
+                        )}
+                        {/* Corner handles (visible when not actively dragging) */}
+                        {!active && (
+                          <>
+                            {['top-0 left-0', 'top-0 right-0', 'bottom-0 left-0', 'bottom-0 right-0'].map((pos, i) => (
+                              <div key={i} className={`absolute ${pos} w-3 h-3 bg-blue-500 border border-white rounded-sm -translate-x-1/2 -translate-y-1/2 pointer-events-none`}
+                                style={{ transform: `translate(${pos.includes('right') ? '50%' : '-50%'}, ${pos.includes('bottom') ? '50%' : '-50%'})` }}
+                              />
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
                 <p className="text-xs text-gray-400">Draw on the image with your finger or mouse to define the printable area.</p>
 
