@@ -21,6 +21,7 @@ import {
   UsersIcon,
   Bars3Icon,
   XMarkIcon,
+  SwatchIcon,
 } from '@heroicons/react/24/outline'
 
 export default function AdminLayout({
@@ -61,6 +62,7 @@ export default function AdminLayout({
     { name: 'Orders', href: '/admin/orders', icon: ShoppingBagIcon },
     { name: 'Customers', href: '/admin/customers', icon: UsersIcon },
     { name: 'Products', href: '/admin/products', icon: CubeIcon },
+    { name: 'Design Catalog', href: '/admin/design-catalog', icon: SwatchIcon },
     { name: 'Subscribers', href: '/admin/subscribers', icon: EnvelopeIcon },
     { name: 'Newsletter', href: '/admin/newsletter', icon: PaperAirplaneIcon },
     { name: 'Email Test', href: '/admin/email-test', icon: EnvelopeIcon },

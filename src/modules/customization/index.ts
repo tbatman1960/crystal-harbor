@@ -7,6 +7,7 @@ export type {
   TextLayer,
   ImageLayer,
   CatalogDesignLayer,
+  LowResWarning,
   CustomizationModuleProps,
   ProductCustomizationConfig,
   CatalogDesign,

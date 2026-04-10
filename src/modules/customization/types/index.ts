@@ -108,18 +108,38 @@ export interface CanvasState {
 
 // ─── Design spec output (sent to cart / order) ─────────────────────
 
+export interface LowResWarning {
+  layerId: string
+  filename: string
+  currentDpi: number
+  recommendedDpi: number
+  message: string
+}
+
 export interface DesignSpecification {
+  designId: string              // unique ID for this design instance
   productId: string
   templateId: string
   selectedColor: string
+  selectedSize: string | null   // set by product page, not editor
   layers: DesignLayer[]
-  previewImageDataUrl: string   // composite preview
-  printReadyDataUrl?: string    // high-res composite (optional at cart time)
-  customizationFees: {
+  fees: {
     baseFee: number
     textFees: number
     imageFees: number
-    totalFee: number
+    aiFees: number
+    upscalingFees: number
+    styleTransferFees: number
+    total: number
+  }
+  previewImageUrl: string       // composite preview data URL
+  aiPreviewImageUrl: string | null  // Prompt 3
+  printFileUrl: string | null       // generated at order time
+  lowResWarnings: LowResWarning[]
+  metadata: {
+    createdAt: string
+    editorVersion: string
+    canvasLibrary: string
   }
 }
 

@@ -6,7 +6,9 @@ import type {
   CatalogDesign,
   DesignLayer,
   DesignSpecification,
+  LowResWarning,
 } from '../types'
+import { v4 as uuidv4 } from 'uuid'
 import { useUndoRedo } from '../hooks/useUndoRedo'
 import { useCanvasEditor } from '../hooks/useCanvasEditor'
 import { calculateFees } from '../utils/pricing'
@@ -143,14 +145,46 @@ export function CustomizationEditor({
     const preview = editor.exportPreview()
     const fees = calculateFees(layers, config.pricing)
 
+    // Build low-res warnings
+    const lowResWarnings: LowResWarning[] = layers
+      .filter((l): l is import('../types').ImageLayer => l.type === 'image' && l.lowResolutionFlag)
+      .map(l => ({
+        layerId: l.id,
+        filename: l.originalFilename,
+        currentDpi: l.dpiAtCurrentSize,
+        recommendedDpi: 300,
+        message: 'This image may not print clearly at this size.',
+      }))
+
     const spec: DesignSpecification = {
+      designId: uuidv4(),
       productId,
       templateId: currentTemplate?.id || '',
       selectedColor,
+      selectedSize: null, // set by product page
       layers,
-      previewImageDataUrl: preview,
-      customizationFees: fees,
+      fees: {
+        baseFee: fees.baseFee,
+        textFees: fees.textFees,
+        imageFees: fees.imageFees,
+        aiFees: 0,
+        upscalingFees: 0,
+        styleTransferFees: 0,
+        total: fees.totalFee,
+      },
+      previewImageUrl: preview,
+      aiPreviewImageUrl: null,
+      printFileUrl: null,
+      lowResWarnings,
+      metadata: {
+        createdAt: new Date().toISOString(),
+        editorVersion: '1.0',
+        canvasLibrary: 'fabric@6',
+      },
     }
+
+    // Log for development / debugging
+    console.log('[Customization] Design specification:', JSON.stringify(spec, null, 2))
 
     onAddToCart(spec)
   }
