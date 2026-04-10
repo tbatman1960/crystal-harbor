@@ -183,6 +183,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       option_price_adjustment: optionPriceAdjustment,
       quantity,
       unit_price: adjustedUnitPrice,
+      customization_fee: 0, // TODO: Will be updated when integrating CustomizationModal
       line_total: adjustedTotal,
       tier_applied: priceData.tierName,
       uploaded_file: uploadedFile,
@@ -193,6 +194,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
         description: selectedDesignInfo.description,
         imageUrl: selectedDesignInfo.imageUrl
       } : null,
+      customization_data: null, // TODO: Will be updated when integrating CustomizationModal
       image_url: product.image_url,
     }
 

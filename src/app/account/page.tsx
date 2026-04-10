@@ -421,11 +421,13 @@ ${user.firstName} ${user.lastName}`)
             selected_color: item.selected_color || '',
             quantity: item.quantity,
             unit_price: item.unit_price,
+            customization_fee: 0,
             line_total: item.unit_price * item.quantity,
             tier_applied: item.tier_applied || '',
             uploaded_file: null,
             custom_text: item.custom_text || null,
             selected_design: null,
+            customization_data: null,
             image_url: product.image_url || null,
           })
           addedCount++

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { trackAddToCart } from '@/lib/analytics'
+import type { DesignSpecification } from '@/modules/customization'
 
 export interface CartItem {
   id: string
@@ -12,6 +13,7 @@ export interface CartItem {
   selected_color: string
   quantity: number
   unit_price: number
+  customization_fee: number
   line_total: number
   tier_applied: string
   uploaded_file: File | null
@@ -22,6 +24,7 @@ export interface CartItem {
     description: string
     imageUrl: string
   } | null
+  customization_data: DesignSpecification | null
   image_url: string | null
 }
 
@@ -62,22 +65,24 @@ export const useCartStore = create<CartStore>()(
       addItem: (newItem) => {
         set((state) => {
           // Check if similar item already exists (same product, size, color, customization)
-          const existingItemIndex = state.items.findIndex(
+          // Customized items are always unique - never merge
+          const existingItemIndex = !newItem.customization_data && state.items.findIndex(
             (item) =>
               item.product_id === newItem.product_id &&
               item.selected_size === newItem.selected_size &&
               item.selected_color === newItem.selected_color &&
               item.custom_text === newItem.custom_text &&
+              !item.customization_data &&
               // For uploaded files, we treat each as unique since files can't be easily compared
               !newItem.uploaded_file
           )
 
           let updatedItems
-          if (existingItemIndex > -1 && !newItem.uploaded_file) {
+          if (existingItemIndex !== false && existingItemIndex > -1 && !newItem.uploaded_file && !newItem.customization_data) {
             // Update existing item quantity and recalculate price
             const existingItem = state.items[existingItemIndex]
             const newQuantity = existingItem.quantity + newItem.quantity
-            const newLineTotal = newItem.unit_price * newQuantity
+            const newLineTotal = (newItem.unit_price + newItem.customization_fee) * newQuantity
 
             updatedItems = [...state.items]
             updatedItems[existingItemIndex] = {
@@ -86,8 +91,12 @@ export const useCartStore = create<CartStore>()(
               line_total: newLineTotal,
             }
           } else {
-            // Add as new item
-            updatedItems = [...state.items, newItem]
+            // Add as new item - calculate line total including customization fee
+            const itemWithCalculatedTotal = {
+              ...newItem,
+              line_total: (newItem.unit_price + newItem.customization_fee) * newItem.quantity
+            }
+            updatedItems = [...state.items, itemWithCalculatedTotal]
           }
 
           // Calculate updated totals
@@ -146,7 +155,7 @@ export const useCartStore = create<CartStore>()(
         set((state) => {
           const updatedItems = state.items.map((item) => {
             if (item.id === itemId) {
-              const newLineTotal = item.unit_price * quantity
+              const newLineTotal = (item.unit_price + item.customization_fee) * quantity
               return {
                 ...item,
                 quantity,
