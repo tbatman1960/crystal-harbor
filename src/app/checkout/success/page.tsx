@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { generateOrderPDF, generatePDFFromElement, printPage, isPDFSupported } from '@/lib/pdf-generator'
 import { trackPurchase } from '@/lib/analytics'
 import { useCartStore } from '@/store/cartStore'
+import type { DesignSpecification } from '@/modules/customization'
 
 export interface OrderDetails {
   id: string
@@ -27,9 +28,11 @@ export interface OrderDetails {
     selected_color: string | null
     quantity: number
     unit_price: number
+    customization_fee?: number
     line_total: number
     custom_text: string | null
     selected_design: any
+    customization_data?: DesignSpecification | null
   }>
   shipping_address: {
     first_name: string

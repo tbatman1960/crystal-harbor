@@ -2,6 +2,7 @@
 // This is a client-side only module due to jsPDF and html2canvas dependencies
 
 import { OrderDetails } from '@/app/checkout/success/page'
+import type { DesignSpecification } from '@/modules/customization'
 
 // Check if running in browser
 const isBrowser = typeof window !== 'undefined'
@@ -172,10 +173,79 @@ export async function generateOrderPDF(
       
       if (item.selected_size) addText(`   Size: ${item.selected_size}`, 25, 9)
       if (item.selected_color) addText(`   Color: ${item.selected_color}`, 25, 9)
-      if (item.selected_design) addText(`   Design: ${item.selected_design.name}`, 25, 9)
-      if (item.custom_text) addText(`   Custom Text: "${item.custom_text}"`, 25, 9)
       
-      addText(`   Quantity: ${item.quantity} × $${item.unit_price.toFixed(2)} = $${item.line_total.toFixed(2)}`, 25, 9)
+      // Legacy design display
+      if (item.selected_design && !item.customization_data) {
+        addText(`   Design: ${item.selected_design.name}`, 25, 9)
+      }
+      if (item.custom_text && !item.customization_data) {
+        addText(`   Custom Text: "${item.custom_text}"`, 25, 9)
+      }
+
+      // New customization system
+      if (item.customization_data) {
+        addText('   ✨ Custom Design Specifications:', 25, 9, 'bold')
+        
+        // Design overview
+        const spec = item.customization_data
+        addText(`   • Design ID: ${spec.designId}`, 30, 8)
+        addText(`   • Design Elements: ${spec.layers.length} layers`, 30, 8)
+        if (spec.fees.total > 0) {
+          addText(`   • Customization Fee: $${spec.fees.total.toFixed(2)}`, 30, 8)
+        }
+
+        // Layer details
+        spec.layers.forEach((layer, layerIndex) => {
+          const layerNum = layerIndex + 1
+          switch (layer.type) {
+            case 'text':
+              const textLayer = layer as any // TextLayer from spec
+              addText(`   • Layer ${layerNum}: Text - "${textLayer.text}"`, 30, 8)
+              addText(`     Font: ${textLayer.fontFamily}, ${textLayer.fontSize}px, ${textLayer.fontColor}`, 33, 7)
+              if (textLayer.bold) addText(`     Bold: Yes`, 33, 7)
+              if (textLayer.italic) addText(`     Italic: Yes`, 33, 7)
+              addText(`     Alignment: ${textLayer.alignment}`, 33, 7)
+              break
+            case 'image':
+              const imageLayer = layer as any // ImageLayer from spec
+              addText(`   • Layer ${layerNum}: Uploaded Image - ${imageLayer.originalFilename}`, 30, 8)
+              addText(`     Resolution: ${imageLayer.dpiAtCurrentSize} DPI (${imageLayer.originalWidth} × ${imageLayer.originalHeight}px)`, 33, 7)
+              if (imageLayer.lowResolutionFlag) {
+                addText(`     ⚠️ Low resolution warning`, 33, 7)
+              }
+              break
+            case 'catalog-design':
+              const catalogLayer = layer as any // CatalogDesignLayer from spec
+              addText(`   • Layer ${layerNum}: Catalog Design - ${catalogLayer.designName}`, 30, 8)
+              break
+          }
+          
+          // Position info for all layers
+          addText(`     Position: ${layer.x.toFixed(1)}%, ${layer.y.toFixed(1)}% (${layer.width.toFixed(1)}% × ${layer.height.toFixed(1)}%)`, 33, 7)
+          if (layer.rotation !== 0) {
+            addText(`     Rotation: ${layer.rotation}°`, 33, 7)
+          }
+        })
+
+        // Print file reference
+        if (spec.printFileUrl) {
+          addText(`   • Print File: Available at order processing`, 30, 8)
+          addText(`     URL: ${spec.printFileUrl}`, 33, 7)
+        }
+
+        // Low resolution warnings
+        if (spec.lowResWarnings.length > 0) {
+          addText(`   ⚠️ Print Quality Warnings:`, 30, 8, 'bold')
+          spec.lowResWarnings.forEach(warning => {
+            addText(`     • ${warning.filename}: ${warning.currentDpi} DPI (recommended: ${warning.recommendedDpi})`, 33, 7)
+            addText(`       ${warning.message}`, 35, 7)
+          })
+        }
+
+        yPosition += 3 // Extra space after customization details
+      }
+      
+      addText(`   Quantity: ${item.quantity} × $${item.unit_price.toFixed(2)}${item.customization_fee ? ` + $${item.customization_fee.toFixed(2)} customization` : ''} = $${item.line_total.toFixed(2)}`, 25, 9)
       yPosition += 5
       
       // Add new page if needed
