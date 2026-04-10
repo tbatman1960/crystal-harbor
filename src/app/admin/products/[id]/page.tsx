@@ -966,6 +966,15 @@ export default function EditProductPage({ params }: EditProductPageProps) {
                 </label>
               </div>
             )}
+
+            {formData.is_customizable && (
+              <a
+                href={`/admin/customization/${params.id}`}
+                className="inline-flex items-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                ⚙️ Configure Templates, Print Areas & Pricing →
+              </a>
+            )}
           </div>
 
           <div className="form-group">
