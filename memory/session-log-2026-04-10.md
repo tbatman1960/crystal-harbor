@@ -35,11 +35,14 @@
 - [x] Guest designs stored in sessionStorage with account signup prompts
 - [x] Build successful - committed as a6ee54d
 
-### Step 7: Edit Design from Cart
-- [ ] Add Edit Design button on cart page
-- [ ] Store customization_data + cart item ID in sessionStorage
-- [ ] Update ProductDetailClient to check for editing data
-- [ ] Add updateItem method to cartStore if needed
+### Step 7: Edit Design from Cart ✅
+- [x] Added updateItem method to cartStore for modifying existing items
+- [x] Added "Edit Design" button on cart page for customized items  
+- [x] Store cart item ID + customization_data in sessionStorage when clicked
+- [x] ProductDetailClient detects edit mode and pre-loads design
+- [x] On save, updates existing cart item instead of adding new
+- [x] Redirects to cart with success message after edit
+- [x] Build successful - committed as 08d1670
 
 ### Step 8: Reorder from Order History
 - [ ] Add Reorder with Same Design button in order history

@@ -39,6 +39,8 @@ export default function AccountPage() {
   const [isEditingAddress, setIsEditingAddress] = useState(false)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set())
+  const [orderDetails, setOrderDetails] = useState<Record<string, any>>({})
   const router = useRouter()
 
   const {
@@ -394,7 +396,7 @@ ${user.firstName} ${user.lastName}`)
         return
       }
       const data = await res.json()
-      const orderItems = data.order_items || []
+      const orderItems = data.order.order_items || []
 
       if (orderItems.length === 0) {
         alert('No items found in this order.')
@@ -421,13 +423,13 @@ ${user.firstName} ${user.lastName}`)
             selected_color: item.selected_color || '',
             quantity: item.quantity,
             unit_price: item.unit_price,
-            customization_fee: 0,
-            line_total: item.unit_price * item.quantity,
+            customization_fee: item.customization_fee || 0,
+            line_total: (item.unit_price + (item.customization_fee || 0)) * item.quantity,
             tier_applied: item.tier_applied || '',
             uploaded_file: null,
             custom_text: item.custom_text || null,
             selected_design: null,
-            customization_data: null,
+            customization_data: item.customization_data || null,
             image_url: product.image_url || null,
           })
           addedCount++
@@ -446,6 +448,72 @@ ${user.firstName} ${user.lastName}`)
     } finally {
       setReorderingOrder(null)
     }
+  }
+
+  const handleReorderWithCustomDesign = async (order: Order, item: any) => {
+    if (!item.customization_data) return
+
+    try {
+      // Store the design data in sessionStorage for customization editing
+      const editData = {
+        isEditing: false, // Not editing existing cart item, creating new
+        customizationData: item.customization_data,
+        isReordering: true, // Flag to indicate this is a reorder
+        returnToCart: true
+      }
+      sessionStorage.setItem('crystal-harbor-edit-design', JSON.stringify(editData))
+
+      // Find the product slug and category
+      const productsRes = await fetch('/api/products')
+      const productsData = await productsRes.json()
+      const products = productsData.products || []
+      const product = products.find((p: any) => p.name === item.product_name)
+
+      if (product) {
+        // Navigate to product page which will detect the reorder data
+        window.location.href = `/products/${product.category?.slug || 'apparel'}/${product.slug}`
+      } else {
+        alert('This product may no longer be available.')
+      }
+    } catch (error) {
+      console.error('Error setting up custom reorder:', error)
+      alert('An error occurred. Please try again.')
+    }
+  }
+
+  const loadOrderDetails = async (order: Order) => {
+    if (orderDetails[order.id]) return // Already loaded
+
+    try {
+      const res = await fetch(`/api/orders/${order.order_number}`)
+      if (res.ok) {
+        const data = await res.json()
+        setOrderDetails(prev => ({
+          ...prev,
+          [order.id]: data.order
+        }))
+      }
+    } catch (error) {
+      console.error('Error loading order details:', error)
+    }
+  }
+
+  const toggleOrderExpansion = async (order: Order) => {
+    const isCurrentlyExpanded = expandedOrders.has(order.id)
+    
+    if (!isCurrentlyExpanded) {
+      await loadOrderDetails(order)
+    }
+
+    setExpandedOrders(prev => {
+      const newSet = new Set(prev)
+      if (isCurrentlyExpanded) {
+        newSet.delete(order.id)
+      } else {
+        newSet.add(order.id)
+      }
+      return newSet
+    })
   }
 
   if (!isAuthenticated || !user) {
@@ -820,82 +888,156 @@ ${user.firstName} ${user.lastName}`)
                 </div>
               ) : orders.length > 0 ? (
                 <div className="space-y-4">
-                  {orders.map((order) => (
-                    <div key={order.id} className="border border-gray-200 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <p className="font-semibold text-neutral-700">
-                            Order {order.order_number}
-                          </p>
-                          <p className="text-sm text-secondary-600">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-neutral-700">
-                            ${order.total_amount.toFixed(2)}
-                          </p>
-                          <span className={getStatusColor(order.status)}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <Link
-                          href={`/orders/${order.order_number}`}
-                          className="text-accent-coral-500 hover:text-accent-coral-600 text-sm font-medium"
-                        >
-                          View Details →
-                        </Link>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => handleReorder(order)}
-                            disabled={reorderingOrder === order.id}
-                            className="inline-flex items-center px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 hover:text-blue-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
-                            title="Add these items to cart"
-                          >
-                            <ShoppingCartIcon className="w-3 h-3 mr-1" />
-                            {reorderingOrder === order.id ? 'Adding...' : 'Reorder'}
-                          </button>
-                          {order.status === 'cancelled' ? (
-                            <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                              ✓ Refund processed — no further refunds or returns available
-                            </span>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => handleEmailAboutOrder(order)}
-                                className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 hover:text-accent-lime-800 text-xs font-medium rounded-full transition-colors duration-200"
-                                title="Email about this order"
-                              >
-                                <EnvelopeIcon className="w-3 h-3 mr-1" />
-                                Email About Order
-                              </button>
-                              <button
-                                onClick={() => handleInitiateReturn(order)}
-                                className="inline-flex items-center px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 text-xs font-medium rounded-full transition-colors duration-200"
-                                title="Request return"
-                              >
-                                <ArrowPathIcon className="w-3 h-3 mr-1" />
-                                Return
-                              </button>
-                              {order.status !== 'delivered' && (
-                                <button
-                                  onClick={() => handleCancelOrder(order)}
-                                  disabled={cancellingOrder === order.id}
-                                  className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
-                                  title={order.status === 'pending' ? 'Cancel for full refund' : 'Request cancellation'}
-                                >
-                                  <XCircleIcon className="w-3 h-3 mr-1" />
-                                  {cancellingOrder === order.id ? 'Cancelling...' : order.status === 'pending' ? 'Cancel Order' : 'Request Cancel'}
-                                </button>
+                  {orders.map((order) => {
+                    const isExpanded = expandedOrders.has(order.id)
+                    const details = orderDetails[order.id]
+                    const hasCustomItems = details?.order_items?.some((item: any) => item.customization_data) || false
+                    
+                    return (
+                      <div key={order.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-neutral-700">
+                              Order {order.order_number}
+                              {hasCustomItems && (
+                                <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
+                                  🎨 Custom Items
+                                </span>
                               )}
-                            </>
-                          )}
+                            </p>
+                            <p className="text-sm text-secondary-600">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-neutral-700">
+                              ${order.total_amount.toFixed(2)}
+                            </p>
+                            <span className={getStatusColor(order.status)}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                          </div>
                         </div>
+
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center gap-3">
+                            <Link
+                              href={`/orders/${order.order_number}`}
+                              className="text-accent-coral-500 hover:text-accent-coral-600 text-sm font-medium"
+                            >
+                              View Details →
+                            </Link>
+                            <button
+                              onClick={() => toggleOrderExpansion(order)}
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                            >
+                              {isExpanded ? 'Hide Items ↑' : 'Show Items ↓'}
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => handleReorder(order)}
+                              disabled={reorderingOrder === order.id}
+                              className="inline-flex items-center px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 hover:text-blue-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
+                              title="Add these items to cart"
+                            >
+                              <ShoppingCartIcon className="w-3 h-3 mr-1" />
+                              {reorderingOrder === order.id ? 'Adding...' : 'Reorder'}
+                            </button>
+                            {order.status === 'cancelled' ? (
+                              <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                                ✓ Refund processed — no further refunds or returns available
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => handleEmailAboutOrder(order)}
+                                  className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 hover:text-accent-lime-800 text-xs font-medium rounded-full transition-colors duration-200"
+                                  title="Email about this order"
+                                >
+                                  <EnvelopeIcon className="w-3 h-3 mr-1" />
+                                  Email About Order
+                                </button>
+                                <button
+                                  onClick={() => handleInitiateReturn(order)}
+                                  className="inline-flex items-center px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-700 hover:text-orange-800 text-xs font-medium rounded-full transition-colors duration-200"
+                                  title="Request return"
+                                >
+                                  <ArrowPathIcon className="w-3 h-3 mr-1" />
+                                  Return
+                                </button>
+                                {order.status !== 'delivered' && (
+                                  <button
+                                    onClick={() => handleCancelOrder(order)}
+                                    disabled={cancellingOrder === order.id}
+                                    className="inline-flex items-center px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 hover:text-red-800 text-xs font-medium rounded-full transition-colors duration-200 disabled:opacity-50"
+                                    title={order.status === 'pending' ? 'Cancel for full refund' : 'Request cancellation'}
+                                  >
+                                    <XCircleIcon className="w-3 h-3 mr-1" />
+                                    {cancellingOrder === order.id ? 'Cancelling...' : order.status === 'pending' ? 'Cancel Order' : 'Request Cancel'}
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Expanded order items */}
+                        {isExpanded && details && (
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h4 className="font-medium text-neutral-700 mb-3">Order Items</h4>
+                            <div className="space-y-3">
+                              {details.order_items?.map((item: any, index: number) => (
+                                <div key={index} className="flex items-start justify-between p-3 bg-gray-50 rounded-lg">
+                                  <div className="flex-1">
+                                    <p className="font-medium text-neutral-700">{item.product_name}</p>
+                                    <div className="text-sm text-secondary-600 space-y-1">
+                                      <div>
+                                        {item.selected_size && <span>Size: {item.selected_size} • </span>}
+                                        {item.selected_color && <span>Color: {item.selected_color} • </span>}
+                                        <span>Qty: {item.quantity}</span>
+                                      </div>
+                                      {item.custom_text && (
+                                        <div><strong>Custom Text:</strong> {item.custom_text}</div>
+                                      )}
+                                      {item.customization_data && (
+                                        <div className="flex items-center text-purple-600">
+                                          🎨 <span className="ml-1">Custom Design</span>
+                                          {item.customization_data.lowResWarnings?.length > 0 && (
+                                            <span className="ml-2 text-yellow-600" title="Low resolution warning">⚠️</span>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right ml-4">
+                                    <div className="font-semibold text-neutral-700">
+                                      ${item.line_total.toFixed(2)}
+                                    </div>
+                                    <div className="text-sm text-secondary-500">
+                                      ${item.unit_price.toFixed(2)} base
+                                      {item.customization_fee > 0 && (
+                                        <div className="text-purple-600">+${item.customization_fee.toFixed(2)} custom</div>
+                                      )}
+                                    </div>
+                                    {item.customization_data && (
+                                      <button
+                                        onClick={() => handleReorderWithCustomDesign(order, item)}
+                                        className="mt-2 inline-flex items-center px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 hover:text-purple-800 text-xs font-medium rounded transition-colors duration-200"
+                                        title="Reorder with the same custom design"
+                                      >
+                                        🎨 Reorder Design
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8">

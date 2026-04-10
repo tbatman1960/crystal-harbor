@@ -25,12 +25,14 @@ export async function GET(
           product_name,
           quantity,
           unit_price,
+          customization_fee,
           line_total,
           selected_size,
           selected_color,
           custom_text,
           tier_applied,
-          uploaded_image_url
+          uploaded_image_url,
+          customization_data
         )
       `)
       .eq('order_number', orderNumber)
