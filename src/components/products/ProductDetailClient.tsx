@@ -5,11 +5,12 @@ import Link from 'next/link'
 import { ProductWithOptions, Category } from '@/lib/products'
 import PricingDisplay from './PricingDisplay'
 import { useCartStore } from '@/store/cartStore'
-import { PhotoIcon, DocumentArrowUpIcon, ShoppingCartIcon } from '@heroicons/react/24/outline'
+import { PhotoIcon, DocumentArrowUpIcon, ShoppingCartIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { SwipeableGallery } from '@/components/mobile/TouchGestures'
 import { getDeviceInfo } from '@/lib/mobile-detection'
 import { getDesignsByProduct, getProductSettings } from '@/lib/designs'
 import { trackViewItem } from '@/lib/analytics'
+import { CustomizationModal, type DesignSpecification } from '@/modules/customization'
 
 interface ProductDetailClientProps {
   product: ProductWithOptions
@@ -63,6 +64,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   const [selectedDesign, setSelectedDesign] = useState('')
   const [error, setError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [showCustomizationModal, setShowCustomizationModal] = useState(false)
   
   const { addItem } = useCartStore()
   
@@ -133,6 +135,39 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     setUploadedFile(file)
     setSelectedDesign('') // Clear selected design when uploading file
     setError('')
+  }
+
+  const handleCustomizationAddToCart = (designSpec: DesignSpecification) => {
+    // Create cart item with customization data
+    const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
+    
+    const cartItem = {
+      id: `${product.id}-${selectedSize}-${selectedColor}-custom-${Date.now()}`,
+      product_id: product.id,
+      product_name: product.name,
+      product_slug: product.slug,
+      category_slug: category.slug,
+      selected_size: selectedSize,
+      selected_color: selectedColor,
+      selected_custom_options: Object.keys(selectedCustomOptions).length > 0 ? selectedCustomOptions : null,
+      option_price_adjustment: optionPriceAdjustment,
+      quantity,
+      unit_price: adjustedUnitPrice,
+      customization_fee: designSpec.fees.total,
+      line_total: (adjustedUnitPrice + designSpec.fees.total) * quantity,
+      tier_applied: priceData.tierName,
+      uploaded_file: null,
+      custom_text: null,
+      selected_design: null,
+      customization_data: designSpec,
+      image_url: product.image_url,
+    }
+
+    addItem(cartItem)
+    setShowCustomizationModal(false)
+    
+    // Show success message
+    alert(`Added customized ${product.name} to cart!`)
   }
 
   const handleAddToCart = () => {
@@ -541,13 +576,37 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               </div>
             )}
 
-            {/* Add to Cart Button */}
-            <button
-              onClick={handleAddToCart}
-              className="btn-primary w-full text-lg py-4"
-            >
-              Add to Cart - ${(priceData.totalPrice + optionPriceAdjustment * quantity).toFixed(2)}
-            </button>
+            {/* Add to Cart Buttons */}
+            <div className="space-y-3">
+              {/* Standard Add to Cart */}
+              <button
+                onClick={handleAddToCart}
+                className="btn-primary w-full text-lg py-4"
+              >
+                Add to Cart - ${(priceData.totalPrice + optionPriceAdjustment * quantity).toFixed(2)}
+              </button>
+
+              {/* Customization Button - Mock for now */}
+              <button
+                onClick={() => {
+                  // Validate required selections first
+                  if (product.sizes.length > 0 && !selectedSize) {
+                    setError('Please select a size first')
+                    return
+                  }
+                  if (product.colors.length > 0 && !selectedColor) {
+                    setError('Please select a color first')
+                    return
+                  }
+                  setError('')
+                  setShowCustomizationModal(true)
+                }}
+                className="btn-outline w-full text-lg py-4 flex items-center justify-center space-x-2 border-2 border-accent-coral-300 text-accent-coral-600 hover:bg-accent-coral-50"
+              >
+                <SparklesIcon className="w-5 h-5" />
+                <span>Customize This Product</span>
+              </button>
+            </div>
 
             {/* Go to Cart Link */}
             <div className="text-center">
@@ -572,6 +631,16 @@ export default function ProductDetailClient({ product, category }: ProductDetail
             </div>
           </div>
         </div>
+
+        {/* Customization Modal */}
+        <CustomizationModal
+          productId={product.id}
+          productName={product.name}
+          basePrice={priceData.pricePerUnit + optionPriceAdjustment}
+          isOpen={showCustomizationModal}
+          onClose={() => setShowCustomizationModal(false)}
+          onAddToCart={handleCustomizationAddToCart}
+        />
       </div>
     </div>
   )
