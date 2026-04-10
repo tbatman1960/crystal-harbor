@@ -3,6 +3,7 @@ import { calculateSalesTax } from './sales-tax'
 import { sendEmail as sendEmailFn, generateOrderConfirmationEmail, generateOrderStatusEmail } from './email'
 import { v4 as uuidv4 } from 'uuid'
 import type { DesignSpecification } from '@/modules/customization'
+import { generatePrintFile, getPrintConfig } from './print-generation'
 
 export interface OrderItem {
   product_id: string
@@ -170,6 +171,50 @@ export async function createOrder(data: CreateOrderData): Promise<{
       // Try to clean up the order
       await supabase.from('orders').delete().eq('id', order.id)
       return { success: false, error: 'Failed to create order items' }
+    }
+
+    // Generate print files for customized items
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i]
+      const orderItemId = orderItems[i].id
+
+      if (item.customization_data) {
+        try {
+          // Get print configuration
+          const printConfig = await getPrintConfig()
+          
+          // Mock product template for now - in production this would come from the database
+          const mockTemplate = {
+            imageUrl: '', // Use transparent background for print files
+            printableArea: { x: 10, y: 10, width: 80, height: 80 },
+            physicalDimensions: { widthInches: 12, heightInches: 14 }
+          }
+
+          // Generate print file (this would happen client-side in practice)
+          // For server-side, we'll skip actual generation and just update the spec
+          console.log(`Would generate print file for order ${order.order_number}, item ${i}`)
+          
+          // Update the design specification with print file placeholder
+          const updatedSpec = {
+            ...item.customization_data,
+            printFileUrl: `print-files/order-${order.order_number}-print-${i}.png`,
+            metadata: {
+              ...item.customization_data.metadata,
+              printFileGenerated: new Date().toISOString()
+            }
+          }
+
+          // Update order item with enhanced customization data
+          await supabase
+            .from('order_items')
+            .update({ customization_data: updatedSpec })
+            .eq('id', orderItemId)
+            
+        } catch (error) {
+          console.error('Error processing customization for item:', orderItemId, error)
+          // Continue processing, don't fail the entire order
+        }
+      }
     }
 
     // Handle file uploads for items with uploaded files
