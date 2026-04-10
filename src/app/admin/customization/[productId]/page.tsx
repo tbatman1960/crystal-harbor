@@ -63,6 +63,7 @@ export default function CustomizationSettingsPage({
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null)
+  const [dragArea, setDragArea] = useState<{ x: number; y: number; w: number; h: number } | null>(null)
   const previewImgRef = useRef<HTMLImageElement>(null)
 
   // Settings
@@ -233,38 +234,59 @@ export default function CustomizationSettingsPage({
     }
   }
 
-  // Printable area mouse handlers for visual editor
-  const handleAreaMouseDown = (e: React.MouseEvent<HTMLDivElement>, templateId: string) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+  // Unified pointer helpers for draw-to-define printable area (mouse + touch)
+  const getPointerPercent = (e: React.MouseEvent | React.TouchEvent, container: HTMLElement) => {
+    const rect = container.getBoundingClientRect()
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY
+    return {
+      x: Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100)),
+      y: Math.max(0, Math.min(100, ((clientY - rect.top) / rect.height) * 100)),
+    }
+  }
+
+  const handleAreaStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, templateId: string) => {
+    e.preventDefault() // prevent scroll on touch
+    const { x, y } = getPointerPercent(e, e.currentTarget)
     setEditingTemplateId(templateId)
     setIsDragging(true)
     setDragStart({ x, y })
+    setDragArea({ x, y, w: 0, h: 0 })
   }
 
-  const handleAreaMouseMove = (e: React.MouseEvent<HTMLDivElement>, templateId: string) => {
+  const handleAreaMove = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, templateId: string) => {
     if (!isDragging || editingTemplateId !== templateId || !dragStart) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100))
-    const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100))
-
-    const newX = Math.min(dragStart.x, x)
-    const newY = Math.min(dragStart.y, y)
-    const newW = Math.abs(x - dragStart.x)
-    const newH = Math.abs(y - dragStart.y)
-
-    handleUpdateTemplate(templateId, {
-      printable_area_x: Math.round(newX * 10) / 10,
-      printable_area_y: Math.round(newY * 10) / 10,
-      printable_area_width: Math.round(newW * 10) / 10,
-      printable_area_height: Math.round(newH * 10) / 10,
+    e.preventDefault()
+    const { x, y } = getPointerPercent(e, e.currentTarget)
+    setDragArea({
+      x: Math.round(Math.min(dragStart.x, x) * 10) / 10,
+      y: Math.round(Math.min(dragStart.y, y) * 10) / 10,
+      w: Math.round(Math.abs(x - dragStart.x) * 10) / 10,
+      h: Math.round(Math.abs(y - dragStart.y) * 10) / 10,
     })
   }
 
-  const handleAreaMouseUp = () => {
+  const handleAreaEnd = () => {
+    if (editingTemplateId && dragArea && dragArea.w > 1 && dragArea.h > 1) {
+      // Save to server only on release
+      handleUpdateTemplate(editingTemplateId, {
+        printable_area_x: dragArea.x,
+        printable_area_y: dragArea.y,
+        printable_area_width: dragArea.w,
+        printable_area_height: dragArea.h,
+      })
+      // Also update local state immediately
+      setTemplates(prev => prev.map(t => t.id === editingTemplateId ? {
+        ...t,
+        printable_area_x: dragArea.x,
+        printable_area_y: dragArea.y,
+        printable_area_width: dragArea.w,
+        printable_area_height: dragArea.h,
+      } : t))
+    }
     setIsDragging(false)
     setDragStart(null)
+    setDragArea(null)
     setEditingTemplateId(null)
   }
 
@@ -361,37 +383,55 @@ export default function CustomizationSettingsPage({
                   </button>
                 </div>
 
-                {/* Image with printable area overlay */}
+                {/* Image with printable area overlay — draw with mouse or finger */}
                 <div
-                  className="relative inline-block cursor-crosshair select-none border border-gray-200 rounded"
-                  onMouseDown={(e) => handleAreaMouseDown(e, tpl.id)}
-                  onMouseMove={(e) => handleAreaMouseMove(e, tpl.id)}
-                  onMouseUp={handleAreaMouseUp}
-                  onMouseLeave={handleAreaMouseUp}
+                  className="relative inline-block cursor-crosshair select-none border border-gray-200 rounded touch-none"
+                  onMouseDown={(e) => handleAreaStart(e, tpl.id)}
+                  onMouseMove={(e) => handleAreaMove(e, tpl.id)}
+                  onMouseUp={handleAreaEnd}
+                  onMouseLeave={handleAreaEnd}
+                  onTouchStart={(e) => handleAreaStart(e, tpl.id)}
+                  onTouchMove={(e) => handleAreaMove(e, tpl.id)}
+                  onTouchEnd={handleAreaEnd}
+                  onTouchCancel={handleAreaEnd}
                 >
                   <img
                     ref={previewImgRef}
                     src={tpl.image_url}
                     alt={tpl.color_name}
-                    className="max-w-md max-h-96 block"
+                    className="w-full max-w-md max-h-96 block"
                     draggable={false}
                   />
-                  {/* Printable area rectangle */}
-                  <div
-                    className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
-                    style={{
-                      left: `${tpl.printable_area_x}%`,
-                      top: `${tpl.printable_area_y}%`,
-                      width: `${tpl.printable_area_width}%`,
-                      height: `${tpl.printable_area_height}%`,
-                    }}
-                  >
-                    <span className="absolute -top-5 left-0 text-xs text-blue-600 bg-white px-1 rounded">
-                      Printable Area
-                    </span>
-                  </div>
+                  {/* Live drag rectangle while drawing */}
+                  {isDragging && editingTemplateId === tpl.id && dragArea && (
+                    <div
+                      className="absolute border-2 border-dashed border-blue-400 bg-blue-400/20 pointer-events-none"
+                      style={{
+                        left: `${dragArea.x}%`,
+                        top: `${dragArea.y}%`,
+                        width: `${dragArea.w}%`,
+                        height: `${dragArea.h}%`,
+                      }}
+                    />
+                  )}
+                  {/* Saved printable area rectangle (hidden while actively drawing on this template) */}
+                  {!(isDragging && editingTemplateId === tpl.id) && tpl.printable_area_width > 0 && tpl.printable_area_height > 0 && (
+                    <div
+                      className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
+                      style={{
+                        left: `${tpl.printable_area_x}%`,
+                        top: `${tpl.printable_area_y}%`,
+                        width: `${tpl.printable_area_width}%`,
+                        height: `${tpl.printable_area_height}%`,
+                      }}
+                    >
+                      <span className="absolute -top-5 left-0 text-xs text-blue-600 bg-white px-1 rounded whitespace-nowrap">
+                        Printable Area
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs text-gray-400">Click and drag on the image to define the printable area.</p>
+                <p className="text-xs text-gray-400">Draw on the image with your finger or mouse to define the printable area.</p>
 
                 {/* Coordinate inputs */}
                 <div className="grid grid-cols-4 gap-2">
