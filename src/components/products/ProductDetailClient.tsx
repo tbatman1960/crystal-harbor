@@ -6,10 +6,10 @@ import { ProductWithOptions, Category } from '@/lib/products'
 import PricingDisplay from './PricingDisplay'
 import { useCartStore } from '@/store/cartStore'
 import { useAuthStore } from '@/store/authStore'
-import { PhotoIcon, DocumentArrowUpIcon, ShoppingCartIcon, SparklesIcon } from '@heroicons/react/24/outline'
+import { PhotoIcon, ShoppingCartIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { SwipeableGallery } from '@/components/mobile/TouchGestures'
 import { getDeviceInfo } from '@/lib/mobile-detection'
-import { getDesignsByProduct, getProductSettings } from '@/lib/designs'
+import { getProductSettings } from '@/lib/designs'
 import { trackViewItem } from '@/lib/analytics'
 import { CustomizationModal, type DesignSpecification } from '@/modules/customization'
 
@@ -60,9 +60,6 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     tierName: '',
     discountPercentage: 0
   })
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [customText, setCustomText] = useState('')
-  const [selectedDesign, setSelectedDesign] = useState('')
   const [error, setError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
@@ -110,8 +107,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     }
   }, [product.id])
   
-  // Get available designs and product settings
-  const availableDesigns = getDesignsByProduct(product.slug)
+  // Product settings (kept for potential future use)
   const productSettings = getProductSettings(product.slug)
 
   // Calculate total price adjustment from selected custom options
@@ -140,28 +136,6 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     `/images/products/${product.slug}-alt2.jpg`,
     `/images/products/${product.slug}-alt3.jpg`,
   ].filter((img): img is string => Boolean(img)) // Remove any null/undefined images
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    // Validate file type
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml', 'application/pdf']
-    if (!allowedTypes.includes(file.type)) {
-      setError('Please upload a PNG, JPG, SVG, or PDF file')
-      return
-    }
-
-    // Validate file size (50MB max)
-    if (file.size > 50 * 1024 * 1024) {
-      setError('File size must be under 50MB')
-      return
-    }
-
-    setUploadedFile(file)
-    setSelectedDesign('') // Clear selected design when uploading file
-    setError('')
-  }
 
   const handleCustomizationAddToCart = (designSpec: DesignSpecification) => {
     const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
@@ -261,22 +235,13 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       }
     }
 
-    // Check if design is required (only if product requires it AND no options are provided)
-    if (productSettings.requiresDesign && !uploadedFile && !customText.trim() && !selectedDesign) {
-      setError('Please upload an image, add custom text, or select a design')
-      return
-    }
-
-    // Get selected design info
-    const selectedDesignInfo = selectedDesign ? availableDesigns.find(d => d.id === selectedDesign) : null
-
     // Calculate adjusted unit price (base tier price + option adjustments)
     const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
     const adjustedTotal = adjustedUnitPrice * quantity
 
     // Create cart item
     const cartItem = {
-      id: `${product.id}-${selectedSize}-${selectedColor}-${selectedDesign}-${Date.now()}`,
+      id: `${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
       product_id: product.id,
       product_name: product.name,
       product_slug: product.slug,
@@ -287,18 +252,13 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       option_price_adjustment: optionPriceAdjustment,
       quantity,
       unit_price: adjustedUnitPrice,
-      customization_fee: 0, // TODO: Will be updated when integrating CustomizationModal
+      customization_fee: 0,
       line_total: adjustedTotal,
       tier_applied: priceData.tierName,
-      uploaded_file: uploadedFile,
-      custom_text: customText.trim() || null,
-      selected_design: selectedDesignInfo ? {
-        id: selectedDesignInfo.id,
-        name: selectedDesignInfo.name,
-        description: selectedDesignInfo.description,
-        imageUrl: selectedDesignInfo.imageUrl
-      } : null,
-      customization_data: null, // TODO: Will be updated when integrating CustomizationModal
+      uploaded_file: null,
+      custom_text: null,
+      selected_design: null,
+      customization_data: null,
       image_url: product.image_url,
     }
 
@@ -496,139 +456,14 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               )
             ))}
 
-            {/* Customization Options */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-display font-semibold text-lg text-primary-600 mb-2">
-                  Design Options
-                </h3>
-                <p className="text-sm text-secondary-600 mb-4">
-                  {productSettings.instructions}
+            {/* Customization hint for customizable products */}
+            {product.is_customizable && (
+              <div className="bg-accent-coral-50 border border-accent-coral-200 rounded-lg p-4">
+                <p className="text-sm text-accent-coral-700 font-medium">
+                  🎨 This product supports customization! Use the "Customize This Product" button below to add your own text, images, or designs.
                 </p>
               </div>
-
-              {/* Pre-selected Designs */}
-              {availableDesigns.length > 0 && (
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-3">
-                    Choose a Design
-                  </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {availableDesigns.map((design) => (
-                      <button
-                        key={design.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedDesign(design.id)
-                          setUploadedFile(null) // Clear uploaded file when selecting design
-                          setError('')
-                        }}
-                        className={`relative p-2 rounded-lg border-2 transition-all duration-200 ${
-                          selectedDesign === design.id
-                            ? 'border-accent-coral-500 bg-accent-coral-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                          {/* Placeholder for design thumbnail */}
-                          <span className="text-2xl">🎨</span>
-                        </div>
-                        <div className="text-xs text-center">
-                          <div className="font-medium text-neutral-700">{design.name}</div>
-                          <div className="text-secondary-500 mt-1">{design.description}</div>
-                        </div>
-                        {selectedDesign === design.id && (
-                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent-coral-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-xs">✓</span>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {selectedDesign && (
-                    <div className="mt-3 p-3 bg-accent-coral-50 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-accent-coral-700">
-                          Selected: {availableDesigns.find(d => d.id === selectedDesign)?.name}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* OR Divider */}
-              {availableDesigns.length > 0 && (
-                <div className="flex items-center space-x-4">
-                  <div className="flex-1 border-t border-gray-200"></div>
-                  <span className="text-sm text-secondary-500 font-medium">OR</span>
-                  <div className="flex-1 border-t border-gray-200"></div>
-                </div>
-              )}
-
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                  Upload Your Own Design
-                </label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".png,.jpg,.jpeg,.svg,.pdf"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="file-upload"
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="flex items-center justify-center w-full p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-accent-coral-500 transition-colors duration-200"
-                  >
-                    <div className="text-center">
-                      {uploadedFile ? (
-                        <div className="flex items-center space-x-2">
-                          <DocumentArrowUpIcon className="w-5 h-5 text-green-600" />
-                          <span className="text-sm font-medium text-green-700">
-                            {uploadedFile.name}
-                          </span>
-                        </div>
-                      ) : (
-                        <div>
-                          <PhotoIcon className="w-8 h-8 text-secondary-400 mx-auto mb-2" />
-                          <p className="text-sm text-secondary-600">
-                            Click to upload PNG, JPG, SVG, or PDF
-                          </p>
-                          <p className="text-xs text-secondary-500">Max 50MB</p>
-                        </div>
-                      )}
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              {/* Custom Text - Only show if product allows it */}
-              {productSettings.allowsCustomText && (
-                <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-2">
-                    Custom Text (Optional)
-                  </label>
-                  <textarea
-                    value={customText}
-                    onChange={(e) => setCustomText(e.target.value)}
-                    placeholder="Enter text you'd like printed on the product..."
-                    rows={3}
-                    className="input-field resize-none"
-                  />
-                  <p className="text-xs text-secondary-500 mt-1">
-                    Add custom text to personalize your product
-                  </p>
-                </div>
-              )}
-
-              <p className="text-xs text-secondary-500">
-                * At least one customization option (image or text) is required
-              </p>
-            </div>
+            )}
 
             {/* Pricing */}
             <PricingDisplay
