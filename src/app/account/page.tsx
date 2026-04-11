@@ -944,9 +944,9 @@ ${user.firstName} ${user.lastName}`)
                               <ShoppingCartIcon className="w-3 h-3 mr-1" />
                               {reorderingOrder === order.id ? 'Adding...' : 'Reorder'}
                             </button>
-                            {order.status === 'cancelled' ? (
+                            {(order.status === 'cancelled' || order.status === 'refunded') ? (
                               <span className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                                ✓ Refund processed — no further refunds or returns available
+                                ✓ {order.status === 'refunded' ? 'Refund processed' : 'Order cancelled'} — no further refunds or returns available
                               </span>
                             ) : (
                               <>
