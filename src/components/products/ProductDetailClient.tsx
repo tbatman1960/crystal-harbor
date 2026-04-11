@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore'
 import { PhotoIcon, ShoppingCartIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { SwipeableGallery } from '@/components/mobile/TouchGestures'
 import { getDeviceInfo } from '@/lib/mobile-detection'
-import { getProductSettings } from '@/lib/designs'
+import { getDesignsByProduct, getProductSettings } from '@/lib/designs'
 import { trackViewItem } from '@/lib/analytics'
 import { CustomizationModal, type DesignSpecification } from '@/modules/customization'
 
@@ -60,6 +60,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     tierName: '',
     discountPercentage: 0
   })
+  const [selectedDesign, setSelectedDesign] = useState('')
   const [error, setError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
@@ -107,7 +108,8 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     }
   }, [product.id])
   
-  // Product settings (kept for potential future use)
+  // Get available designs and product settings
+  const availableDesigns = getDesignsByProduct(product.slug)
   const productSettings = getProductSettings(product.slug)
 
   // Calculate total price adjustment from selected custom options
@@ -239,9 +241,12 @@ export default function ProductDetailClient({ product, category }: ProductDetail
     const adjustedUnitPrice = priceData.pricePerUnit + optionPriceAdjustment
     const adjustedTotal = adjustedUnitPrice * quantity
 
+    // Get selected design info
+    const selectedDesignInfo = selectedDesign ? availableDesigns.find(d => d.id === selectedDesign) : null
+
     // Create cart item
     const cartItem = {
-      id: `${product.id}-${selectedSize}-${selectedColor}-${Date.now()}`,
+      id: `${product.id}-${selectedSize}-${selectedColor}-${selectedDesign}-${Date.now()}`,
       product_id: product.id,
       product_name: product.name,
       product_slug: product.slug,
@@ -257,7 +262,12 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       tier_applied: priceData.tierName,
       uploaded_file: null,
       custom_text: null,
-      selected_design: null,
+      selected_design: selectedDesignInfo ? {
+        id: selectedDesignInfo.id,
+        name: selectedDesignInfo.name,
+        description: selectedDesignInfo.description,
+        imageUrl: selectedDesignInfo.imageUrl
+      } : null,
       customization_data: null,
       image_url: product.image_url,
     }
@@ -456,11 +466,82 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               )
             ))}
 
+            {/* Pre-selected Design Catalog */}
+            {availableDesigns.length > 0 && (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-display font-semibold text-lg text-primary-600 mb-2">
+                    Design Options
+                  </h3>
+                  <p className="text-sm text-secondary-600 mb-4">
+                    {productSettings.instructions}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-3">
+                    Choose a Design
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {availableDesigns.map((design) => (
+                      <button
+                        key={design.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDesign(design.id)
+                          setError('')
+                        }}
+                        className={`relative p-2 rounded-lg border-2 transition-all duration-200 ${
+                          selectedDesign === design.id
+                            ? 'border-accent-coral-500 bg-accent-coral-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="aspect-square bg-gray-100 rounded-lg mb-2 overflow-hidden">
+                          {design.imageUrl ? (
+                            <img
+                              src={design.imageUrl}
+                              alt={design.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                e.currentTarget.nextElementSibling?.setAttribute('style', 'display: flex')
+                              }}
+                            />
+                          ) : null}
+                          <div className="w-full h-full items-center justify-center hidden">
+                            <span className="text-2xl">🎨</span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-center">
+                          <div className="font-medium text-neutral-700">{design.name}</div>
+                          <div className="text-secondary-500 mt-1">{design.description}</div>
+                        </div>
+                        {selectedDesign === design.id && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 bg-accent-coral-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  {selectedDesign && (
+                    <div className="mt-3 p-3 bg-accent-coral-50 rounded-lg">
+                      <span className="text-sm font-medium text-accent-coral-700">
+                        Selected: {availableDesigns.find(d => d.id === selectedDesign)?.name}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Customization hint for customizable products */}
             {product.is_customizable && (
               <div className="bg-accent-coral-50 border border-accent-coral-200 rounded-lg p-4">
                 <p className="text-sm text-accent-coral-700 font-medium">
-                  🎨 This product supports customization! Use the "Customize This Product" button below to add your own text, images, or designs.
+                  🎨 Want to personalize further? Use the "Customize This Product" button below to add your own text, images, or designs.
                 </p>
               </div>
             )}
