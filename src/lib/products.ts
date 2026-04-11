@@ -42,6 +42,7 @@ export interface Product {
   image_url: string | null
   created_at: string
   updated_at: string
+  is_customizable?: boolean
   category?: Category
   sizes?: ProductOption[]
   colors?: ProductOption[]

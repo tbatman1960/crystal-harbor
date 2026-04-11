@@ -655,8 +655,8 @@ export default function ProductDetailClient({ product, category }: ProductDetail
                 Add to Cart - ${(priceData.totalPrice + optionPriceAdjustment * quantity).toFixed(2)}
               </button>
 
-              {/* Customization Button - Mock for now */}
-              <button
+              {/* Customization Button - only show for customizable products */}
+              {product.is_customizable && (<button
                 onClick={() => {
                   // Validate required selections first
                   if (!isAuthenticated) {
@@ -680,7 +680,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
               >
                 <SparklesIcon className="w-5 h-5" />
                 <span>Customize This Product</span>
-              </button>
+              </button>)}
             </div>
 
             {/* Go to Cart Link */}
@@ -707,15 +707,15 @@ export default function ProductDetailClient({ product, category }: ProductDetail
           </div>
         </div>
 
-        {/* Customization Modal */}
-        <CustomizationModal
+        {/* Customization Modal - only render for customizable products */}
+        {product.is_customizable && (<CustomizationModal
           productId={product.id}
           productName={product.name}
           basePrice={priceData.pricePerUnit + optionPriceAdjustment}
           isOpen={showCustomizationModal}
           onClose={() => setShowCustomizationModal(false)}
           onAddToCart={handleCustomizationAddToCart}
-        />
+        />)}
       </div>
     </div>
   )
