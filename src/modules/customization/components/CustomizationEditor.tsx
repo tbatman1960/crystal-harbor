@@ -20,6 +20,7 @@ import { LayerPanel } from './LayerPanel'
 import { FeeDisplay } from './FeeDisplay'
 import { AIGenerationToolbar } from './AIGenerationToolbar'
 import { ImageEnhancer } from './ImageEnhancer'
+import { StyleTransferModal } from './StyleTransferModal'
 
 interface CustomizationEditorProps {
   productId: string
@@ -62,6 +63,8 @@ export function CustomizationEditor({
   const [aiGenerationsUsed, setAiGenerationsUsed] = useState(0)
   const [showImageEnhancer, setShowImageEnhancer] = useState(false)
   const [enhancingImageLayer, setEnhancingImageLayer] = useState<import('../types').ImageLayer | null>(null)
+  const [showStyleTransfer, setShowStyleTransfer] = useState(false)
+  const [stylingImageLayer, setStylingImageLayer] = useState<import('../types').ImageLayer | null>(null)
   const [selectedColor, setSelectedColor] = useState(
     config.templates[0]?.colorName || ''
   )
@@ -249,6 +252,54 @@ export function CustomizationEditor({
   const handleCancelEnhancement = () => {
     setShowImageEnhancer(false)
     setEnhancingImageLayer(null)
+  }
+
+  const handleStartStyleTransfer = (layerId: string) => {
+    const layer = layers.find(l => l.id === layerId && l.type === 'image') as import('../types').ImageLayer
+    if (layer) {
+      setStylingImageLayer(layer)
+      setShowStyleTransfer(true)
+    }
+  }
+
+  const handleStyleApplied = (sourceImageUrl: string, styleName: string, resultImageUrl: string, transferId: string) => {
+    if (!stylingImageLayer) return
+
+    // Create new style-transfer layer
+    const newLayer: import('../types').StyleTransferLayer = {
+      id: uuidv4(),
+      type: 'style-transfer',
+      x: stylingImageLayer.x + 5, // Slightly offset
+      y: stylingImageLayer.y + 5,
+      width: stylingImageLayer.width,
+      height: stylingImageLayer.height,
+      rotation: stylingImageLayer.rotation,
+      zIndex: layers.length,
+      locked: false,
+      sourceImageUrl,
+      styleName,
+      imageUrl: resultImageUrl,
+      transferId,
+    }
+
+    // Add to canvas and layers
+    const img = new Image()
+    img.onload = () => {
+      if ((editor as any).canvasRef?.current) {
+        (editor as any).addImageToCanvas(img, newLayer.id, newLayer.x, newLayer.y, newLayer.width, newLayer.height)
+      }
+    }
+    img.src = resultImageUrl
+
+    setLayers([...layers, newLayer])
+    setAiGenerationsUsed(prev => prev + 1) // Style transfer counts toward AI limit
+    setShowStyleTransfer(false)
+    setStylingImageLayer(null)
+  }
+
+  const handleCancelStyleTransfer = () => {
+    setShowStyleTransfer(false)
+    setStylingImageLayer(null)
   }
 
   const handleSaveDesign = async () => {
@@ -533,7 +584,7 @@ export function CustomizationEditor({
           {activeTab === 'ai-generate' && allowAiGeneration && (
             <AIGenerationToolbar
               pricing={config.pricing}
-              maxGenerations={5} // TODO: Make this configurable from admin
+              maxGenerations={config.pricing.maxAiGenerations || 5}
               currentGenerations={aiGenerationsUsed}
               onGenerate={() => {}} // Not used in this implementation
               onGenerationComplete={handleAIGenerationComplete}
@@ -559,6 +610,7 @@ export function CustomizationEditor({
               onMoveLayer={editor.moveLayer}
               onToggleVisibility={handleToggleVisibility}
               onEnhanceImage={handleStartImageEnhancement}
+              onApplyStyle={allowStyleTransfer ? handleStartStyleTransfer : undefined}
             />
           )}
         </div>
@@ -831,6 +883,23 @@ export function CustomizationEditor({
               pricing={config.pricing}
               onEnhanced={handleImageEnhanced}
               onCancel={handleCancelEnhancement}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Style Transfer Modal */}
+      {showStyleTransfer && stylingImageLayer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={handleCancelStyleTransfer} />
+          <div className="relative max-w-4xl w-full mx-4">
+            <StyleTransferModal
+              imageUrl={stylingImageLayer.imageUrl}
+              pricing={config.pricing}
+              maxGenerations={config.pricing.maxAiGenerations || 5}
+              currentGenerations={aiGenerationsUsed}
+              onApplyStyle={handleStyleApplied}
+              onCancel={handleCancelStyleTransfer}
             />
           </div>
         </div>

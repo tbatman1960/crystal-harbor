@@ -28,6 +28,7 @@ interface Settings {
   ai_generation_fee: number
   ai_upscaling_fee: number
   style_transfer_fee: number
+  max_ai_generations: number
 }
 
 const DEFAULT_FONTS = [
@@ -82,6 +83,7 @@ export default function CustomizationSettingsPage({
     ai_generation_fee: 0,
     ai_upscaling_fee: 0,
     style_transfer_fee: 0,
+    max_ai_generations: 5,
   })
 
   const [activeSection, setActiveSection] = useState<'templates' | 'text' | 'pricing'>('templates')
@@ -127,6 +129,7 @@ export default function CustomizationSettingsPage({
             ai_generation_fee: Number(s.ai_generation_fee) || 0,
             ai_upscaling_fee: Number(s.ai_upscaling_fee) || 0,
             style_transfer_fee: Number(s.style_transfer_fee) || 0,
+            max_ai_generations: Number(s.max_ai_generations) || 5,
           })
         }
       }
@@ -685,12 +688,13 @@ export default function CustomizationSettingsPage({
             </p>
 
             {[
-              { key: 'base_fee', label: 'Base Customization Fee', desc: 'Flat fee when any customization is applied' },
-              { key: 'per_text_element_fee', label: 'Per Text Element Fee', desc: 'Additional charge per text element added' },
-              { key: 'per_image_fee', label: 'Per Image Fee', desc: 'Additional charge per uploaded or catalog image' },
-              { key: 'ai_generation_fee', label: 'AI Generation Fee', desc: 'Charge per AI image generation (coming soon)', disabled: true },
-              { key: 'ai_upscaling_fee', label: 'AI Upscaling Fee', desc: 'Charge for image enhancement (coming soon)', disabled: true },
-              { key: 'style_transfer_fee', label: 'Style Transfer Fee', desc: 'Charge per style transfer (coming soon)', disabled: true },
+              { key: 'base_fee', label: 'Base Customization Fee', desc: 'Flat fee when any customization is applied', type: 'currency' },
+              { key: 'per_text_element_fee', label: 'Per Text Element Fee', desc: 'Additional charge per text element added', type: 'currency' },
+              { key: 'per_image_fee', label: 'Per Image Fee', desc: 'Additional charge per uploaded or catalog image', type: 'currency' },
+              { key: 'ai_generation_fee', label: 'AI Generation Fee', desc: 'Charge per AI image generation', type: 'currency' },
+              { key: 'ai_upscaling_fee', label: 'AI Upscaling Fee', desc: 'Charge for image enhancement/upscaling', type: 'currency' },
+              { key: 'style_transfer_fee', label: 'Style Transfer Fee', desc: 'Charge per artistic style transfer', type: 'currency' },
+              { key: 'max_ai_generations', label: 'Max AI Generations', desc: 'Maximum AI generations + style transfers per session', type: 'number' },
             ].map(field => (
               <div key={field.key} className="flex items-start gap-3">
                 <div className="flex-1">
@@ -698,15 +702,19 @@ export default function CustomizationSettingsPage({
                   <p className="text-xs text-gray-500">{field.desc}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-gray-500">$</span>
+                  {field.type === 'currency' && <span className="text-gray-500">$</span>}
                   <input
                     type="number"
-                    step="0.01"
+                    step={field.type === 'currency' ? '0.01' : '1'}
                     min="0"
                     value={(settings as any)[field.key]}
-                    onChange={(e) => setSettings({ ...settings, [field.key]: parseFloat(e.target.value) || 0 })}
-                    disabled={(field as any).disabled}
-                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right disabled:opacity-50"
+                    onChange={(e) => setSettings({ 
+                      ...settings, 
+                      [field.key]: field.type === 'currency' 
+                        ? parseFloat(e.target.value) || 0
+                        : parseInt(e.target.value) || 0
+                    })}
+                    className="w-24 px-2 py-1 border border-gray-300 rounded text-sm text-right"
                   />
                 </div>
               </div>

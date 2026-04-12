@@ -11,6 +11,7 @@ interface LayerPanelProps {
   onMoveLayer: (direction: 'up' | 'down') => void
   onToggleVisibility: (id: string) => void
   onEnhanceImage?: (layerId: string) => void
+  onApplyStyle?: (layerId: string) => void
 }
 
 export function LayerPanel({
@@ -22,6 +23,7 @@ export function LayerPanel({
   onMoveLayer,
   onToggleVisibility,
   onEnhanceImage,
+  onApplyStyle,
 }: LayerPanelProps) {
   if (layers.length === 0) {
     return (
@@ -36,6 +38,8 @@ export function LayerPanel({
       case 'text': return '✏️'
       case 'image': return '📷'
       case 'catalog-design': return '🎨'
+      case 'ai-generated': return '✨'
+      case 'style-transfer': return '🎭'
       default: return '📄'
     }
   }
@@ -45,6 +49,8 @@ export function LayerPanel({
       case 'text': return layer.text.substring(0, 20) || 'Text'
       case 'image': return layer.originalFilename || 'Image'
       case 'catalog-design': return layer.designName || 'Design'
+      case 'ai-generated': return `AI: ${layer.prompt.substring(0, 15)}...`
+      case 'style-transfer': return `${layer.styleName} Style`
       default: return 'Element'
     }
   }
@@ -116,16 +122,28 @@ export function LayerPanel({
                   {typeLabel(layer)}
                   {isLowRes && <span className="text-amber-600 ml-1">⚠️</span>}
                 </span>
-                {isLowRes && onEnhanceImage && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onEnhanceImage(layer.id) }}
-                    className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
-                    title="Enhance image quality"
-                  >
-                    ✨
-                  </button>
-                )}
+                <div className="flex gap-1">
+                  {isLowRes && onEnhanceImage && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onEnhanceImage(layer.id) }}
+                      className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
+                      title="Enhance image quality"
+                    >
+                      ✨
+                    </button>
+                  )}
+                  {isImageLayer && onApplyStyle && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onApplyStyle(layer.id) }}
+                      className="text-xs px-1.5 py-0.5 bg-purple-600 text-white rounded hover:bg-purple-700 flex-shrink-0"
+                      title="Apply artistic style"
+                    >
+                      🎨
+                    </button>
+                  )}
+                </div>
               </button>
             </div>
           )

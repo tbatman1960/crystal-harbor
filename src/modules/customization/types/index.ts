@@ -42,6 +42,7 @@ export interface CustomizationPricing {
   aiGenerationFee: number   // Prompt 3
   aiUpscalingFee: number    // Prompt 3
   styleTransferFee: number  // Prompt 3
+  maxAiGenerations: number  // Prompt 3
 }
 
 /** Full admin-managed customization config for a product */
