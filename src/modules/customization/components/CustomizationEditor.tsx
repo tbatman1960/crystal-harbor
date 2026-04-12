@@ -19,6 +19,7 @@ import { CatalogDesignPicker } from './CatalogDesignPicker'
 import { LayerPanel } from './LayerPanel'
 import { FeeDisplay } from './FeeDisplay'
 import { AIGenerationToolbar } from './AIGenerationToolbar'
+import { ImageEnhancer } from './ImageEnhancer'
 
 interface CustomizationEditorProps {
   productId: string
@@ -59,6 +60,8 @@ export function CustomizationEditor({
     allowText ? 'text' : allowImageUpload ? 'image' : allowCatalogDesigns ? 'catalog' : allowAiGeneration ? 'ai-generate' : 'layers'
   )
   const [aiGenerationsUsed, setAiGenerationsUsed] = useState(0)
+  const [showImageEnhancer, setShowImageEnhancer] = useState(false)
+  const [enhancingImageLayer, setEnhancingImageLayer] = useState<import('../types').ImageLayer | null>(null)
   const [selectedColor, setSelectedColor] = useState(
     config.templates[0]?.colorName || ''
   )
@@ -198,6 +201,54 @@ export function CustomizationEditor({
     }
     img.src = imageUrl
     setAiGenerationsUsed(prev => prev + 1)
+  }
+
+  const handleStartImageEnhancement = (layerId: string) => {
+    const layer = layers.find(l => l.id === layerId && l.type === 'image') as import('../types').ImageLayer
+    if (layer && layer.dpiAtCurrentSize < 150) {
+      setEnhancingImageLayer(layer)
+      setShowImageEnhancer(true)
+    }
+  }
+
+  const handleImageEnhanced = (enhancedImageUrl: string, upscaleId: string) => {
+    if (!enhancingImageLayer) return
+
+    const updated = [...layers]
+    const layerIndex = updated.findIndex(l => l.id === enhancingImageLayer.id)
+    if (layerIndex !== -1 && updated[layerIndex].type === 'image') {
+      const imageLayer = updated[layerIndex] as import('../types').ImageLayer
+      updated[layerIndex] = {
+        ...imageLayer,
+        imageUrl: enhancedImageUrl,
+        dpiAtCurrentSize: 300, // Assume enhanced to 300 DPI
+        lowResolutionFlag: false,
+      }
+      setLayers(updated)
+      
+      // Update the canvas
+      const canvas = (editor as any).canvasRef?.current
+      if (canvas) {
+        const obj = canvas.getObjects().find((o: any) => o.layerId === enhancingImageLayer.id)
+        if (obj) {
+          const img = new Image()
+          img.onload = () => {
+            obj.setSrc(enhancedImageUrl, () => {
+              canvas.renderAll()
+            })
+          }
+          img.src = enhancedImageUrl
+        }
+      }
+    }
+    
+    setShowImageEnhancer(false)
+    setEnhancingImageLayer(null)
+  }
+
+  const handleCancelEnhancement = () => {
+    setShowImageEnhancer(false)
+    setEnhancingImageLayer(null)
   }
 
   const handleSaveDesign = async () => {
@@ -507,6 +558,7 @@ export function CustomizationEditor({
               onRemoveLayer={editor.removeSelected}
               onMoveLayer={editor.moveLayer}
               onToggleVisibility={handleToggleVisibility}
+              onEnhanceImage={handleStartImageEnhancement}
             />
           )}
         </div>
@@ -518,10 +570,27 @@ export function CustomizationEditor({
           baseProductPrice={basePrice}
         />
 
-        {/* Low-res warnings */}
-        {layers.some(l => l.type === 'image' && l.lowResolutionFlag) && (
-          <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
-            ⚠️ One or more images may not print clearly at this size. We&apos;ll offer image enhancement options soon.
+        {/* Low-res warnings with enhance buttons */}
+        {layers.filter(l => l.type === 'image' && l.lowResolutionFlag).length > 0 && (
+          <div className="space-y-2">
+            {layers
+              .filter((l): l is import('../types').ImageLayer => l.type === 'image' && l.lowResolutionFlag)
+              .map(layer => (
+                <div key={layer.id} className="text-xs bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-amber-700">
+                      ⚠️ {layer.originalFilename} may not print clearly ({Math.round(layer.dpiAtCurrentSize)} DPI)
+                    </span>
+                    <button
+                      onClick={() => handleStartImageEnhancement(layer.id)}
+                      className="ml-2 px-2 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
+                    >
+                      ✨ Enhance
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
           </div>
         )}
 
@@ -745,6 +814,24 @@ export function CustomizationEditor({
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Enhancement Modal */}
+      {showImageEnhancer && enhancingImageLayer && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={handleCancelEnhancement} />
+          <div className="relative max-w-4xl w-full mx-4">
+            <ImageEnhancer
+              imageUrl={enhancingImageLayer.imageUrl}
+              originalWidth={enhancingImageLayer.originalWidth}
+              originalHeight={enhancingImageLayer.originalHeight}
+              currentDPI={enhancingImageLayer.dpiAtCurrentSize}
+              pricing={config.pricing}
+              onEnhanced={handleImageEnhanced}
+              onCancel={handleCancelEnhancement}
+            />
           </div>
         </div>
       )}

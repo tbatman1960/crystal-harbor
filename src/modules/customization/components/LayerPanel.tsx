@@ -10,6 +10,7 @@ interface LayerPanelProps {
   onRemoveLayer: () => void
   onMoveLayer: (direction: 'up' | 'down') => void
   onToggleVisibility: (id: string) => void
+  onEnhanceImage?: (layerId: string) => void
 }
 
 export function LayerPanel({
@@ -20,6 +21,7 @@ export function LayerPanel({
   onRemoveLayer,
   onMoveLayer,
   onToggleVisibility,
+  onEnhanceImage,
 }: LayerPanelProps) {
   if (layers.length === 0) {
     return (
@@ -86,29 +88,48 @@ export function LayerPanel({
       </div>
 
       <div className="space-y-1 max-h-40 overflow-y-auto">
-        {sorted.map(layer => (
-          <button
-            key={layer.id}
-            type="button"
-            onClick={() => onSelectLayer(layer.id)}
-            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-sm transition-colors ${
-              selectedLayerId === layer.id
-                ? 'bg-blue-100 border border-blue-300 text-blue-800'
-                : 'bg-gray-50 border border-transparent text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id) }}
-              className="text-gray-400 hover:text-gray-700 flex-shrink-0"
-              title={hiddenLayerIds.has(layer.id) ? 'Show' : 'Hide'}
-            >
-              {hiddenLayerIds.has(layer.id) ? '👁️‍🗨️' : '👁️'}
-            </button>
-            <span>{typeIcon(layer.type)}</span>
-            <span className={`truncate flex-1 ${hiddenLayerIds.has(layer.id) ? 'opacity-40 line-through' : ''}`}>{typeLabel(layer)}</span>
-          </button>
-        ))}
+        {sorted.map(layer => {
+          const isImageLayer = layer.type === 'image'
+          const isLowRes = isImageLayer && (layer as import('../types').ImageLayer).lowResolutionFlag
+          
+          return (
+            <div key={layer.id}>
+              <button
+                type="button"
+                onClick={() => onSelectLayer(layer.id)}
+                className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-sm transition-colors ${
+                  selectedLayerId === layer.id
+                    ? 'bg-blue-100 border border-blue-300 text-blue-800'
+                    : 'bg-gray-50 border border-transparent text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onToggleVisibility(layer.id) }}
+                  className="text-gray-400 hover:text-gray-700 flex-shrink-0"
+                  title={hiddenLayerIds.has(layer.id) ? 'Show' : 'Hide'}
+                >
+                  {hiddenLayerIds.has(layer.id) ? '👁️‍🗨️' : '👁️'}
+                </button>
+                <span>{typeIcon(layer.type)}</span>
+                <span className={`truncate flex-1 ${hiddenLayerIds.has(layer.id) ? 'opacity-40 line-through' : ''}`}>
+                  {typeLabel(layer)}
+                  {isLowRes && <span className="text-amber-600 ml-1">⚠️</span>}
+                </span>
+                {isLowRes && onEnhanceImage && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onEnhanceImage(layer.id) }}
+                    className="text-xs px-1.5 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700 flex-shrink-0"
+                    title="Enhance image quality"
+                  >
+                    ✨
+                  </button>
+                )}
+              </button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
