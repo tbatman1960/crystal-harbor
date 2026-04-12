@@ -54,7 +54,7 @@ export interface ProductCustomizationConfig {
 
 // ─── Canvas layer types ─────────────────────────────────────────────
 
-export type LayerType = 'text' | 'image' | 'catalog-design'
+export type LayerType = 'text' | 'image' | 'catalog-design' | 'ai-generated' | 'style-transfer'
 
 export interface BaseLayer {
   id: string
@@ -96,7 +96,26 @@ export interface CatalogDesignLayer extends BaseLayer {
   imageUrl: string
 }
 
-export type DesignLayer = TextLayer | ImageLayer | CatalogDesignLayer
+export interface AIGeneratedLayer extends BaseLayer {
+  type: 'ai-generated'
+  prompt: string
+  model: string
+  imageUrl: string
+  generationId: string
+  wasUpscaled: boolean
+  originalWidth: number
+  originalHeight: number
+}
+
+export interface StyleTransferLayer extends BaseLayer {
+  type: 'style-transfer'
+  sourceImageUrl: string
+  styleName: string
+  imageUrl: string
+  transferId: string
+}
+
+export type DesignLayer = TextLayer | ImageLayer | CatalogDesignLayer | AIGeneratedLayer | StyleTransferLayer
 
 // ─── Canvas state ───────────────────────────────────────────────────
 

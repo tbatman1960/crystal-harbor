@@ -18,6 +18,7 @@ import { ImageUploader } from './ImageUploader'
 import { CatalogDesignPicker } from './CatalogDesignPicker'
 import { LayerPanel } from './LayerPanel'
 import { FeeDisplay } from './FeeDisplay'
+import { AIGenerationToolbar } from './AIGenerationToolbar'
 
 interface CustomizationEditorProps {
   productId: string
@@ -37,7 +38,7 @@ interface CustomizationEditorProps {
 const CANVAS_WIDTH = 500
 const CANVAS_HEIGHT = 600
 
-type ToolTab = 'text' | 'image' | 'catalog' | 'layers'
+type ToolTab = 'text' | 'image' | 'catalog' | 'ai-generate' | 'layers'
 
 export function CustomizationEditor({
   productId,
@@ -48,13 +49,16 @@ export function CustomizationEditor({
   allowText,
   allowImageUpload,
   allowCatalogDesigns,
+  allowAiGeneration,
+  allowStyleTransfer,
   onAddToCart,
   onCancel,
 }: CustomizationEditorProps) {
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   const [activeTab, setActiveTab] = useState<ToolTab>(
-    allowText ? 'text' : allowImageUpload ? 'image' : 'catalog'
+    allowText ? 'text' : allowImageUpload ? 'image' : allowCatalogDesigns ? 'catalog' : allowAiGeneration ? 'ai-generate' : 'layers'
   )
+  const [aiGenerationsUsed, setAiGenerationsUsed] = useState(0)
   const [selectedColor, setSelectedColor] = useState(
     config.templates[0]?.colorName || ''
   )
@@ -155,6 +159,45 @@ export function CustomizationEditor({
       else next.add(layerId)
       return next
     })
+  }
+
+  const handleAIGenerationComplete = (imageUrl: string, prompt: string, generationId: string) => {
+    // Add AI-generated image as a new layer
+    const img = new Image()
+    img.onload = () => {
+      editor.addImage(imageUrl, 'ai-generated.png', img.naturalWidth, img.naturalHeight)
+      
+      // Update the last added layer to be an AI-generated layer
+      setTimeout(() => {
+        const updated = [...layers]
+        const lastLayer = updated[updated.length - 1]
+        if (lastLayer && lastLayer.type === 'image') {
+          // Transform the image layer to an AI-generated layer
+          const aiLayer: import('../types').AIGeneratedLayer = {
+            id: lastLayer.id,
+            type: 'ai-generated',
+            x: lastLayer.x,
+            y: lastLayer.y,
+            width: lastLayer.width,
+            height: lastLayer.height,
+            rotation: lastLayer.rotation,
+            zIndex: lastLayer.zIndex,
+            locked: lastLayer.locked,
+            prompt,
+            model: 'mock-service',
+            imageUrl: lastLayer.imageUrl,
+            generationId,
+            wasUpscaled: false,
+            originalWidth: img.naturalWidth,
+            originalHeight: img.naturalHeight,
+          }
+          updated[updated.length - 1] = aiLayer
+          setLayers(updated)
+        }
+      }, 100)
+    }
+    img.src = imageUrl
+    setAiGenerationsUsed(prev => prev + 1)
   }
 
   const handleSaveDesign = async () => {
@@ -314,6 +357,7 @@ export function CustomizationEditor({
     { key: 'text', label: 'Text', icon: '✏️', show: allowText },
     { key: 'image', label: 'Upload', icon: '📷', show: allowImageUpload },
     { key: 'catalog', label: 'Designs', icon: '🎨', show: allowCatalogDesigns },
+    { key: 'ai-generate', label: 'AI Generate', icon: '✨', show: allowAiGeneration },
     { key: 'layers', label: 'Layers', icon: '📋', show: true },
   ]
 
@@ -432,6 +476,16 @@ export function CustomizationEditor({
               designs={catalogDesigns}
               pricing={config.pricing}
               onSelectDesign={(d) => editor.addCatalogDesign(d.id, d.name, d.imageUrl)}
+            />
+          )}
+
+          {activeTab === 'ai-generate' && allowAiGeneration && (
+            <AIGenerationToolbar
+              pricing={config.pricing}
+              maxGenerations={5} // TODO: Make this configurable from admin
+              currentGenerations={aiGenerationsUsed}
+              onGenerate={() => {}} // Not used in this implementation
+              onGenerationComplete={handleAIGenerationComplete}
             />
           )}
 
