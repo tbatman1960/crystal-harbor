@@ -21,6 +21,7 @@ import { FeeDisplay } from './FeeDisplay'
 import { AIGenerationToolbar } from './AIGenerationToolbar'
 import { ImageEnhancer } from './ImageEnhancer'
 import { StyleTransferModal } from './StyleTransferModal'
+import { MockRealisticPreviewService } from '../services/realisticPreview'
 
 interface CustomizationEditorProps {
   productId: string
@@ -76,8 +77,14 @@ export function CustomizationEditor({
   const [saveDesignName, setSaveDesignName] = useState('')
   const [saveLoading, setSaveLoading] = useState(false)
   const [loadLoading, setLoadLoading] = useState(false)
+  const [isGeneratingRealisticPreview, setIsGeneratingRealisticPreview] = useState(false)
+  const [realisticPreviewUrl, setRealisticPreviewUrl] = useState<string | null>(null)
+  const [previewMode, setPreviewMode] = useState<'2d' | 'realistic'>('2d')
 
   const currentTemplate = config.templates.find(t => t.colorName === selectedColor) || config.templates[0]
+  
+  // Create realistic preview service
+  const realisticPreviewService = new MockRealisticPreviewService()
 
   // Saved designs management
   const {
@@ -149,6 +156,7 @@ export function CustomizationEditor({
   const handlePreview = () => {
     const dataUrl = editor.exportPreview(1.0)
     setPreviewDataUrl(dataUrl)
+    setPreviewMode('2d')
     setShowPreview(true)
   }
 
@@ -302,6 +310,34 @@ export function CustomizationEditor({
     setStylingImageLayer(null)
   }
 
+  const handleGenerateRealisticPreview = async () => {
+    if (layers.length === 0) return
+    
+    setIsGeneratingRealisticPreview(true)
+    try {
+      // Generate the 2D preview first
+      const designImageUrl = editor.exportPreview()
+      
+      // Call the realistic preview service
+      const result = await realisticPreviewService.generatePreview(
+        designImageUrl,
+        productName,
+        selectedColor
+      )
+      
+      if (result.success && result.imageUrl) {
+        setRealisticPreviewUrl(result.imageUrl)
+      } else {
+        alert(result.error || 'Failed to generate realistic preview')
+      }
+    } catch (error) {
+      console.error('Error generating realistic preview:', error)
+      alert('Failed to generate realistic preview')
+    } finally {
+      setIsGeneratingRealisticPreview(false)
+    }
+  }
+
   const handleSaveDesign = async () => {
     if (layers.length === 0) return
 
@@ -337,7 +373,7 @@ export function CustomizationEditor({
           total: fees.totalFee,
         },
         previewImageUrl: preview,
-        aiPreviewImageUrl: null,
+        aiPreviewImageUrl: realisticPreviewUrl,
         printFileUrl: null,
         lowResWarnings,
         metadata: {
@@ -656,14 +692,32 @@ export function CustomizationEditor({
           >
             {layers.length === 0 ? 'Add elements to continue' : 'Add Customized Product to Cart'}
           </button>
-          <button
-            type="button"
-            onClick={handlePreview}
-            disabled={layers.length === 0}
-            className="w-full py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            👁️ Preview
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={layers.length === 0}
+              className="flex-1 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              👁️ Preview
+            </button>
+            {realisticPreviewService.isAvailable() && (
+              <button
+                type="button"
+                onClick={handleGenerateRealisticPreview}
+                disabled={layers.length === 0 || isGeneratingRealisticPreview}
+                className="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isGeneratingRealisticPreview ? (
+                  <>
+                    <span className="animate-pulse">⚡</span> Generating...
+                  </>
+                ) : (
+                  '🎨 Realistic Preview'
+                )}
+              </button>
+            )}
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
@@ -713,9 +767,36 @@ export function CustomizationEditor({
           <div className="absolute inset-0 bg-black/70" onClick={() => setShowPreview(false)} />
           <div className="relative bg-white rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Design Preview</h3>
+            
+            {/* Preview selector tabs if realistic preview is available */}
+            {realisticPreviewUrl && (
+              <div className="flex mb-3 bg-gray-100 rounded-lg p-1">
+                <button
+                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                    previewMode === '2d' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  onClick={() => setPreviewMode('2d')}
+                >
+                  2D Preview
+                </button>
+                <button
+                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                    previewMode === 'realistic' 
+                      ? 'bg-white text-gray-900 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                  onClick={() => setPreviewMode('realistic')}
+                >
+                  🎨 Realistic
+                </button>
+              </div>
+            )}
+            
             <img
-              src={previewDataUrl}
-              alt="Design preview"
+              src={previewMode === 'realistic' && realisticPreviewUrl ? realisticPreviewUrl : previewDataUrl}
+              alt={`${previewMode === 'realistic' ? 'Realistic' : '2D'} design preview`}
               className="w-full rounded-lg border border-gray-200"
             />
             {layers.some(l => l.type === 'image' && l.lowResolutionFlag) && (

@@ -13,7 +13,7 @@ export interface PreviewResult {
 }
 
 // Mock implementation - returns the design image as-is with a frame
-class MockRealisticPreviewService implements RealisticPreviewService {
+export class MockRealisticPreviewService implements RealisticPreviewService {
   async generatePreview(designImageUrl: string, productType: string, productColor: string): Promise<PreviewResult> {
     try {
       // Load the design image
