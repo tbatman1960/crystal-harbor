@@ -63,6 +63,8 @@ export default function AdminLayout({
     { name: 'Customers', href: '/admin/customers', icon: UsersIcon },
     { name: 'Products', href: '/admin/products', icon: CubeIcon },
     { name: 'Design Catalog', href: '/admin/design-catalog', icon: SwatchIcon },
+    { name: 'Design Templates', href: '/admin/design-templates', icon: DocumentTextIcon },
+    { name: 'AI Prompts', href: '/admin/ai-prompts', icon: SwatchIcon },
     { name: 'Subscribers', href: '/admin/subscribers', icon: EnvelopeIcon },
     { name: 'Newsletter', href: '/admin/newsletter', icon: PaperAirplaneIcon },
     { name: 'Email Test', href: '/admin/email-test', icon: EnvelopeIcon },
