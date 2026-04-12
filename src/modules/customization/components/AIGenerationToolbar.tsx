@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SparklesIcon, ArrowPathIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import type { CustomizationPricing } from '../types'
 
@@ -8,19 +8,18 @@ interface AIGenerationToolbarProps {
   pricing: CustomizationPricing
   maxGenerations: number
   currentGenerations: number
+  productType?: string
   onGenerate: (prompt: string, options?: { style?: string }) => void
   onGenerationComplete: (imageUrl: string, prompt: string, generationId: string) => void
 }
 
-const EXAMPLE_PROMPTS = [
+// Example prompts now loaded from admin config
+// Default fallback prompts in case API fails
+const FALLBACK_PROMPTS = [
   "A golden retriever wearing a party hat",
   "Beautiful sunset over mountains",
   "Colorful geometric abstract pattern",
-  "Vintage coffee shop illustration",
-  "Cute cartoon cat with big eyes",
-  "Space scene with planets and stars",
-  "Hand-drawn floral border design",
-  "Retro 80s neon cityscape"
+  "Vintage coffee shop illustration"
 ]
 
 const AI_STYLES = [
@@ -43,6 +42,7 @@ export function AIGenerationToolbar({
   pricing,
   maxGenerations,
   currentGenerations,
+  productType,
   onGenerate,
   onGenerationComplete
 }: AIGenerationToolbarProps) {
@@ -51,9 +51,42 @@ export function AIGenerationToolbar({
   const [isGenerating, setIsGenerating] = useState(false)
   const [sessionImages, setSessionImages] = useState<GeneratedImage[]>([])
   const [showFeeConfirmation, setShowFeeConfirmation] = useState(false)
+  const [examplePrompts, setExamplePrompts] = useState<string[]>(FALLBACK_PROMPTS)
+  const [loadingPrompts, setLoadingPrompts] = useState(true)
 
   const remainingGenerations = maxGenerations - currentGenerations
   const canGenerate = remainingGenerations > 0 && prompt.trim().length > 0 && !isGenerating
+
+  // Load prompt examples from admin config
+  useEffect(() => {
+    const loadPrompts = async () => {
+      try {
+        const url = new URL('/api/admin/customization/prompts', window.location.origin)
+        url.searchParams.set('active', 'true')
+        if (productType) {
+          url.searchParams.set('productType', productType)
+        }
+
+        const response = await fetch(url.toString())
+        const data = await response.json()
+
+        if (response.ok && data.prompts && data.prompts.length > 0) {
+          const promptTexts = data.prompts.map((p: any) => p.prompt_text)
+          setExamplePrompts(promptTexts)
+        } else {
+          // Keep fallback prompts if API fails
+          console.warn('Failed to load prompt examples, using fallbacks')
+        }
+      } catch (error) {
+        console.warn('Error loading prompt examples:', error)
+        // Keep fallback prompts
+      } finally {
+        setLoadingPrompts(false)
+      }
+    }
+
+    loadPrompts()
+  }, [productType])
 
   const handleGenerate = async () => {
     if (!canGenerate) return
@@ -203,18 +236,27 @@ export function AIGenerationToolbar({
       {/* Example prompts */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Quick ideas:</label>
-        <div className="grid grid-cols-2 gap-1 text-xs">
-          {EXAMPLE_PROMPTS.map((example, index) => (
-            <button
-              key={index}
-              onClick={() => handleUseExample(example)}
-              className="px-2 py-1 text-left text-blue-600 hover:bg-blue-50 rounded border border-blue-200 truncate"
-              disabled={isGenerating || remainingGenerations === 0}
-            >
-              {example}
-            </button>
-          ))}
-        </div>
+        {loadingPrompts ? (
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="px-2 py-1 bg-gray-100 rounded animate-pulse h-6" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1 text-xs">
+            {examplePrompts.slice(0, 8).map((example, index) => (
+              <button
+                key={index}
+                onClick={() => handleUseExample(example)}
+                className="px-2 py-1 text-left text-blue-600 hover:bg-blue-50 rounded border border-blue-200 truncate"
+                disabled={isGenerating || remainingGenerations === 0}
+                title={example}
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Generate button */}

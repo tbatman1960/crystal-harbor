@@ -21,6 +21,7 @@ import { FeeDisplay } from './FeeDisplay'
 import { AIGenerationToolbar } from './AIGenerationToolbar'
 import { ImageEnhancer } from './ImageEnhancer'
 import { StyleTransferModal } from './StyleTransferModal'
+import { TemplatePicker } from './TemplatePicker'
 import { MockRealisticPreviewService } from '../services/realisticPreview'
 
 interface CustomizationEditorProps {
@@ -80,6 +81,10 @@ export function CustomizationEditor({
   const [isGeneratingRealisticPreview, setIsGeneratingRealisticPreview] = useState(false)
   const [realisticPreviewUrl, setRealisticPreviewUrl] = useState<string | null>(null)
   const [previewMode, setPreviewMode] = useState<'2d' | 'realistic'>('2d')
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareLoading, setShareLoading] = useState(false)
+  const [shareResult, setShareResult] = useState<{ shareUrl: string; token: string } | null>(null)
 
   const currentTemplate = config.templates.find(t => t.colorName === selectedColor) || config.templates[0]
   
@@ -338,6 +343,157 @@ export function CustomizationEditor({
     }
   }
 
+  const handleSelectTemplate = async (template: any) => {
+    try {
+      // Clear current design first
+      editor.clearAll()
+      
+      // Load template layers
+      const templateLayers = template.layer_data || []
+      
+      // Process each layer and add to canvas
+      for (const layer of templateLayers) {
+        switch (layer.type) {
+          case 'text':
+            // Add text layer
+            editor.addText(
+              layer.text || 'Sample Text',
+              layer.fontFamily || 'Arial',
+              layer.fontSize || 24,
+              layer.fontColor || '#000000'
+            )
+            // Set position and other properties
+            setTimeout(() => {
+              const canvas = (editor as any).canvasRef?.current
+              if (canvas) {
+                const obj = canvas.getActiveObject()
+                if (obj) {
+                  obj.set({
+                    left: layer.x || 50,
+                    top: layer.y || 50,
+                    scaleX: (layer.width || 200) / obj.width,
+                    scaleY: (layer.height || 50) / obj.height,
+                    angle: layer.rotation || 0
+                  })
+                  canvas.renderAll()
+                }
+              }
+            }, 100)
+            break
+            
+          case 'image':
+            // For template images, we'd need to load them
+            if (layer.imageUrl) {
+              const img = new Image()
+              img.onload = () => {
+                editor.addImage(layer.imageUrl, layer.originalFilename || 'template-image.jpg', img.naturalWidth, img.naturalHeight)
+                // Set position
+                setTimeout(() => {
+                  const canvas = (editor as any).canvasRef?.current
+                  if (canvas) {
+                    const obj = canvas.getActiveObject()
+                    if (obj) {
+                      obj.set({
+                        left: layer.x || 50,
+                        top: layer.y || 50,
+                        scaleX: (layer.width || 200) / obj.width,
+                        scaleY: (layer.height || 200) / obj.height,
+                        angle: layer.rotation || 0
+                      })
+                      canvas.renderAll()
+                    }
+                  }
+                }, 100)
+              }
+              img.src = layer.imageUrl
+            }
+            break
+        }
+      }
+      
+      // Update layers state with template layers
+      setLayers(templateLayers)
+      setShowTemplatePicker(false)
+    } catch (error) {
+      console.error('Error loading template:', error)
+      alert('Failed to load template')
+    }
+  }
+
+  const handleShareDesign = async (title: string, description: string, allowFeedback: boolean) => {
+    if (layers.length === 0) return
+    
+    setShareLoading(true)
+    try {
+      // Generate the current design specification
+      const preview = editor.exportPreview()
+      const fees = calculateFees(layers, config.pricing)
+
+      const lowResWarnings: LowResWarning[] = layers
+        .filter((l): l is import('../types').ImageLayer => l.type === 'image' && l.lowResolutionFlag)
+        .map(l => ({
+          layerId: l.id,
+          filename: l.originalFilename,
+          currentDpi: l.dpiAtCurrentSize,
+          recommendedDpi: 300,
+          message: 'This image may not print clearly at this size.',
+        }))
+
+      const spec: DesignSpecification = {
+        designId: uuidv4(),
+        productId,
+        templateId: currentTemplate?.id || '',
+        selectedColor,
+        selectedSize: null,
+        layers,
+        fees: {
+          baseFee: fees.baseFee,
+          textFees: fees.textFees,
+          imageFees: fees.imageFees,
+          aiFees: 0,
+          upscalingFees: 0,
+          styleTransferFees: 0,
+          total: fees.totalFee,
+        },
+        previewImageUrl: preview,
+        aiPreviewImageUrl: realisticPreviewUrl,
+        printFileUrl: null,
+        lowResWarnings,
+        metadata: {
+          createdAt: new Date().toISOString(),
+          editorVersion: '1.0',
+          canvasLibrary: 'fabric@6',
+        },
+      }
+
+      // Create the share link
+      const response = await fetch('/api/designs/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          designData: spec,
+          title: title || `${productName} Design`,
+          description: description || undefined,
+          allowFeedback,
+          expiresInDays: 30 // 30 day expiration
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create share link')
+      }
+
+      setShareResult(result)
+    } catch (error) {
+      console.error('Error sharing design:', error)
+      alert(error instanceof Error ? error.message : 'Failed to share design')
+    } finally {
+      setShareLoading(false)
+    }
+  }
+
   const handleSaveDesign = async () => {
     if (layers.length === 0) return
 
@@ -556,12 +712,13 @@ export function CustomizationEditor({
         </div>
 
         {/* Canvas */}
-        <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white inline-block">
+        <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white inline-block touch-manipulation">
           <canvas ref={canvasElRef} />
         </div>
 
         <p className="text-xs text-gray-400 mt-1">
-          Click elements to select. Drag to reposition. Use handles to resize.
+          <span className="hidden md:inline">Click elements to select. Drag to reposition. Use handles to resize.</span>
+          <span className="md:hidden">Tap elements to select. Drag to move. Pinch to zoom.</span>
         </p>
       </div>
 
@@ -572,19 +729,20 @@ export function CustomizationEditor({
         </div>
 
         {/* Tab bar */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto">
           {tabs.filter(t => t.show).map(tab => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 py-2 text-sm font-medium text-center border-b-2 transition-colors ${
+              className={`flex-1 min-w-0 py-3 px-2 text-sm font-medium text-center border-b-2 transition-colors touch-manipulation ${
                 activeTab === tab.key
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab.icon} {tab.label}
+              <span className="block text-lg sm:text-base">{tab.icon}</span>
+              <span className="block text-xs sm:text-sm mt-0.5 truncate">{tab.label}</span>
             </button>
           ))}
         </div>
@@ -622,6 +780,7 @@ export function CustomizationEditor({
               pricing={config.pricing}
               maxGenerations={config.pricing.maxAiGenerations || 5}
               currentGenerations={aiGenerationsUsed}
+              productType={productName.toLowerCase()}
               onGenerate={() => {}} // Not used in this implementation
               onGenerationComplete={handleAIGenerationComplete}
             />
@@ -682,6 +841,22 @@ export function CustomizationEditor({
           </div>
         )}
 
+        {/* Start from Template button */}
+        {layers.length === 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">🎨 Quick Start</h4>
+            <p className="text-sm text-blue-700 mb-3">
+              Start with a pre-made template and customize it to your needs.
+            </p>
+            <button
+              onClick={() => setShowTemplatePicker(true)}
+              className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Browse Templates
+            </button>
+          </div>
+        )}
+
         {/* Action buttons */}
         <div className="space-y-2 pt-2 border-t border-gray-200">
           <button
@@ -713,7 +888,10 @@ export function CustomizationEditor({
                     <span className="animate-pulse">⚡</span> Generating...
                   </>
                 ) : (
-                  '🎨 Realistic Preview'
+                  <>
+                    <span className="hidden sm:inline">🎨 Realistic Preview</span>
+                    <span className="sm:hidden">🎨 3D</span>
+                  </>
                 )}
               </button>
             )}
@@ -735,22 +913,30 @@ export function CustomizationEditor({
               Cancel
             </button>
           </div>
-          {/* Save and Load buttons */}
-          <div className="flex gap-2">
+          {/* Save, Load, and Share buttons */}
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
               onClick={() => setShowSaveModal(true)}
               disabled={layers.length === 0}
-              className="flex-1 py-2 border border-green-300 rounded-lg text-sm text-green-600 hover:bg-green-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="py-2 border border-green-300 rounded-lg text-sm text-green-600 hover:bg-green-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              💾 Save Design
+              💾 Save
             </button>
             <button
               type="button"
               onClick={() => setShowLoadModal(true)}
-              className="flex-1 py-2 border border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+              className="py-2 border border-blue-300 rounded-lg text-sm text-blue-600 hover:bg-blue-50 transition-colors"
             >
-              📁 Load Design
+              📁 Load
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              disabled={layers.length === 0}
+              className="py-2 border border-purple-300 rounded-lg text-sm text-purple-600 hover:bg-purple-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              🔗 Share
             </button>
           </div>
           {isGuest && (
@@ -985,6 +1171,214 @@ export function CustomizationEditor({
           </div>
         </div>
       )}
+
+      {/* Template Picker */}
+      {showTemplatePicker && (
+        <TemplatePicker
+          productType={productName.toLowerCase()}
+          onSelectTemplate={handleSelectTemplate}
+          onClose={() => setShowTemplatePicker(false)}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setShowShareModal(false)} />
+          <div className="relative bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            {shareResult ? (
+              <ShareSuccess 
+                shareUrl={shareResult.shareUrl}
+                onClose={() => {
+                  setShowShareModal(false)
+                  setShareResult(null)
+                }}
+              />
+            ) : (
+              <ShareForm
+                loading={shareLoading}
+                onSubmit={handleShareDesign}
+                onCancel={() => setShowShareModal(false)}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
+  )
+}
+
+// Share form component
+function ShareForm({ 
+  loading, 
+  onSubmit, 
+  onCancel 
+}: { 
+  loading: boolean
+  onSubmit: (title: string, description: string, allowFeedback: boolean) => void
+  onCancel: () => void 
+}) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [allowFeedback, setAllowFeedback] = useState(false)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(title, description, allowFeedback)
+  }
+
+  return (
+    <>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Share Your Design</h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="share-title" className="block text-sm font-medium text-gray-700 mb-2">
+            Title
+          </label>
+          <input
+            id="share-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="My Custom Design"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            maxLength={255}
+          />
+        </div>
+        <div>
+          <label htmlFor="share-description" className="block text-sm font-medium text-gray-700 mb-2">
+            Description (optional)
+          </label>
+          <textarea
+            id="share-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Tell others about your design..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+            rows={3}
+            maxLength={500}
+          />
+        </div>
+        <div className="flex items-center">
+          <input
+            id="allow-feedback"
+            type="checkbox"
+            checked={allowFeedback}
+            onChange={(e) => setAllowFeedback(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="allow-feedback" className="ml-2 text-sm text-gray-700">
+            Allow others to leave feedback
+          </label>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Creating...' : '🔗 Create Share Link'}
+          </button>
+        </div>
+      </form>
+    </>
+  )
+}
+
+// Share success component
+function ShareSuccess({ 
+  shareUrl, 
+  onClose 
+}: { 
+  shareUrl: string
+  onClose: () => void 
+}) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(shareUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const socialLinks = {
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`,
+    twitter: `https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent('Check out my custom design!')}`,
+    pinterest: `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(shareUrl)}&description=${encodeURIComponent('Custom design from Crystal Harbor')}`
+  }
+
+  return (
+    <>
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">🎉 Design Shared Successfully!</h3>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Share Link</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={shareUrl}
+              readOnly
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm"
+            />
+            <button
+              onClick={handleCopy}
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              {copied ? '✅' : '📋'}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">Share on Social Media</p>
+          <div className="flex gap-2">
+            <a
+              href={socialLinks.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              Facebook
+            </a>
+            <a
+              href={socialLinks.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-sky-500 text-white rounded-lg text-sm font-medium hover:bg-sky-600"
+            >
+              Twitter
+            </a>
+            <a
+              href={socialLinks.pinterest}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700"
+            >
+              Pinterest
+            </a>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-lg">
+          💡 Your design will be available at this link for 30 days. Anyone with the link can view it and create their own version.
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900"
+        >
+          Done
+        </button>
+      </div>
+    </>
   )
 }
