@@ -55,7 +55,7 @@ export default function DesignTemplatesPage() {
       setLoading(true)
       
       // Fetch templates
-      const templatesResponse = await fetch('/api/admin/customization/templates')
+      const templatesResponse = await fetch('/api/admin/design-templates')
       const templatesData = await templatesResponse.json()
       
       if (!templatesResponse.ok) {
@@ -92,8 +92,8 @@ export default function DesignTemplatesPage() {
 
     try {
       const url = editingTemplate 
-        ? `/api/admin/customization/templates?id=${editingTemplate.id}`
-        : '/api/admin/customization/templates'
+        ? `/api/admin/design-templates?id=${editingTemplate.id}`
+        : '/api/admin/design-templates'
       
       const method = editingTemplate ? 'PUT' : 'POST'
       
@@ -148,7 +148,7 @@ export default function DesignTemplatesPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/customization/templates?id=${template.id}`, {
+      const response = await fetch(`/api/admin/design-templates?id=${template.id}`, {
         method: 'DELETE'
       })
 

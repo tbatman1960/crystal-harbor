@@ -1,182 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
-import { DesignLayer } from '@/modules/customization/types'
+import { supabaseAdmin as supabase } from '@/lib/supabase'
+import { v4 as uuidv4 } from 'uuid'
 
-export const runtime = 'nodejs'
-
-interface TemplateCreateData {
-  name: string
-  category: string
-  description?: string
-  thumbnailUrl?: string
-  layerData: DesignLayer[]
-  productTypes?: string[]
-  displayOrder?: number
-}
-
-interface TemplateUpdateData extends Partial<TemplateCreateData> {
-  isActive?: boolean
-}
-
-// GET - List all templates
+// GET /api/admin/customization/templates?product_id=xxx
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category')
-    const activeOnly = searchParams.get('active') === 'true'
-    const productType = searchParams.get('productType')
-
-    let query = supabaseAdmin
-      .from('design_templates')
-      .select(`
-        *,
-        template_categories!inner(name, slug, icon_name)
-      `)
-      .order('display_order', { ascending: true })
-      .order('created_at', { ascending: false })
-
-    if (activeOnly) {
-      query = query.eq('is_active', true)
+    const productId = request.nextUrl.searchParams.get('product_id')
+    if (!productId) {
+      return NextResponse.json({ error: 'product_id required' }, { status: 400 })
     }
 
-    if (category) {
-      query = query.eq('category', category)
-    }
-
-    if (productType) {
-      // Filter by product type - either empty array (all products) or contains the specific type
-      query = query.or(`product_types.eq.{},product_types.cs.{${productType}}`)
-    }
-
-    const { data: templates, error } = await query
+    const { data, error } = await supabase
+      .from('product_templates')
+      .select('*')
+      .eq('product_id', productId)
+      .order('color_name')
 
     if (error) {
-      console.error('Templates fetch error:', error)
+      console.error('Error fetching templates:', error)
       return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 })
     }
 
-    return NextResponse.json({ templates })
+    return NextResponse.json({ templates: data || [] })
   } catch (error) {
-    console.error('Templates API error:', error)
+    console.error('Templates GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// POST - Create new template
+// POST /api/admin/customization/templates
 export async function POST(request: NextRequest) {
   try {
-    const body: TemplateCreateData = await request.json()
-    
-    const { name, category, description, thumbnailUrl, layerData, productTypes = [], displayOrder = 0 } = body
+    const body = await request.json()
+    const {
+      product_id,
+      color_name,
+      image_url,
+      printable_area_x = 25,
+      printable_area_y = 20,
+      printable_area_width = 50,
+      printable_area_height = 50,
+      physical_width_inches = 12,
+      physical_height_inches = 14,
+    } = body
 
-    if (!name || !category || !layerData || layerData.length === 0) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: name, category, and layerData are required' 
-      }, { status: 400 })
+    if (!product_id || !color_name || !image_url) {
+      return NextResponse.json(
+        { error: 'product_id, color_name, and image_url are required' },
+        { status: 400 }
+      )
     }
 
-    // Validate layerData structure
-    if (!Array.isArray(layerData) || layerData.some(layer => !layer.id || !layer.type)) {
-      return NextResponse.json({ 
-        error: 'Invalid layerData: must be array of valid design layers' 
-      }, { status: 400 })
-    }
-
-    const { data: template, error } = await supabaseAdmin
-      .from('design_templates')
-      .insert({
-        name,
-        category,
-        description,
-        thumbnail_url: thumbnailUrl,
-        layer_data: layerData,
-        product_types: productTypes,
-        display_order: displayOrder,
-        is_active: true
-      })
+    const { data, error } = await supabase
+      .from('product_templates')
+      .insert([{
+        id: uuidv4(),
+        product_id,
+        color_name,
+        image_url,
+        printable_area_x,
+        printable_area_y,
+        printable_area_width,
+        printable_area_height,
+        physical_width_inches,
+        physical_height_inches,
+      }])
       .select()
       .single()
 
     if (error) {
-      console.error('Template creation error:', error)
+      console.error('Error creating template:', error)
       return NextResponse.json({ error: 'Failed to create template' }, { status: 500 })
     }
 
-    return NextResponse.json({ template }, { status: 201 })
+    return NextResponse.json({ template: data }, { status: 201 })
   } catch (error) {
-    console.error('Template creation API error:', error)
+    console.error('Templates POST error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// PUT - Update template
+// PUT /api/admin/customization/templates
 export async function PUT(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const templateId = searchParams.get('id')
-    
-    if (!templateId) {
-      return NextResponse.json({ error: 'Template ID required' }, { status: 400 })
+    const body = await request.json()
+    const { id, ...updates } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Template id required' }, { status: 400 })
     }
 
-    const body: TemplateUpdateData = await request.json()
-    const updateData: Record<string, any> = {}
-
-    if (body.name !== undefined) updateData.name = body.name
-    if (body.category !== undefined) updateData.category = body.category
-    if (body.description !== undefined) updateData.description = body.description
-    if (body.thumbnailUrl !== undefined) updateData.thumbnail_url = body.thumbnailUrl
-    if (body.layerData !== undefined) updateData.layer_data = body.layerData
-    if (body.productTypes !== undefined) updateData.product_types = body.productTypes
-    if (body.displayOrder !== undefined) updateData.display_order = body.displayOrder
-    if (body.isActive !== undefined) updateData.is_active = body.isActive
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No update data provided' }, { status: 400 })
-    }
-
-    const { data: template, error } = await supabaseAdmin
-      .from('design_templates')
-      .update(updateData)
-      .eq('id', templateId)
+    const { data, error } = await supabase
+      .from('product_templates')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', id)
       .select()
       .single()
 
     if (error) {
-      console.error('Template update error:', error)
+      console.error('Error updating template:', error)
       return NextResponse.json({ error: 'Failed to update template' }, { status: 500 })
     }
 
-    return NextResponse.json({ template })
+    return NextResponse.json({ template: data })
   } catch (error) {
-    console.error('Template update API error:', error)
+    console.error('Templates PUT error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-// DELETE - Delete template
+// DELETE /api/admin/customization/templates?id=xxx
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const templateId = searchParams.get('id')
-    
-    if (!templateId) {
-      return NextResponse.json({ error: 'Template ID required' }, { status: 400 })
+    const id = request.nextUrl.searchParams.get('id')
+    if (!id) {
+      return NextResponse.json({ error: 'Template id required' }, { status: 400 })
     }
 
-    const { error } = await supabaseAdmin
-      .from('design_templates')
+    const { error } = await supabase
+      .from('product_templates')
       .delete()
-      .eq('id', templateId)
+      .eq('id', id)
 
     if (error) {
-      console.error('Template deletion error:', error)
+      console.error('Error deleting template:', error)
       return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Template deletion API error:', error)
+    console.error('Templates DELETE error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
