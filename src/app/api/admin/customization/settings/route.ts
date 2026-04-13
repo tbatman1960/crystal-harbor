@@ -53,12 +53,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'product_id required' }, { status: 400 })
     }
 
-    // Ensure JSON strings for array fields
-    if (Array.isArray(fields.available_fonts)) {
-      fields.available_fonts = JSON.stringify(fields.available_fonts)
+    // Only allow known columns through
+    const ALLOWED_FIELDS = [
+      'max_characters', 'max_lines', 'available_fonts', 'available_colors',
+      'base_fee', 'per_text_element_fee', 'per_image_fee',
+      'ai_generation_fee', 'ai_upscaling_fee', 'style_transfer_fee',
+      'max_ai_generations',
+    ]
+    const sanitized: Record<string, any> = {}
+    for (const key of ALLOWED_FIELDS) {
+      if (fields[key] !== undefined) sanitized[key] = fields[key]
     }
-    if (Array.isArray(fields.available_colors)) {
-      fields.available_colors = JSON.stringify(fields.available_colors)
+
+    // Ensure JSON strings for array fields
+    if (Array.isArray(sanitized.available_fonts)) {
+      sanitized.available_fonts = JSON.stringify(sanitized.available_fonts)
+    }
+    if (Array.isArray(sanitized.available_colors)) {
+      sanitized.available_colors = JSON.stringify(sanitized.available_colors)
     }
 
     // Check if row exists
@@ -72,7 +84,7 @@ export async function PUT(request: NextRequest) {
     if (existing) {
       const { data: updated, error } = await supabase
         .from('product_customization_settings')
-        .update({ ...fields, updated_at: new Date().toISOString() })
+        .update({ ...sanitized, updated_at: new Date().toISOString() })
         .eq('product_id', product_id)
         .select()
         .single()
@@ -85,7 +97,7 @@ export async function PUT(request: NextRequest) {
     } else {
       const { data: created, error } = await supabase
         .from('product_customization_settings')
-        .insert([{ id: uuidv4(), product_id, ...fields }])
+        .insert([{ id: uuidv4(), product_id, ...sanitized }])
         .select()
         .single()
 
