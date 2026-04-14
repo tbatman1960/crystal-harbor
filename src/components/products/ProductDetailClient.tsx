@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { ProductWithOptions, Category } from '@/lib/products'
 import PricingDisplay from './PricingDisplay'
@@ -64,6 +64,12 @@ export default function ProductDetailClient({ product, category }: ProductDetail
   const [error, setError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [showCustomizationModal, setShowCustomizationModal] = useState(false)
+  const [cartToast, setCartToast] = useState<string | null>(null)
+
+  const showCartToast = useCallback((msg: string) => {
+    setCartToast(msg)
+    setTimeout(() => setCartToast(null), 3000)
+  }, [])
   
   const { addItem, updateItem } = useCartStore()
   const { isAuthenticated } = useAuthStore()
@@ -181,7 +187,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       setShowCustomizationModal(false)
       
       // Show success message and redirect to cart
-      alert(`Updated your customized ${product.name}!`)
+      showCartToast(`Updated your customized ${product.name}!`)
       window.location.href = '/cart'
     } else {
       // Add new cart item (existing behavior)
@@ -211,7 +217,7 @@ export default function ProductDetailClient({ product, category }: ProductDetail
       setShowCustomizationModal(false)
       
       // Show success message
-      alert(`Added customized ${product.name} to cart!`)
+      showCartToast(`Added customized ${product.name} to cart!`)
     }
   }
 
@@ -274,11 +280,18 @@ export default function ProductDetailClient({ product, category }: ProductDetail
 
     addItem(cartItem)
 
-    // Show success message (could be a toast notification)
-    alert(`Added ${quantity} ${product.name} to cart!`)
+    showCartToast(`Added ${quantity} ${product.name} to cart!`)
   }
 
   return (
+    <>
+      {/* Cart toast notification */}
+      {cartToast && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2">
+          <ShoppingCartIcon className="w-5 h-5" />
+          <span className="font-medium">{cartToast}</span>
+        </div>
+      )}
     <div className="section-padding bg-white">
       <div className="container mx-auto">
         {/* Breadcrumb */}
@@ -634,5 +647,6 @@ export default function ProductDetailClient({ product, category }: ProductDetail
         />)}
       </div>
     </div>
+    </>
   )
 }
