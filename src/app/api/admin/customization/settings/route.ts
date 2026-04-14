@@ -54,11 +54,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Only allow known columns through
+    // Only pass fields that exist as columns in product_customization_settings
+    // max_ai_generations excluded until ALTER TABLE adds it
     const ALLOWED_FIELDS = [
       'max_characters', 'max_lines', 'available_fonts', 'available_colors',
       'base_fee', 'per_text_element_fee', 'per_image_fee',
       'ai_generation_fee', 'ai_upscaling_fee', 'style_transfer_fee',
-      'max_ai_generations',
     ]
     const sanitized: Record<string, any> = {}
     for (const key of ALLOWED_FIELDS) {
