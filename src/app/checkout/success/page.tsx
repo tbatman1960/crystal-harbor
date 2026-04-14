@@ -6,6 +6,7 @@ import { PrinterIcon, CheckCircleIcon, ArrowDownTrayIcon } from '@heroicons/reac
 import Link from 'next/link'
 // Order data fetched via API route (not direct Supabase) due to RLS
 import { generateOrderPDF, generatePDFFromElement, printPage, isPDFSupported } from '@/lib/pdf-generator'
+import { generatePrintFileClient } from '@/lib/print-generation'
 import { trackPurchase } from '@/lib/analytics'
 import { useCartStore } from '@/store/cartStore'
 import type { DesignSpecification } from '@/modules/customization'
@@ -87,6 +88,28 @@ function OrderSuccessContent() {
       if (!orderData) throw new Error('Order not found')
 
       setOrder(orderData)
+
+      // Generate print files for customized items (post-payment)
+      if (orderData?.order_items) {
+        orderData.order_items.forEach(async (item: any, index: number) => {
+          if (item.customization_data?.layers?.length > 0) {
+            try {
+              const result = await generatePrintFileClient(
+                item.customization_data,
+                orderData.order_number,
+                index
+              )
+              if (!result.success) {
+                console.warn(`Print file generation failed for item ${index}:`, result.error)
+              } else {
+                console.log(`Print file generated for item ${index}`)
+              }
+            } catch (e) {
+              console.warn(`Print file generation error for item ${index}:`, e)
+            }
+          }
+        })
+      }
 
       // Track purchase completion for analytics
       if (orderData?.order_items) {

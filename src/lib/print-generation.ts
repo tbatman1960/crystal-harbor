@@ -357,10 +357,115 @@ export async function getPrintConfig(): Promise<PrintConfig> {
 }
 
 /**
+ * Client-side: generate print file and upload via API (post-payment only)
+ * Called from order success page after payment is confirmed.
+ */
+export async function generatePrintFileClient(
+  designSpec: DesignSpecification,
+  orderNumber: string,
+  itemIndex: number,
+  productTemplate?: {
+    imageUrl: string
+    printableArea: { x: number; y: number; width: number; height: number }
+    physicalDimensions: { widthInches: number; heightInches: number }
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const template = productTemplate || {
+      imageUrl: '',
+      printableArea: { x: 10, y: 10, width: 80, height: 80 },
+      physicalDimensions: { widthInches: 12, heightInches: 14 },
+    }
+
+    const config = DEFAULT_PRINT_CONFIG
+    const dimensions = calculatePrintDimensions(
+      template.physicalDimensions.widthInches,
+      template.physicalDimensions.heightInches,
+      config.dpi
+    )
+
+    // Create offscreen canvas
+    const canvas = new OffscreenCanvas(dimensions.widthPixels, dimensions.heightPixels)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Unable to create canvas context')
+
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+
+    if (!config.transparentBackground) {
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, dimensions.widthPixels, dimensions.heightPixels)
+    }
+
+    // Calculate printable area in pixels
+    const printableAreaPixels = {
+      x: (template.printableArea.x / 100) * dimensions.widthPixels,
+      y: (template.printableArea.y / 100) * dimensions.heightPixels,
+      width: (template.printableArea.width / 100) * dimensions.widthPixels,
+      height: (template.printableArea.height / 100) * dimensions.heightPixels,
+    }
+
+    // Render layers
+    const sortedLayers = [...designSpec.layers].sort((a, b) => a.zIndex - b.zIndex)
+    for (const layer of sortedLayers) {
+      if ((layer as any).visible === false) continue
+      const layerPixels = {
+        x: printableAreaPixels.x + (layer.x / 100) * printableAreaPixels.width,
+        y: printableAreaPixels.y + (layer.y / 100) * printableAreaPixels.height,
+        width: (layer.width / 100) * printableAreaPixels.width,
+        height: (layer.height / 100) * printableAreaPixels.height,
+      }
+      ctx.save()
+      if (layer.rotation) {
+        const cx = layerPixels.x + layerPixels.width / 2
+        const cy = layerPixels.y + layerPixels.height / 2
+        ctx.translate(cx, cy)
+        ctx.rotate((layer.rotation * Math.PI) / 180)
+        ctx.translate(-cx, -cy)
+      }
+      try {
+        if (layer.type === 'text') {
+          await renderTextLayer(ctx, layer, layerPixels, config.dpi)
+        } else if (layer.type === 'image' || layer.type === 'catalog-design' || layer.type === 'ai-generated' || layer.type === 'style-transfer') {
+          await renderImageLayer(ctx, layer, layerPixels)
+        }
+      } catch (e) {
+        console.warn(`Failed to render layer ${layer.id}:`, e)
+      }
+      ctx.restore()
+    }
+
+    // Convert to base64
+    const blob = await canvas.convertToBlob({ type: 'image/png' })
+    const base64 = await blobToDataUrl(blob)
+
+    // Upload via API (server validates payment before accepting)
+    const res = await fetch('/api/orders/generate-print-files', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderNumber,
+        itemIndex,
+        imageBase64: base64,
+      }),
+    })
+
+    if (!res.ok) {
+      const err = await res.json()
+      return { success: false, error: err.error || 'Upload failed' }
+    }
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Client print generation error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * Utility to test print file generation
  */
 export async function testPrintGeneration() {
-  // This is a test function for development
   console.log('Print generation utilities loaded')
   console.log('Default DPI:', DEFAULT_PRINT_CONFIG.dpi)
   console.log('Sample 12x14 inch canvas at 300 DPI:', calculatePrintDimensions(12, 14, 300))
