@@ -442,7 +442,24 @@ export default function AdminOrderViewPage({ params }: OrderPageProps) {
                             )}
                             {item.customization_data.printFileUrl && (
                               <button
-                                onClick={() => window.open(item.customization_data.printFileUrl, '_blank')}
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/admin/customization/download-print?path=${encodeURIComponent(item.customization_data.printFileUrl)}`)
+                                    if (res.ok) {
+                                      const blob = await res.blob()
+                                      const url = URL.createObjectURL(blob)
+                                      const a = document.createElement('a')
+                                      a.href = url
+                                      a.download = item.customization_data.printFileUrl.split('/').pop() || 'print-file.png'
+                                      a.click()
+                                      URL.revokeObjectURL(url)
+                                    } else {
+                                      alert('Failed to download print file')
+                                    }
+                                  } catch (e) {
+                                    alert('Failed to download print file')
+                                  }
+                                }}
                                 className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                               >
                                 Download Print File
