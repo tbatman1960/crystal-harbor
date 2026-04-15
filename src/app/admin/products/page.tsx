@@ -243,9 +243,19 @@ export default function AdminProductsPage() {
                   <PencilIcon className="w-4 h-4" />
                 </button>
                 <button 
-                  onClick={() => {
-                    if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
-                      alert('Delete functionality not implemented yet')
+                  onClick={async () => {
+                    if (confirm(`Are you sure you want to delete "${product.name}"? This cannot be undone.`)) {
+                      try {
+                        const res = await fetch(`/api/admin/products/${product.id}`, { method: 'DELETE' })
+                        if (res.ok) {
+                          setProducts(products.filter(p => p.id !== product.id))
+                        } else {
+                          const err = await res.json()
+                          alert(err.error || 'Failed to delete product')
+                        }
+                      } catch (e) {
+                        alert('Failed to delete product')
+                      }
                     }
                   }}
                   className="text-red-500 hover:text-red-600 transition-colors duration-200"
