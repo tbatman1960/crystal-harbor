@@ -308,7 +308,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 
-    // Delete product (cascade will handle related records)
+    // Delete related records that may not cascade automatically
+    await supabase.from('product_customization_settings').delete().eq('product_id', id)
+    await supabase.from('product_templates').delete().eq('product_id', id)
+    await supabase.from('product_options').delete().eq('product_id', id)
+    await supabase.from('pricing_tiers').delete().eq('product_id', id)
+
+    // Delete product
     const { error } = await supabase
       .from('products')
       .delete()

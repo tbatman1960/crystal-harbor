@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { getProductBySlug, getCategoryBySlug } from '@/lib/products'
+
+export const dynamic = 'force-dynamic'
 import ProductDetailClient from '@/components/products/ProductDetailClient'
 import { generateSEOMetadata, generateProductStructuredData, generateBreadcrumbStructuredData } from '@/lib/seo'
 

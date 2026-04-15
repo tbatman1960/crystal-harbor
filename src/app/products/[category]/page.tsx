@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { getCategoryBySlug, getProductsByCategory } from '@/lib/products'
+
+export const dynamic = 'force-dynamic'
 import ProductCard from '@/components/products/ProductCard'
 import { generateSEOMetadata } from '@/lib/seo'
 
