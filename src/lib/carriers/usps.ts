@@ -60,8 +60,9 @@ export interface USPSTrackingResponse {
   events: USPSTrackingEvent[];
 }
 
-// Token cache for OAuth2
+// Token caches for OAuth2 and payment authorization
 let tokenCache: { access_token: string; expires_at: number } | null = null;
+let paymentTokenCache: { token: string; expires_at: number } | null = null;
 
 /**
  * Get OAuth2 access token for USPS API
@@ -69,7 +70,6 @@ let tokenCache: { access_token: string; expires_at: number } | null = null;
 async function getUSPSToken(): Promise<string | null> {
   const clientId = process.env.USPS_CLIENT_ID;
   const clientSecret = process.env.USPS_CLIENT_SECRET;
-  const uspsEnv = process.env.USPS_ENV || 'testing';
 
   if (!clientId || !clientSecret) {
     return null;
@@ -81,9 +81,7 @@ async function getUSPSToken(): Promise<string | null> {
   }
 
   try {
-    const baseUrl = uspsEnv === 'production' 
-      ? 'https://apis.usps.com' 
-      : 'https://apis-tem.usps.com';
+    const baseUrl = getUSPSBaseUrl();
 
     const response = await fetch(`${baseUrl}/oauth2/v3/token`, {
       method: 'POST',
@@ -118,6 +116,79 @@ async function getUSPSToken(): Promise<string | null> {
 }
 
 /**
+ * Get USPS base URL
+ */
+function getUSPSBaseUrl(): string {
+  return 'https://api.usps.com';
+}
+
+/**
+ * Get payment authorization token required for label creation
+ */
+async function getUSPSPaymentToken(accessToken: string): Promise<string | null> {
+  // Check cache
+  if (paymentTokenCache && paymentTokenCache.expires_at > Date.now()) {
+    return paymentTokenCache.token;
+  }
+
+  try {
+    const baseUrl = getUSPSBaseUrl();
+    const crid = process.env.USPS_CRID || '55939760';
+    const mid = process.env.USPS_MID || '904153252';
+    const epsAccount = process.env.USPS_EPS_ACCOUNT || '1000420021';
+
+    const response = await fetch(`${baseUrl}/payments/v3/payment-authorization`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        roles: [
+          {
+            roleName: 'PAYER',
+            CRID: crid,
+            MID: mid,
+            manifestMID: mid,
+            accountType: 'EPS',
+            accountNumber: epsAccount,
+          },
+          {
+            roleName: 'LABEL_OWNER',
+            CRID: crid,
+            MID: mid,
+            manifestMID: mid,
+            accountType: 'EPS',
+            accountNumber: epsAccount,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('USPS Payment Auth error:', response.status, errorData);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.paymentAuthorizationToken) {
+      // Cache for 7 hours (tokens last 8 hours)
+      paymentTokenCache = {
+        token: data.paymentAuthorizationToken,
+        expires_at: Date.now() + 7 * 60 * 60 * 1000,
+      };
+      return data.paymentAuthorizationToken;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error getting USPS payment token:', error);
+    return null;
+  }
+}
+
+/**
  * Get shipping rates from USPS API or return mock rates if API not configured
  */
 export async function getUSPSRates(request: USPSShippingRequest): Promise<USPSRate[]> {
@@ -130,10 +201,7 @@ export async function getUSPSRates(request: USPSShippingRequest): Promise<USPSRa
   }
 
   try {
-    const uspsEnv = process.env.USPS_ENV || 'testing';
-    const baseUrl = uspsEnv === 'production' 
-      ? 'https://apis.usps.com' 
-      : 'https://apis-tem.usps.com';
+    const baseUrl = getUSPSBaseUrl();
 
     // Use first package for pricing (combine packages if needed)
     const mainPackage = request.packages[0];
@@ -216,10 +284,14 @@ export async function createUSPSLabel(request: USPSLabelRequest): Promise<USPSLa
   }
 
   try {
-    const uspsEnv = process.env.USPS_ENV || 'testing';
-    const baseUrl = uspsEnv === 'production' 
-      ? 'https://apis.usps.com' 
-      : 'https://apis-tem.usps.com';
+    const baseUrl = getUSPSBaseUrl();
+
+    // Get payment authorization token (required for label creation)
+    const paymentToken = await getUSPSPaymentToken(token);
+    if (!paymentToken) {
+      console.error('Failed to get USPS payment authorization token');
+      return generateMockLabel(request);
+    }
 
     const labelRequest = {
       imageInfo: {
@@ -249,6 +321,7 @@ export async function createUSPSLabel(request: USPSLabelRequest): Promise<USPSLa
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'X-Payment-Authorization-Token': paymentToken,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(labelRequest),
@@ -287,10 +360,7 @@ export async function getUSPSTracking(trackingNumber: string): Promise<USPSTrack
   }
 
   try {
-    const uspsEnv = process.env.USPS_ENV || 'testing';
-    const baseUrl = uspsEnv === 'production' 
-      ? 'https://apis.usps.com' 
-      : 'https://apis-tem.usps.com';
+    const baseUrl = getUSPSBaseUrl();
 
     const response = await fetch(`${baseUrl}/tracking/v3/tracking/${trackingNumber}`, {
       method: 'GET',
