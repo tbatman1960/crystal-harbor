@@ -89,10 +89,14 @@ function OrderSuccessContent() {
 
       setOrder(orderData)
 
-      // Generate print files for customized items (post-payment)
+      // Generate print files for all items that need them (post-payment)
       if (orderData?.order_items) {
         orderData.order_items.forEach(async (item: any, index: number) => {
-          if (item.customization_data?.layers?.length > 0) {
+          const hasCustomization = item.customization_data?.layers?.length > 0
+          const hasCatalogDesign = item.selected_design?.imageUrl || item.selected_design?.image_url
+
+          if (hasCustomization) {
+            // Full customization — render layers client-side
             try {
               const result = await generatePrintFileClient(
                 item.customization_data,
@@ -106,6 +110,27 @@ function OrderSuccessContent() {
               }
             } catch (e) {
               console.warn(`Print file generation error for item ${index}:`, e)
+            }
+          } else if (hasCatalogDesign) {
+            // Catalog design only — server fetches and stores the image
+            try {
+              const imageUrl = item.selected_design.imageUrl || item.selected_design.image_url
+              const res = await fetch('/api/orders/generate-print-files', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderNumber: orderData.order_number,
+                  itemIndex: index,
+                  catalogImageUrl: imageUrl,
+                }),
+              })
+              if (res.ok) {
+                console.log(`Catalog design print file stored for item ${index}`)
+              } else {
+                console.warn(`Catalog design print file failed for item ${index}`)
+              }
+            } catch (e) {
+              console.warn(`Catalog design print file error for item ${index}:`, e)
             }
           }
         })

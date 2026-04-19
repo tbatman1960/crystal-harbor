@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 
-// POST — receive a print-ready image (base64) and store it in Supabase Storage
-// Called from the order success page after client-side canvas rendering
+// POST — store a print-ready image for an order item
+// Accepts either:
+//   - imageBase64: client-rendered canvas (customization editor output)
+//   - catalogImageUrl: URL to a catalog design image (server fetches it)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { orderNumber, itemIndex, imageBase64, filename } = body
+    const { orderNumber, itemIndex, imageBase64, catalogImageUrl } = body
 
-    if (!orderNumber || itemIndex === undefined || !imageBase64) {
+    if (!orderNumber || itemIndex === undefined || (!imageBase64 && !catalogImageUrl)) {
       return NextResponse.json(
-        { error: 'orderNumber, itemIndex, and imageBase64 are required' },
+        { error: 'orderNumber, itemIndex, and either imageBase64 or catalogImageUrl are required' },
         { status: 400 }
       )
     }
@@ -30,17 +32,50 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not yet paid' }, { status: 403 })
     }
 
-    // Decode base64 to buffer
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
-    const buffer = Buffer.from(base64Data, 'base64')
+    let buffer: Buffer
+    let contentType = 'image/png'
+    let extension = 'png'
 
-    // Upload to Supabase Storage (print-files bucket, not publicly accessible)
-    const filePath = `print-files/order-${orderNumber}-print-${itemIndex}.png`
+    if (imageBase64) {
+      // Client-rendered customization — decode base64
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '')
+      buffer = Buffer.from(base64Data, 'base64')
+    } else if (catalogImageUrl) {
+      // Catalog design — fetch the image server-side
+      try {
+        const imageResponse = await fetch(catalogImageUrl)
+        if (!imageResponse.ok) {
+          console.error('Failed to fetch catalog image:', catalogImageUrl, imageResponse.status)
+          return NextResponse.json({ error: 'Failed to fetch catalog design image' }, { status: 500 })
+        }
+
+        const arrayBuffer = await imageResponse.arrayBuffer()
+        buffer = Buffer.from(arrayBuffer)
+
+        // Detect content type from response or URL
+        const respContentType = imageResponse.headers.get('content-type') || ''
+        if (respContentType.includes('jpeg') || respContentType.includes('jpg')) {
+          contentType = 'image/jpeg'
+          extension = 'jpg'
+        } else if (respContentType.includes('webp')) {
+          contentType = 'image/webp'
+          extension = 'webp'
+        }
+      } catch (fetchError) {
+        console.error('Error fetching catalog image:', fetchError)
+        return NextResponse.json({ error: 'Failed to fetch catalog design image' }, { status: 500 })
+      }
+    } else {
+      return NextResponse.json({ error: 'No image data provided' }, { status: 400 })
+    }
+
+    // Upload to Supabase Storage
+    const filePath = `print-files/order-${orderNumber}-print-${itemIndex}.${extension}`
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from('customization')
       .upload(filePath, buffer, {
-        contentType: 'image/png',
+        contentType,
         upsert: true,
       })
 
@@ -64,6 +99,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           ...(item.customization_data?.metadata || {}),
           printFileGenerated: new Date().toISOString(),
+          source: imageBase64 ? 'customization-editor' : 'catalog-design',
         },
       }
 
