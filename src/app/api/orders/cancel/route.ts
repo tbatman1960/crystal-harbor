@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { customerCancelOrder } from '@/lib/refunds'
 import { sendEmail, generateOrderStatusEmail } from '@/lib/email'
 import { supabaseAdmin as supabase } from '@/lib/supabase'
+import { voidUSPSLabel } from '@/lib/carriers/usps'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +23,34 @@ export async function POST(request: NextRequest) {
         { error: result.error },
         { status: 400 }
       )
+    }
+
+    // Void any USPS shipping labels to reclaim postage
+    try {
+      const { data: labels } = await supabase
+        .from('shipping_labels')
+        .select('tracking_number')
+        .eq('order_id', order_id)
+
+      if (labels && labels.length > 0) {
+        for (const label of labels) {
+          if (label.tracking_number) {
+            const voidResult = await voidUSPSLabel(label.tracking_number)
+            if (voidResult.success) {
+              console.log(`✅ USPS label voided: ${label.tracking_number}`)
+              await supabase
+                .from('shipping_labels')
+                .update({ status: 'voided' })
+                .eq('tracking_number', label.tracking_number)
+            } else {
+              console.error(`Failed to void USPS label ${label.tracking_number}:`, voidResult.error)
+            }
+          }
+        }
+      }
+    } catch (labelError) {
+      console.error('Error voiding shipping labels:', labelError)
+      // Don't fail the cancellation if label voiding fails
     }
 
     // Send cancellation confirmation email

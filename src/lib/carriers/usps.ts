@@ -351,6 +351,50 @@ export async function createUSPSLabel(request: USPSLabelRequest): Promise<USPSLa
 /**
  * Get tracking information for a package
  */
+/**
+ * Void/cancel a USPS shipping label to get postage refunded to EPS account
+ */
+export async function voidUSPSLabel(trackingNumber: string): Promise<{ success: boolean; error?: string }> {
+  const uspsEnv = process.env.USPS_ENV || 'testing';
+  if (uspsEnv !== 'production') {
+    console.log('USPS in test mode — mock voiding label:', trackingNumber);
+    return { success: true };
+  }
+
+  const token = await getUSPSToken();
+  if (!token) {
+    return { success: false, error: 'USPS API not configured' };
+  }
+
+  try {
+    const baseUrl = getUSPSBaseUrl();
+    const paymentToken = await getUSPSPaymentToken(token);
+    if (!paymentToken) {
+      return { success: false, error: 'Failed to get payment authorization' };
+    }
+
+    const response = await fetch(`${baseUrl}/labels/v3/label/${trackingNumber}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-Payment-Authorization-Token': paymentToken,
+      },
+    });
+
+    if (response.ok || response.status === 204) {
+      console.log('USPS label voided successfully:', trackingNumber);
+      return { success: true };
+    }
+
+    const errorData = await response.json().catch(() => ({}));
+    console.error('USPS void label error:', response.status, errorData);
+    return { success: false, error: `USPS returned ${response.status}: ${errorData?.error?.message || 'Unknown error'}` };
+  } catch (error: any) {
+    console.error('Error voiding USPS label:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function getUSPSTracking(trackingNumber: string): Promise<USPSTrackingResponse> {
   const token = await getUSPSToken();
 
