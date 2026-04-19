@@ -277,9 +277,10 @@ export async function getUSPSRates(request: USPSShippingRequest): Promise<USPSRa
 export async function createUSPSLabel(request: USPSLabelRequest): Promise<USPSLabelResponse> {
   const token = await getUSPSToken();
 
-  // If no API credentials, generate mock label
-  if (!token) {
-    console.log('USPS API not configured, generating mock label');
+  // Only create real labels in production mode — avoid accidental charges
+  const uspsEnv = process.env.USPS_ENV || 'testing';
+  if (!token || uspsEnv !== 'production') {
+    console.log(`USPS labels in ${uspsEnv} mode — generating mock label`);
     return generateMockLabel(request);
   }
 
