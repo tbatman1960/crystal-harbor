@@ -26,36 +26,36 @@ const dancingScript = Dancing_Script({
 })
 
 export const metadata: Metadata = {
-  title: 'Crystal Harbor Trading Co. — Custom Printed T-Shirts, Blankets, Banners & Flags',
+  title: 'DearPast — Custom Printed T-Shirts, Blankets, Banners & Flags',
   description: 'Upload your design, choose your product, and we\'ll handle the rest. Quality custom printing with no minimums. Volume pricing available.',
   keywords: 'custom printing, t-shirts, banners, flags, blankets, personalized products, volume pricing, no minimum orders',
-  authors: [{ name: 'Crystal Harbor Trading Company' }],
+  authors: [{ name: 'DearPast' }],
   manifest: '/manifest.json',
   openGraph: {
-    title: 'Crystal Harbor Trading Co. — Custom Printed Products',
+    title: 'DearPast — Custom Printed Products',
     description: 'Quality custom printing with no minimums. Upload your design and create something unique.',
     url: process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app',
-    siteName: 'Crystal Harbor Trading Company',
+    siteName: 'DearPast',
     images: [
       {
         url: '/icons/icon-192x192.png',
         width: 192,
         height: 192,
-        alt: 'Crystal Harbor Trading Company Logo'
+        alt: 'DearPast Logo'
       }
     ],
     type: 'website'
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Crystal Harbor Trading Co. — Custom Printed Products',
+    title: 'DearPast — Custom Printed Products',
     description: 'Quality custom printing with no minimums. Upload your design and create something unique.',
     images: ['/icons/icon-192x192.png']
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Crystal Harbor'
+    title: 'DearPast'
   },
   formatDetection: {
     telephone: false
