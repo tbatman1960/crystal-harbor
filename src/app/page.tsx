@@ -90,7 +90,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-24 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="mb-6">
-              <span className="font-script text-5xl md:text-7xl tracking-wide" style={{ color: '#C0C0C0' }}>Crystal Harbor</span>
+              <span className="font-script text-5xl md:text-7xl tracking-wide" style={{ color: '#C0C0C0' }}>DearPast</span>
               <br />
               <span className="font-display font-bold text-2xl md:text-4xl mt-2 block">
                 Custom Products, <span className="text-gradient">Made Your Way</span>
@@ -192,7 +192,7 @@ export default function HomePage() {
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-display font-bold text-3xl md:text-4xl text-primary-600 mb-4">
-              Why Choose Crystal Harbor?
+              Why Choose DearPast?
             </h2>
           </div>
 
