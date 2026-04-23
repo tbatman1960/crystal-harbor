@@ -46,7 +46,7 @@ export default function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <span className="font-script text-2xl md:text-3xl tracking-wide" style={{ color: '#C0C0C0' }}>
-              Crystal Harbor
+              DearPast
             </span>
           </Link>
 
