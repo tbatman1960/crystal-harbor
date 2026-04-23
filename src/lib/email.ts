@@ -18,7 +18,7 @@ const EMAIL_CONFIG = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
   },
-  from: process.env.SMTP_FROM || 'Crystal Harbor Trading Company <info@crystalharbortc.com>',
+  from: process.env.SMTP_FROM || 'DearPast <info@crystalharbortc.com>',
   // Force IPv4 to avoid IPv6 connectivity issues
   family: 4,
   // Add connection timeout
@@ -280,7 +280,7 @@ export function generateOrderConfirmationEmail(orderData: {
           <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a> 
           or call (317) 997-5503
         </div>
-        <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
+        <div>DearPast • Quality custom printing with no minimums</div>
       </div>
 
     </div>
@@ -341,13 +341,13 @@ View or cancel your order: ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal
 
 Questions? Contact us at info@crystalharbortc.com or (317) 997-5503
 
-Crystal Harbor Trading Company
+DearPast
 Quality custom printing with no minimums
 `
 
   return {
     to: customerEmail,
-    subject: `Order Confirmation - ${orderNumber} - Crystal Harbor Trading Company`,
+    subject: `Order Confirmation - ${orderNumber} - DearPast`,
     html,
     text,
     replyTo: 'orders@crystalharbortc.com'
@@ -368,7 +368,7 @@ export function generateWelcomeEmail(subscriberData: {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Welcome to Crystal Harbor!</title>
+  <title>Welcome to DearPast!</title>
 </head>
 <body style="margin: 0; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; background-color: #f8fafc;">
   
@@ -377,9 +377,9 @@ export function generateWelcomeEmail(subscriberData: {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 30px 20px; text-align: center;">
       <div style="font-size: 28px; font-weight: bold; margin-bottom: 8px;">
-        Crys<span style="color: #8A9DB8;">tal</span> Har<span style="color: #C4942A;">bor</span>
+        Dear<span style="color: #8A9DB8;">Past</span>
       </div>
-      <div style="font-size: 18px; font-weight: 600;">Welcome to Crystal Harbor!</div>
+      <div style="font-size: 18px; font-weight: 600;">Welcome to DearPast!</div>
       <div style="font-size: 16px; opacity: 0.9; margin-top: 8px;">Thank you for subscribing to our newsletter</div>
     </div>
 
@@ -390,7 +390,7 @@ export function generateWelcomeEmail(subscriberData: {
         <div style="font-size: 48px; margin-bottom: 16px;">🎉</div>
         <h2 style="color: #1e3a8a; margin: 0 0 16px 0; font-size: 24px;">You're In!</h2>
         <p style="color: #6b7280; font-size: 16px; margin: 0;">
-          Welcome to the Crystal Harbor family! You'll be the first to know about new products, special offers, and custom printing tips.
+          Welcome to the DearPast family! You'll be the first to know about new products, special offers, and custom printing tips.
         </p>
       </div>
 
