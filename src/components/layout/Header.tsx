@@ -45,9 +45,11 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="font-script text-2xl md:text-3xl tracking-wide" style={{ color: '#C0C0C0' }}>
-              DearPast
-            </span>
+            <img
+              src="/images/logo/dearpast-logo.jpg"
+              alt="DearPast"
+              className="h-12 md:h-14 w-auto object-contain"
+            />
           </Link>
 
           {/* Desktop Navigation */}
