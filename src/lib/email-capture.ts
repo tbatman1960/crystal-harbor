@@ -1,4 +1,4 @@
-// Email capture system for Crystal Harbor Trading Company
+// Email capture system for DearPast
 
 export interface SubscriberEmail {
   id?: string

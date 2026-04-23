@@ -143,7 +143,7 @@ export default function ResetPasswordPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
             <span className="font-script text-4xl text-primary-600 tracking-wide">
-              Crystal Harbor
+              DearPast
             </span>
           </Link>
         </div>

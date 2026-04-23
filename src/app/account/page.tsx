@@ -232,7 +232,7 @@ export default function AccountPage() {
     if (!user) return
     
     const subject = encodeURIComponent(`Customer Support - ${user.firstName} ${user.lastName}`)
-    const body = encodeURIComponent(`Hello Crystal Harbor Trading Company,
+    const body = encodeURIComponent(`Hello DearPast,
 
 I am contacting you regarding my account.
 
@@ -262,7 +262,7 @@ ${user.firstName} ${user.lastName}`)
     if (!user) return
     
     const subject = encodeURIComponent(`Order Inquiry - ${order.order_number}`)
-    const body = encodeURIComponent(`Hello Crystal Harbor Trading Company,
+    const body = encodeURIComponent(`Hello DearPast,
 
 I have a question about my order.
 
@@ -291,7 +291,7 @@ ${user.firstName} ${user.lastName}`)
     if (!user) return
     
     const subject = encodeURIComponent(`Return Request - ${order.order_number}`)
-    const body = encodeURIComponent(`Hello Crystal Harbor Trading Company,
+    const body = encodeURIComponent(`Hello DearPast,
 
 I would like to initiate a return for my order.
 
@@ -362,7 +362,7 @@ ${user.firstName} ${user.lastName}`)
       // Non-pending orders: send email to admin for review
       if (!user) return
       const subject = encodeURIComponent(`Cancellation/Refund Request - ${order.order_number}`)
-      const body = encodeURIComponent(`Hello Crystal Harbor Trading Company,
+      const body = encodeURIComponent(`Hello DearPast,
 
 I would like to request a cancellation/refund for my order.
 

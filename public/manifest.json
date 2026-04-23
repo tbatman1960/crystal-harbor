@@ -1,11 +1,11 @@
 {
-  "name": "Crystal Harbor Trading Company",
-  "short_name": "Crystal Harbor",
+  "name": "DearPast",
+  "short_name": "DearPast",
   "description": "Custom printed goods - T-shirts, blankets, banners, and flags",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1E3A8A",
-  "theme_color": "#1E3A8A",
+  "background_color": "#FFF8F0",
+  "theme_color": "#5B3A1E",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -57,28 +57,46 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["shopping", "business"],
+  "categories": [
+    "shopping",
+    "business"
+  ],
   "shortcuts": [
     {
       "name": "Browse Products",
       "short_name": "Products",
       "description": "Browse our custom printed products",
       "url": "/products",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "View Cart",
       "short_name": "Cart",
       "description": "View your shopping cart",
       "url": "/cart",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "My Account",
       "short_name": "Account",
       "description": "Manage your account and orders",
       "url": "/account",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

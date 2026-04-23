@@ -1,4 +1,4 @@
-// Google Analytics 4 integration for Crystal Harbor Trading Company
+// Google Analytics 4 integration for DearPast
 
 declare global {
   interface Window {

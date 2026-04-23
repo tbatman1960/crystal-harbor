@@ -68,7 +68,7 @@ export default function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
             Account Created!
           </h2>
           <p className="text-secondary-600">
-            Welcome to Crystal Harbor. You're being redirected...
+            Welcome to DearPast. You're being redirected...
           </p>
         </div>
       </div>
@@ -82,7 +82,7 @@ export default function RegisterForm({ redirectTo = '/' }: RegisterFormProps) {
           <h2 className="font-display font-bold text-2xl text-primary-600 mb-2">
             Create Account
           </h2>
-          <p className="text-secondary-600">Join Crystal Harbor today</p>
+          <p className="text-secondary-600">Join DearPast today</p>
         </div>
 
         {error && (

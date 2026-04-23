@@ -25,7 +25,7 @@ export default function SEOHead({ seoData, structuredData = [] }: SEOHeadProps) 
       <meta property="og:image" content={seoData.ogImage ? `${baseUrl}${seoData.ogImage}` : `${baseUrl}/icons/icon-192x192.png`} />
       <meta property="og:url" content={seoData.canonicalUrl || baseUrl} />
       <meta property="og:type" content="website" />
-      <meta property="og:site_name" content="Crystal Harbor Trading Company" />
+      <meta property="og:site_name" content="DearPast" />
       
       {/* Twitter Card Tags */}
       <meta name="twitter:card" content="summary_large_image" />

@@ -138,7 +138,7 @@ function generateVendorOrderEmail(order: any) {
     </head>
     <body>
       <div class="header">
-        <div class="company-name">Crystal Harbor Trading Company</div>
+        <div class="company-name">DearPast</div>
         <div class="order-title">Production Order Request</div>
       </div>
       
@@ -215,7 +215,7 @@ function generateVendorOrderEmail(order: any) {
       </div>
 
       <div class="footer">
-        <p><strong>Crystal Harbor Trading Company</strong></p>
+        <p><strong>DearPast</strong></p>
         <p>Production Order System | Generated: ${new Date().toLocaleString()}</p>
         <p>Please confirm receipt of this order and provide production timeline.</p>
       </div>
@@ -268,6 +268,6 @@ ${order.special_instructions}
 Please confirm receipt and provide estimated completion date.
 
 Generated: ${new Date().toLocaleString()}
-Crystal Harbor Trading Company Production System
+DearPast Production System
   `
 }

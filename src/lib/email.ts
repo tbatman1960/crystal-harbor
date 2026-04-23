@@ -452,7 +452,7 @@ export function generateWelcomeEmail(subscriberData: {
           Questions? Contact us at 
           <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a>
         </div>
-        <div style="margin-bottom: 16px;">Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
+        <div style="margin-bottom: 16px;">DearPast • Quality custom printing with no minimums</div>
         <div style="font-size: 12px; color: #9ca3af;">
           You received this email because you subscribed to our newsletter at crystalharbor.com<br>
           <a href="#" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a> | 
@@ -467,7 +467,7 @@ export function generateWelcomeEmail(subscriberData: {
 </html>`
 
   const text = `
-Welcome to Crystal Harbor!
+Welcome to DearPast!
 
 🎉 You're In!
 Thank you for subscribing to our newsletter. You'll be the first to know about new products, special offers, and custom printing tips.
@@ -488,7 +488,7 @@ Visit ${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}
 
 Questions? Contact us at info@crystalharbortc.com
 
-Crystal Harbor Trading Company
+DearPast
 Quality custom printing with no minimums
 
 You received this email because you subscribed to our newsletter.
@@ -497,7 +497,7 @@ Reply with "UNSUBSCRIBE" to stop receiving these emails.
 
   return {
     to: email,
-    subject: `Welcome to Crystal Harbor ${discountCode ? '+ Your 10% Discount!' : ''}`,
+    subject: `Welcome to DearPast ${discountCode ? '+ Your 10% Discount!' : ''}`,
     html,
     text,
     replyTo: 'info@crystalharbortc.com'
@@ -560,7 +560,7 @@ export function generateOrderStatusEmail(orderData: {
       case 'delivered':
         return {
           title: '🎉 Order Delivered',
-          message: 'Your Crystal Harbor order has been delivered! We hope you love your custom items.',
+          message: 'Your DearPast order has been delivered! We hope you love your custom items.',
           color: '#16a34a',
           icon: '🏠'
         }
@@ -655,7 +655,7 @@ export function generateOrderStatusEmail(orderData: {
       <!-- Delivered - Request Review -->
       <div style="background: #fef3c7; border: 1px solid #fcd34d; border-radius: 6px; padding: 20px; margin-bottom: 30px;">
         <h3 style="color: #92400e; margin: 0 0 12px 0; font-size: 16px;">How Did We Do?</h3>
-        <p style="color: #b45309; margin: 0 0 12px 0;">We'd love to hear about your experience with Crystal Harbor!</p>
+        <p style="color: #b45309; margin: 0 0 12px 0;">We'd love to hear about your experience with DearPast!</p>
         <ul style="margin: 0; padding-left: 20px; color: #b45309; font-size: 14px;">
           <li>Did your items arrive as expected?</li>
           <li>Are you happy with the print quality?</li>
@@ -671,7 +671,7 @@ export function generateOrderStatusEmail(orderData: {
           <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a> 
           or call (317) 997-5503
         </div>
-        <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
+        <div>DearPast • Quality custom printing with no minimums</div>
       </div>
 
     </div>
@@ -705,7 +705,7 @@ YOUR PACKAGE IS ON THE WAY!
 
 ${newStatus.toLowerCase() === 'delivered' ? `
 HOW DID WE DO?
-We'd love to hear about your experience with Crystal Harbor!
+We'd love to hear about your experience with DearPast!
 • Did your items arrive as expected?
 • Are you happy with the print quality?
 • Would you recommend us to friends?
@@ -713,7 +713,7 @@ We'd love to hear about your experience with Crystal Harbor!
 
 Questions? Contact us at info@crystalharbortc.com or (317) 997-5503
 
-Crystal Harbor Trading Company
+DearPast
 Quality custom printing with no minimums
 `
 
@@ -791,7 +791,7 @@ export function generatePasswordResetEmail(data: {
           Need help? Contact us at 
           <a href="mailto:info@crystalharbortc.com" style="color: #C4942A; text-decoration: none;">info@crystalharbortc.com</a>
         </div>
-        <div>Crystal Harbor Trading Company • Quality custom printing with no minimums</div>
+        <div>DearPast • Quality custom printing with no minimums</div>
       </div>
 
     </div>
@@ -801,7 +801,7 @@ export function generatePasswordResetEmail(data: {
 </html>`
 
   const text = `
-Reset Your Password - Crystal Harbor Trading Company
+Reset Your Password - DearPast
 
 Hi ${customerName},
 
@@ -813,13 +813,13 @@ This link expires in 1 hour. If you didn't request a password reset, you can saf
 
 Need help? Contact us at info@crystalharbortc.com
 
-Crystal Harbor Trading Company
+DearPast
 Quality custom printing with no minimums
 `
 
   return {
     to: email,
-    subject: 'Reset Your Password - Crystal Harbor Trading Company',
+    subject: 'Reset Your Password - DearPast',
     html,
     text,
     replyTo: 'info@crystalharbortc.com'

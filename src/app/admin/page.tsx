@@ -86,7 +86,7 @@ export default function AdminDashboard() {
           Dashboard
         </h1>
         <p className="text-secondary-600">
-          Welcome to the Crystal Harbor admin panel. Here's an overview of your business.
+          Welcome to the DearPast admin panel. Here's an overview of your business.
         </p>
       </div>
 

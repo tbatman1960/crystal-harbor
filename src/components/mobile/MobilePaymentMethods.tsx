@@ -92,7 +92,7 @@ export default function MobilePaymentMethods({
         supportedNetworks: ['visa', 'masterCard', 'amex', 'discover'],
         merchantCapabilities: ['supports3DS'],
         total: {
-          label: 'Crystal Harbor Trading Company',
+          label: 'DearPast',
           amount: amount.toFixed(2),
           type: 'final'
         },
@@ -109,7 +109,7 @@ export default function MobilePaymentMethods({
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               validationURL: event.validationURL,
-              displayName: 'Crystal Harbor Trading Company'
+              displayName: 'DearPast'
             })
           })
 
@@ -185,7 +185,7 @@ export default function MobilePaymentMethods({
         }],
         merchantInfo: {
           merchantId: 'your-google-merchant-id',
-          merchantName: 'Crystal Harbor Trading Company'
+          merchantName: 'DearPast'
         },
         transactionInfo: {
           totalPriceStatus: 'FINAL',

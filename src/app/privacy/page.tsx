@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Crystal Harbor Trading Company',
-  description: 'Privacy policy for Crystal Harbor Trading Company - how we collect, use, and protect your personal information.',
+  title: 'Privacy Policy - DearPast',
+  description: 'Privacy policy for DearPast - how we collect, use, and protect your personal information.',
 }
 
 export default function PrivacyPage() {

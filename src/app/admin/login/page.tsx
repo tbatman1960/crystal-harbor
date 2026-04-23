@@ -56,7 +56,7 @@ function AdminLoginForm() {
         <div className="text-center">
           <Link href="/" className="inline-block mb-6">
             <span className="font-script text-4xl text-primary-600 tracking-wide">
-              Crystal Harbor
+              DearPast
             </span>
           </Link>
           <h2 className="font-display font-bold text-3xl text-neutral-800">

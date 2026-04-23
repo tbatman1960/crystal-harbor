@@ -89,7 +89,7 @@ export default function AdminLayout({
       <div className="p-6 border-b border-primary-500">
         <div className="flex items-center justify-between">
           <Link href="/admin" className="block">
-            <span className="font-script text-2xl tracking-wide" style={{ color: '#C0C0C0' }}>Crystal Harbor</span>
+            <span className="font-script text-2xl tracking-wide" style={{ color: '#C0C0C0' }}>DearPast</span>
             <div className="text-secondary-300 text-sm mt-1">Admin Panel</div>
           </Link>
           {/* Close button - mobile only */}
@@ -166,7 +166,7 @@ export default function AdminLayout({
             <Bars3Icon className="w-6 h-6" />
           </button>
           <Link href="/admin" className="block">
-            <span className="font-script text-xl tracking-wide" style={{ color: '#C0C0C0' }}>Crystal Harbor</span>
+            <span className="font-script text-xl tracking-wide" style={{ color: '#C0C0C0' }}>DearPast</span>
           </Link>
           <div className="w-8" /> {/* Spacer for centering */}
         </div>

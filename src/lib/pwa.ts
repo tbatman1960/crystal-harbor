@@ -43,7 +43,7 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
 // Show update notification
 const showUpdateNotification = () => {
   if (Notification.permission === 'granted') {
-    new Notification('Crystal Harbor Update Available', {
+    new Notification('DearPast Update Available', {
       body: 'A new version of the app is available. Refresh to update.',
       icon: '/icons/icon-192x192.png',
       tag: 'app-update',

@@ -438,12 +438,12 @@ export default function AdminCustomerDetailPage({ params }: { params: { id: stri
                         View Order
                       </Link>
                       <a
-                        href={`mailto:${customer.email}?subject=${encodeURIComponent(`Re: Your Crystal Harbor Order #${order.order_number}`)}&body=${encodeURIComponent(
+                        href={`mailto:${customer.email}?subject=${encodeURIComponent(`Re: Your DearPast Order #${order.order_number}`)}&body=${encodeURIComponent(
                           `Hi ${customer.first_name},\n\nRegarding your order #${order.order_number} placed on ${new Date(order.created_at).toLocaleDateString()}:\n\n` +
                           `Order Total: $${order.total_amount.toFixed(2)}\n` +
                           `Status: ${order.status}\n` +
                           (order.order_items ? `Items: ${order.order_items.map((item: any) => `${item.product_name} × ${item.quantity}`).join(', ')}\n` : '') +
-                          `\n\nThank you,\nCrystal Harbor Trading Company`
+                          `\n\nThank you,\nDearPast`
                         )}`}
                         className="inline-flex items-center px-3 py-1 bg-accent-lime-100 hover:bg-accent-lime-200 text-accent-lime-700 text-xs font-medium rounded-full"
                       >

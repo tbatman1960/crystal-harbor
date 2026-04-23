@@ -308,7 +308,7 @@ export async function createUSPSLabel(request: USPSLabelRequest): Promise<USPSLa
         ZIPCode: request.toAddress.zipCode,
       },
       fromAddress: {
-        firstName: 'Crystal Harbor',
+        firstName: 'DearPast',
         lastName: 'Trading Company',
         streetAddress: '2307 Willow Lakes East Blvd',
         city: 'Greenwood',
@@ -505,7 +505,7 @@ function generateMockLabel(request: USPSLabelRequest): USPSLabelResponse {
   // From Address (top left)
   doc.text('FROM:', 0.1, 0.3);
   doc.setFontSize(10);
-  doc.text('Crystal Harbor Trading Company', 0.1, 0.5);
+  doc.text('DearPast', 0.1, 0.5);
   doc.text('2307 Willow Lakes East Blvd', 0.1, 0.7);
   doc.text('Greenwood, IN 46143', 0.1, 0.9);
   

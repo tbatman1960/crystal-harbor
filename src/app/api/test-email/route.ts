@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     // Create test email
     const testEmail = {
       to: to,
-      subject: 'Crystal Harbor - Email Test',
+      subject: 'DearPast - Email Test',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 20px; text-align: center;">
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
               <strong>Test Details:</strong><br>
               • Sent to: ${to}<br>
               • Date: ${new Date().toLocaleString()}<br>
-              • System: Crystal Harbor Trading Company<br>
+              • System: DearPast<br>
             </div>
             
             <p>Your customers will now receive:</p>
@@ -44,25 +44,25 @@ export async function POST(request: NextRequest) {
             
             <div style="margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 8px;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                This is a test email from Crystal Harbor Trading Company.<br>
+                This is a test email from DearPast.<br>
                 If you didn't request this test, you can safely ignore it.
               </p>
             </div>
           </div>
         </div>
       `,
-      text: `Crystal Harbor - Email Test
+      text: `DearPast - Email Test
       
 ✅ Success! Your email configuration is working correctly.
 
 Test Details:
 • Sent to: ${to}  
 • Date: ${new Date().toLocaleString()}
-• System: Crystal Harbor Trading Company
+• System: DearPast
 
 Your customers will now receive order confirmations and other important emails.
 
-This is a test email from Crystal Harbor Trading Company.`
+This is a test email from DearPast.`
     }
 
     const result = await sendEmail(testEmail)

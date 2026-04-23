@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   
   if (!product) {
     return {
-      title: 'Product Not Found - Crystal Harbor Trading Company',
+      title: 'Product Not Found - DearPast',
     }
   }
 
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       title: seoData.ogTitle || seoData.title,
       description: seoData.ogDescription || seoData.description,
       url: `${baseUrl}/products/${product.category?.slug}/${product.slug}`,
-      siteName: 'Crystal Harbor Trading Company',
+      siteName: 'DearPast',
       images: [
         {
           url: product.image_url || '/icons/icon-192x192.png',

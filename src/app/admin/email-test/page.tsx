@@ -160,7 +160,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=orders@crystalharbortc.com
 SMTP_PASS=your-email-password
-SMTP_FROM=Crystal Harbor Trading Company <orders@crystalharbortc.com>`}
+SMTP_FROM=DearPast <orders@crystalharbortc.com>`}
               </pre>
               <p className="text-xs text-secondary-600 mt-2">
                 💡 Use the same password you use to check email on your iPhone
@@ -181,7 +181,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=orders@crystalharbortc.com
 SMTP_PASS=your-email-password
-SMTP_FROM=Crystal Harbor Trading Company <orders@crystalharbortc.com>`}
+SMTP_FROM=DearPast <orders@crystalharbortc.com>`}
               </pre>
               <p className="text-xs text-secondary-600 mt-2">
                 💡 May require App Password if 2FA is enabled
@@ -202,7 +202,7 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=apikey
 SMTP_PASS=your-sendgrid-api-key
-SMTP_FROM=Crystal Harbor Trading Company <orders@crystalharbortc.com>`}
+SMTP_FROM=DearPast <orders@crystalharbortc.com>`}
               </pre>
               <p className="text-xs text-secondary-600 mt-2">
                 💡 Sign up at sendgrid.com for 100 free emails/day

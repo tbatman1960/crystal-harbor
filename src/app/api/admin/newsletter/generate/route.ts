@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const systemPrompt = `You are a professional email newsletter designer for Crystal Harbor Trading Company, an e-commerce company specializing in custom printed products (blankets, mugs, t-shirts, etc.) with no minimum orders.
+    const systemPrompt = `You are a professional email newsletter designer for DearPast, an e-commerce company specializing in custom printed products (blankets, mugs, t-shirts, etc.) with no minimum orders.
 
 Generate a complete, professional HTML email newsletter based on the user's description. Use inline CSS styles only (no external stylesheets).
 
@@ -29,7 +29,7 @@ Brand colors:
 
 Guidelines:
 - Use a max-width of 600px centered layout
-- Include a branded header with "Crystal Harbor Trading Company"
+- Include a branded header with "DearPast"
 - Professional, warm, and engaging tone
 - Include a call-to-action button styled with the gold color
 - Include an unsubscribe footer

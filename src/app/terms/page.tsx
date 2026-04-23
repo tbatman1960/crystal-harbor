@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - Crystal Harbor Trading Company',
-  description: 'Terms of service and conditions for Crystal Harbor Trading Company custom printing services.',
+  title: 'Terms of Service - DearPast',
+  description: 'Terms of service and conditions for DearPast custom printing services.',
 }
 
 export default function TermsPage() {
@@ -29,13 +29,13 @@ export default function TermsPage() {
 
           <h2>1. Acceptance of Terms</h2>
           <p>
-            By accessing and using Crystal Harbor Trading Company's website and services, 
+            By accessing and using DearPast's website and services, 
             you accept and agree to be bound by the terms and provision of this agreement.
           </p>
 
           <h2>2. Custom Printing Services</h2>
           <p>
-            Crystal Harbor Trading Company provides custom printing services on various products including 
+            DearPast provides custom printing services on various products including 
             t-shirts, blankets, banners, and flags. All products are made to order based on customer specifications.
           </p>
 
@@ -86,7 +86,7 @@ export default function TermsPage() {
 
           <h2>9. Limitation of Liability</h2>
           <p>
-            Crystal Harbor Trading Company's liability is limited to the cost of the products ordered. 
+            DearPast's liability is limited to the cost of the products ordered. 
             We are not liable for consequential, incidental, or special damages.
           </p>
 

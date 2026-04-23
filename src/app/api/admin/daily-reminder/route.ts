@@ -190,7 +190,7 @@ function generateDailyReminderEmail({
     </head>
     <body>
       <div class="header">
-        <div class="company-name">Crystal Harbor Trading Company</div>
+        <div class="company-name">DearPast</div>
         <div class="date">Daily Order Status Report - ${date}</div>
       </div>
       
@@ -277,7 +277,7 @@ function generateDailyReminderEmail({
       </div>
 
       <div class="footer">
-        <p>Generated automatically by Crystal Harbor Trading Company admin system</p>
+        <p>Generated automatically by DearPast admin system</p>
         <p>Access admin panel: <a href="http://localhost:3000/admin">Admin Dashboard</a></p>
       </div>
     </body>

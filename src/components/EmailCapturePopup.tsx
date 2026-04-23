@@ -135,7 +135,7 @@ export default function EmailCapturePopup({
             
             <div className="mt-4 pt-4 border-t border-secondary-100">
               <p className="text-xs text-secondary-500 text-center">
-                By subscribing, you agree to receive marketing emails from Crystal Harbor Trading Company. 
+                By subscribing, you agree to receive marketing emails from DearPast. 
                 You can unsubscribe at any time. 
                 <br />
                 <a href="/privacy" className="text-accent-coral-500 hover:underline">Privacy Policy</a>

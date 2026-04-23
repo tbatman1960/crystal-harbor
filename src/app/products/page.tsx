@@ -3,7 +3,7 @@ import { getCategories, getProducts } from '@/lib/products'
 import ProductCard from '@/components/products/ProductCard'
 
 export const metadata = {
-  title: 'Custom Products - Crystal Harbor Trading Company',
+  title: 'Custom Products - DearPast',
   description: 'Browse our selection of custom printed t-shirts, blankets, flags, and banners. Upload your design and create something unique.',
   keywords: 'custom printing, t-shirts, blankets, flags, banners, personalized products',
 }

@@ -22,7 +22,7 @@ export default function RefundPolicyPage() {
               💰 Refund Overview
             </h2>
             <p className="text-blue-800">
-              At Crystal Harbor Trading Company, we're committed to your satisfaction. This policy 
+              At DearPast, we're committed to your satisfaction. This policy 
               outlines when and how refunds are processed for our custom printed products.
             </p>
           </div>
@@ -159,7 +159,7 @@ export default function RefundPolicyPage() {
                   <li>• Refunded to original card</li>
                   <li>• May take 3-5 additional business days to appear</li>
                   <li>• Bank processing times vary</li>
-                  <li>• Refund will show as credit from Crystal Harbor</li>
+                  <li>• Refund will show as credit from DearPast</li>
                 </ul>
               </div>
 

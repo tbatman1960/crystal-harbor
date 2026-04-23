@@ -128,7 +128,7 @@ export default function PWAProvider({ children }: PWAProviderProps) {
           <div className="flex items-start space-x-3">
             <ArrowDownTrayIcon className="h-6 w-6 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-sm">Install Crystal Harbor App</h4>
+              <h4 className="font-semibold text-sm">Install DearPast App</h4>
               <p className="text-xs text-blue-100 mt-1">
                 Get faster access and offline browsing
               </p>
@@ -163,7 +163,7 @@ export default function PWAProvider({ children }: PWAProviderProps) {
           <div className="bg-white rounded-t-2xl w-full max-w-md p-6 animate-slide-up">
             <div className="flex justify-between items-start mb-4">
               <h3 className="font-display font-bold text-lg text-primary-600">
-                Install Crystal Harbor
+                Install DearPast
               </h3>
               <button
                 onClick={dismissInstallBanner}
@@ -174,7 +174,7 @@ export default function PWAProvider({ children }: PWAProviderProps) {
             </div>
 
             <p className="text-secondary-600 text-sm mb-6">
-              Add Crystal Harbor to your home screen for quick access:
+              Add DearPast to your home screen for quick access:
             </p>
 
             <div className="space-y-4">
@@ -218,7 +218,7 @@ export default function PWAProvider({ children }: PWAProviderProps) {
                     Tap "Add" to confirm
                   </p>
                   <p className="text-secondary-500 text-xs mt-0.5">
-                    Crystal Harbor will appear on your home screen
+                    DearPast will appear on your home screen
                   </p>
                 </div>
               </div>

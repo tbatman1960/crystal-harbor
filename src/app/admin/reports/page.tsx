@@ -126,7 +126,7 @@ export default function ReportsPage() {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Vendor Order Report - Crystal Harbor Trading Company</title>
+            <title>Vendor Order Report - DearPast</title>
             <style>
               @media print {
                 @page { margin: 0.5in; }
@@ -160,7 +160,7 @@ export default function ReportsPage() {
           </head>
           <body>
             <div class="header">
-              <div class="company-name">Crystal Harbor Trading Company</div>
+              <div class="company-name">DearPast</div>
               <div class="report-title">Vendor Order Report</div>
               <div>Generated: ${new Date().toLocaleDateString()} | Total Orders: ${filteredOrders.length}</div>
             </div>

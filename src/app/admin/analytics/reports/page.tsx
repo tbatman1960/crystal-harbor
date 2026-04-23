@@ -209,7 +209,7 @@ export default function AdvancedReportsPage() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Crystal Harbor Trading Company - ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report</title>
+        <title>DearPast - ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report</title>
         <style>
           body { font-family: Arial, sans-serif; margin: 20px; }
           .header { text-align: center; border-bottom: 2px solid #1E3A8A; padding-bottom: 15px; margin-bottom: 20px; }
@@ -228,7 +228,7 @@ export default function AdvancedReportsPage() {
       </head>
       <body>
         <div class="header">
-          <div class="company-name">Crystal Harbor Trading Company</div>
+          <div class="company-name">DearPast</div>
           <div class="report-title">${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report</div>
           <div>Period: ${dateFrom} to ${dateTo} | Generated: ${new Date().toLocaleString()}</div>
         </div>

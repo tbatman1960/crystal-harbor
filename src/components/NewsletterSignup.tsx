@@ -78,7 +78,7 @@ export default function NewsletterSignup({
     return (
       <div className={`text-center ${className}`}>
         <div className="text-6xl mb-4">🎉</div>
-        <h3 className="text-2xl font-bold text-primary-600 mb-2">Welcome to Crystal Harbor!</h3>
+        <h3 className="text-2xl font-bold text-primary-600 mb-2">Welcome to DearPast!</h3>
         {showDiscountOffer && (
           <div className="bg-accent-lime-100 border border-accent-lime-300 rounded-lg p-4 mb-4">
             <p className="text-accent-lime-800 font-semibold">

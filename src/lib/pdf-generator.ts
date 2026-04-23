@@ -135,7 +135,7 @@ export async function generateOrderPDF(
     pdf.setTextColor(255, 255, 255)
     pdf.setFontSize(18)
     pdf.setFont('helvetica', 'bold')
-    pdf.text('Crystal Harbor Trading Company', 20, 15)
+    pdf.text('DearPast', 20, 15)
     
     pdf.setFontSize(12)
     pdf.setFont('helvetica', 'normal')

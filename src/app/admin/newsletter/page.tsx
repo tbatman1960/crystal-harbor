@@ -190,7 +190,7 @@ export default function AdminNewsletterPage() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-semibold text-primary-600 mb-4">AI Newsletter Generator</h2>
               <p className="text-sm text-secondary-500 mb-4">
-                Describe what you want and AI will generate professional newsletter HTML matching Crystal Harbor&apos;s branding.
+                Describe what you want and AI will generate professional newsletter HTML matching DearPast&apos;s branding.
               </p>
               <textarea
                 value={aiPrompt}

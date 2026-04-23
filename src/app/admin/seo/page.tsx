@@ -53,12 +53,12 @@ export default function AdminSEOPage() {
 
       // Set default values if none exist
       const defaultSettings: SEOSettings = {
-        homepage_title: 'Crystal Harbor Trading Co. — Custom Printed T-Shirts, Blankets, Banners & Flags',
+        homepage_title: 'DearPast Trading Co. — Custom Printed T-Shirts, Blankets, Banners & Flags',
         homepage_description: 'Upload your design, choose your product, and we\'ll handle the rest. Quality custom printing with no minimums. Volume pricing available.',
         homepage_keywords: 'custom printing, t-shirts, banners, flags, blankets, personalized products, volume pricing, no minimum orders',
         homepage_og_image: '/icons/icon-192x192.png',
         default_og_image: '/icons/icon-192x192.png',
-        organization_name: 'Crystal Harbor Trading Company',
+        organization_name: 'DearPast',
         organization_logo: '/icons/icon-192x192.png',
         organization_contact_phone: '+1-555-CRYSTAL',
         organization_address: 'United States',
@@ -147,7 +147,7 @@ export default function AdminSEOPage() {
                 type="text"
                 {...register('homepage_title', { required: 'Homepage title is required' })}
                 className="w-full px-3 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-accent-lime-500 focus:border-accent-lime-500"
-                placeholder="Crystal Harbor Trading Co. — Custom Printed..."
+                placeholder="DearPast Trading Co. — Custom Printed..."
               />
               {errors.homepage_title && (
                 <p className="text-red-500 text-sm mt-1">{errors.homepage_title.message}</p>

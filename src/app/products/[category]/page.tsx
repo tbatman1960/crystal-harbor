@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   
   if (!category) {
     return {
-      title: 'Category Not Found - Crystal Harbor Trading Company',
+      title: 'Category Not Found - DearPast',
     }
   }
 
@@ -32,13 +32,13 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
       title: seoData.ogTitle || seoData.title,
       description: seoData.ogDescription || seoData.description,
       url: `${baseUrl}/products/${category.slug}`,
-      siteName: 'Crystal Harbor Trading Company',
+      siteName: 'DearPast',
       images: [
         {
           url: seoData.ogImage || '/icons/icon-192x192.png',
           width: 192,
           height: 192,
-          alt: `Custom ${category.name} - Crystal Harbor Trading Company`
+          alt: `Custom ${category.name} - DearPast`
         }
       ],
       type: 'website'

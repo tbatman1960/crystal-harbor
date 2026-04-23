@@ -2,8 +2,8 @@ import LoginForm from '@/components/auth/LoginForm'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Sign In - Crystal Harbor Trading Company',
-  description: 'Sign in to your Crystal Harbor account to track orders and manage your profile.',
+  title: 'Sign In - DearPast',
+  description: 'Sign in to your DearPast account to track orders and manage your profile.',
 }
 
 export default function LoginPage({
@@ -20,7 +20,7 @@ export default function LoginPage({
         <div className="text-center mb-8">
           <Link href="/" className="inline-block mb-6">
             <span className="font-script text-4xl text-primary-600 tracking-wide">
-              Crystal Harbor
+              DearPast
             </span>
           </Link>
         </div>

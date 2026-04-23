@@ -173,7 +173,7 @@ export default function SharedDesignPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Crystal Harbor</h1>
+              <h1 className="text-xl font-semibold text-gray-900">DearPast</h1>
             </div>
             <button
               onClick={() => router.push('/products')}
@@ -362,10 +362,10 @@ export default function SharedDesignPage() {
           </div>
         )}
 
-        {/* Crystal Harbor branding */}
+        {/* DearPast branding */}
         <div className="text-center mt-8 text-gray-500">
           <p className="text-sm">
-            Powered by <span className="font-medium text-gray-900">Crystal Harbor</span> - Custom Products Made Simple
+            Powered by <span className="font-medium text-gray-900">DearPast</span> - Custom Products Made Simple
           </p>
         </div>
       </main>

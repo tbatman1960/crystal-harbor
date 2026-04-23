@@ -113,7 +113,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-neutral-700 mb-1">Address</h3>
                     <p className="text-secondary-600">
-                      Crystal Harbor Trading Company<br />
+                      DearPast<br />
                       2307 Willow Lakes East Blvd<br />
                       Greenwood, Indiana 46143
                     </p>
