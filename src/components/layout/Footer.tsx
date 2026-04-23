@@ -38,14 +38,14 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="mb-4">
               <span className="font-script text-2xl tracking-wide" style={{ color: '#C0C0C0' }}>
-                Crystal Harbor
+                DearPast
               </span>
             </div>
             <p className="text-secondary-400 mb-4">
               Custom printed products made simple. Upload your design, choose your product, and we'll handle the rest.
             </p>
             <div className="text-secondary-400 text-sm space-y-1">
-              <p>Crystal Harbor Trading Company</p>
+              <p>DearPast</p>
               <p>2307 Willow Lakes East Blvd</p>
               <p>Greenwood, Indiana 46143</p>
               <p><a href="tel:+13179975503" className="hover:text-accent-lime-500 transition-colors duration-200">(317) 997-5503</a></p>
@@ -121,7 +121,7 @@ export default function Footer() {
         <div className="border-t border-neutral-700 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-secondary-400 text-sm mb-4 md:mb-0">
-              © {currentYear} Crystal Harbor Trading Company. All rights reserved.
+              © {currentYear} DearPast. All rights reserved.
             </div>
             <div className="text-secondary-400 text-sm">
               Quality custom printing with no minimums • 2-3 weeks fulfillment
