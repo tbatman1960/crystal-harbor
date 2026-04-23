@@ -2,20 +2,20 @@ import { Metadata } from 'next'
 import { generateBreadcrumbStructuredData } from '@/lib/seo'
 
 export const metadata: Metadata = {
-  title: 'About Us — Crystal Harbor Trading Company',
-  description: 'Learn about Crystal Harbor Trading Company - your trusted partner for custom printed products. Quality, affordability, and personal service with no minimums.',
-  keywords: 'about crystal harbor, custom printing company, personalized products, quality printing, no minimum orders',
+  title: 'About Us — DearPast',
+  description: 'Learn about DearPast - your trusted partner for custom printed products. Quality, affordability, and personal service with no minimums.',
+  keywords: 'about dearpast, custom printing company, personalized products, quality printing, no minimum orders',
   openGraph: {
-    title: 'About Crystal Harbor Trading Company',
+    title: 'About DearPast',
     description: 'Your trusted partner for custom printed products with quality, affordability, and personal service.',
     url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crystal-harbor.netlify.app'}/about`,
-    siteName: 'Crystal Harbor Trading Company',
+    siteName: 'DearPast',
     images: ['/icons/icon-192x192.png'],
     type: 'website'
   },
   twitter: {
     card: 'summary',
-    title: 'About Crystal Harbor Trading Company',
+    title: 'About DearPast',
     description: 'Your trusted partner for custom printed products with quality, affordability, and personal service.',
     images: ['/icons/icon-192x192.png']
   },
@@ -42,7 +42,7 @@ export default function AboutPage() {
           {/* Header */}
         <div className="text-center mb-12">
           <h1 className="font-display font-bold text-4xl md:text-5xl text-primary-600 mb-6">
-            About Crystal Harbor
+            About DearPast
           </h1>
           <p className="text-xl text-secondary-600 max-w-2xl mx-auto">
             Where style meets affordability and every product tells a story
@@ -52,7 +52,7 @@ export default function AboutPage() {
         {/* Main Story */}
         <div className="prose prose-lg max-w-none mb-12">
           <p className="text-lg text-secondary-700 leading-relaxed mb-6">
-            Welcome to Crystal Harbor Trading Company, where style meets affordability and every product tells a story. Our journey began with a simple idea: families deserve quality, beautiful products without the heavy price tag.
+            Welcome to DearPast, where style meets affordability and every product tells a story. Our journey began with a simple idea: families deserve quality, beautiful products without the heavy price tag.
           </p>
           
           <p className="text-lg text-secondary-700 leading-relaxed mb-6">
@@ -123,7 +123,7 @@ export default function AboutPage() {
         {/* Why Choose Us */}
         <div className="mb-12">
           <h2 className="font-display font-bold text-2xl text-primary-600 mb-8 text-center">
-            Why Choose Crystal Harbor?
+            Why Choose DearPast?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
@@ -173,8 +173,8 @@ export default function AboutPage() {
             Thank you for letting us be a small part of your everyday moments. We look forward to serving you, one thoughtful order at a time.
           </p>
           <p className="font-display font-semibold text-xl">
-            Crystal Harbor Trading Company<br />
-            <span className="text-lg opacity-90">Inspired by the sea. Crafted for your life.</span>
+            DearPast<br />
+            <span className="text-lg opacity-90">Cherishing memories. Crafted for your life.</span>
           </p>
         </div>
         </div>
