@@ -40,7 +40,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-primary-600 shadow-lg sticky top-0 z-50">
+    <header className="bg-primary-100 shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
@@ -72,7 +72,7 @@ export default function Header() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative p-2 text-secondary-400 hover:text-accent-coral-500 transition-colors duration-200"
+              className="relative p-2 text-primary-700 hover:text-accent-coral-500 transition-colors duration-200"
             >
               <ShoppingCartIcon className="h-6 w-6" />
               {cartItemCount > 0 && (
@@ -87,14 +87,14 @@ export default function Header() {
             {/* User Account */}
             <Link
               href="/account"
-              className="p-2 text-secondary-400 hover:text-accent-lime-500 transition-colors duration-200"
+              className="p-2 text-primary-700 hover:text-accent-lime-500 transition-colors duration-200"
             >
               <UserIcon className="h-6 w-6" />
             </Link>
 
             {/* Mobile menu button */}
             <button
-              className="md:hidden p-2 text-secondary-400 hover:text-white transition-colors duration-200"
+              className="md:hidden p-2 text-primary-700 hover:text-primary-900 transition-colors duration-200"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {isMenuOpen ? (
@@ -108,7 +108,7 @@ export default function Header() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-primary-500">
+          <div className="md:hidden py-4 border-t border-primary-300">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => (
                 <Link
@@ -116,8 +116,8 @@ export default function Header() {
                   href={item.href}
                   className={`nav-link px-4 py-2 rounded-lg ${
                     isActiveLink(item.href) 
-                      ? 'bg-primary-500 nav-link-active' 
-                      : 'hover:bg-primary-500'
+                      ? 'bg-primary-200 nav-link-active' 
+                      : 'hover:bg-primary-200'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >

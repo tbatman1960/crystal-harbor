@@ -133,7 +133,7 @@ a {
   
   /* Navigation styles */
   .nav-link {
-    @apply text-secondary-400 hover:text-accent-lime-500 font-medium transition-colors duration-200;
+    @apply text-primary-700 hover:text-accent-lime-500 font-medium transition-colors duration-200;
   }
   
   .nav-link-active {
