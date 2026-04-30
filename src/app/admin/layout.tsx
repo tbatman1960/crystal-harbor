@@ -22,6 +22,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   SwatchIcon,
+  MapIcon,
 } from '@heroicons/react/24/outline'
 
 export default function AdminLayout({
@@ -76,6 +77,7 @@ export default function AdminLayout({
     { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
     { name: 'SEO Settings', href: '/admin/seo', icon: MagnifyingGlassIcon },
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
+    { name: 'Architecture', href: '/admin/architecture', icon: MapIcon },
   ]
 
   const handleLogout = () => {

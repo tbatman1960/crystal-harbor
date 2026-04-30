@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DearPast — Architecture Map</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0a12;
+    color: #e8e0d8;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #5B3A1E 0%, #3d2515 100%);
+    padding: 24px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #E8731A;
+  }
+  .header h1 {
+    font-family: 'Georgia', serif;
+    font-size: 28px;
+    color: #FFF8F0;
+    letter-spacing: 1px;
+  }
+  .header h1 span { color: #F5A623; }
+  .header .subtitle { color: #c8b49f; font-size: 14px; margin-top: 4px; }
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #c8b49f;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* Navigation tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: #141420;
+    border-bottom: 1px solid #2a2a3a;
+    padding: 0 40px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 14px 24px;
+    cursor: pointer;
+    color: #8a8a9a;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    user-select: none;
+  }
+  .tab:hover { color: #F5A623; }
+  .tab.active { color: #F5A623; border-bottom-color: #E8731A; }
+
+  /* Main content */
+  .content { padding: 40px; max-width: 1400px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: #161622;
+    border: 1px solid #2a2a3a;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: all 0.2s;
+  }
+  .card:hover { border-color: #E8731A44; box-shadow: 0 4px 20px #E8731A11; }
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #F5A623;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 20px; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 20px 0;
+    flex-wrap: nowrap;
+  }
+  .flow-step {
+    min-width: 140px;
+    padding: 16px;
+    background: #1e1e2e;
+    border: 2px solid #5B3A1E;
+    border-radius: 10px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .flow-step:hover { border-color: #F5A623; transform: translateY(-2px); }
+  .flow-step .step-title { font-weight: 600; color: #F5A623; font-size: 14px; }
+  .flow-step .step-detail { font-size: 11px; color: #8a8a9a; margin-top: 6px; }
+  .flow-arrow {
+    font-size: 24px;
+    color: #E8731A;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+
+  /* Table styles */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    background: #1e1e2e;
+    color: #F5A623;
+    font-weight: 600;
+    border-bottom: 2px solid #5B3A1E;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #1e1e2e;
+    color: #c8b49f;
+  }
+  tr:hover td { background: #1a1a2a; }
+  code {
+    background: #1e1e2e;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #E8731A;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-green { background: #1a3a1a; color: #4ade80; }
+  .tag-yellow { background: #3a3a1a; color: #F5A623; }
+  .tag-red { background: #3a1a1a; color: #ef4444; }
+  .tag-blue { background: #1a1a3a; color: #60a5fa; }
+  .tag-orange { background: #3a2a1a; color: #E8731A; }
+
+  /* Expandable */
+  .expandable { cursor: pointer; }
+  .expandable .expand-icon { transition: transform 0.2s; display: inline-block; }
+  .expandable.open .expand-icon { transform: rotate(90deg); }
+  .expand-content { display: none; margin-top: 12px; padding-left: 16px; border-left: 2px solid #2a2a3a; }
+  .expandable.open + .expand-content,
+  .expandable.open .expand-content { display: block; }
+
+  /* Service boxes */
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .service-box {
+    background: #1e1e2e;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .service-box:hover { border-color: #F5A623; transform: translateY(-2px); }
+  .service-box .svc-icon { font-size: 32px; margin-bottom: 8px; }
+  .service-box .svc-name { font-weight: 600; color: #FFF8F0; font-size: 14px; }
+  .service-box .svc-role { font-size: 11px; color: #8a8a9a; margin-top: 4px; }
+  .service-box .svc-detail { font-size: 11px; color: #E8731A; margin-top: 8px; }
+
+  /* Diagram boxes */
+  .diagram-box {
+    border: 2px solid;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .diagram-box h4 { font-size: 14px; margin-bottom: 8px; }
+  .diagram-box ul { list-style: none; padding: 0; }
+  .diagram-box li { font-size: 12px; color: #c8b49f; padding: 3px 0; }
+  .diagram-box li::before { content: "→ "; color: #E8731A; }
+
+  /* Connection lines via flexbox */
+  .arch-row {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+    margin-bottom: 20px;
+  }
+  .arch-row > * { flex: 1; }
+
+  /* Security badges */
+  .security-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #1e1e2e;
+  }
+  .security-item:last-child { border-bottom: none; }
+  .security-icon { font-size: 24px; flex-shrink: 0; }
+  .security-title { font-weight: 600; color: #FFF8F0; font-size: 14px; }
+  .security-desc { font-size: 12px; color: #8a8a9a; margin-top: 4px; }
+
+  /* Pulse animation */
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .live-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #4ade80;
+    display: inline-block; animation: pulse 2s infinite; margin-right: 6px;
+  }
+
+  /* Schema relationship lines */
+  .schema-container { position: relative; }
+  .schema-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 900px) { .schema-grid { grid-template-columns: 1fr; } }
+  .schema-table {
+    background: #1e1e2e;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .schema-table-header {
+    background: #5B3A1E;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #FFF8F0;
+  }
+  .schema-table-body { padding: 8px 0; }
+  .schema-field {
+    padding: 4px 14px;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .schema-field .fname { color: #e8e0d8; }
+  .schema-field .ftype { color: #8a8a9a; font-size: 11px; }
+  .schema-field.pk .fname { color: #F5A623; }
+  .schema-field.fk .fname { color: #E8731A; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Dear<span>Past</span> — Architecture Map</h1>
+    <div class="subtitle">E-commerce Platform • Next.js 14 + Supabase + Stripe</div>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> Live</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#F5A623"></div> Configured</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Pending</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> Mock/Test</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('overview')">Overview</div>
+  <div class="tab" onclick="showTab('pages')">Pages & Routes</div>
+  <div class="tab" onclick="showTab('api')">API Routes</div>
+  <div class="tab" onclick="showTab('database')">Database</div>
+  <div class="tab" onclick="showTab('services')">External Services</div>
+  <div class="tab" onclick="showTab('flows')">Data Flows</div>
+  <div class="tab" onclick="showTab('security')">Security</div>
+</div>
+
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div id="overview" class="section active">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">⚡</span> Stack</div>
+        <table>
+          <tr><td>Framework</td><td><code>Next.js 14</code> App Router + TypeScript</td></tr>
+          <tr><td>Frontend</td><td>React 18, Tailwind CSS 3, Zustand, Heroicons</td></tr>
+          <tr><td>Database</td><td>Supabase (PostgreSQL) — 20+ tables</td></tr>
+          <tr><td>Payments</td><td><span class="live-dot"></span>Stripe (LIVE keys)</td></tr>
+          <tr><td>Email</td><td>Nodemailer → Namecheap SMTP</td></tr>
+          <tr><td>Shipping</td><td>USPS REST API (OAuth2)</td></tr>
+          <tr><td>Canvas</td><td>Fabric.js v6 (customization editor)</td></tr>
+          <tr><td>Hosting</td><td><span class="live-dot"></span>Netlify Pro (auto-deploy)</td></tr>
+          <tr><td>Analytics</td><td><span class="tag tag-red">placeholder</span> GA4</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Current Status</div>
+        <table>
+          <tr><td>Products</td><td>4 products across 4 categories</td></tr>
+          <tr><td>Admin Sections</td><td>15 pages (full CRUD)</td></tr>
+          <tr><td>API Routes</td><td>35+ endpoints</td></tr>
+          <tr><td>Source Files</td><td>199 files, ~42K lines</td></tr>
+          <tr><td>Codebase</td><td>TypeScript + React</td></tr>
+        </table>
+        <div style="margin-top:16px">
+          <span class="tag tag-green">Payments Live</span>
+          <span class="tag tag-green">Email Working</span>
+          <span class="tag tag-green">USPS Rates Live</span>
+          <span class="tag tag-yellow">Labels Mock</span>
+          <span class="tag tag-red">GA4 Placeholder</span>
+          <span class="tag tag-red">No Custom Domain</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🏗️</span> High-Level Architecture</div>
+      <div class="service-grid">
+        <div class="service-box" style="border-color:#E8731A">
+          <div class="svc-icon">🌐</div>
+          <div class="svc-name">Netlify CDN</div>
+          <div class="svc-role">Hosting + SSL + Deploy</div>
+          <div class="svc-detail">Auto-deploy from GitHub</div>
+        </div>
+        <div class="service-box" style="border-color:#5B3A1E">
+          <div class="svc-icon">⚛️</div>
+          <div class="svc-name">Next.js 14</div>
+          <div class="svc-role">Unified Frontend + Backend</div>
+          <div class="svc-detail">App Router + API Routes</div>
+        </div>
+        <div class="service-box" style="border-color:#4ade80">
+          <div class="svc-icon">🗄️</div>
+          <div class="svc-name">Supabase</div>
+          <div class="svc-role">PostgreSQL + Storage</div>
+          <div class="svc-detail">RLS enabled, service role</div>
+        </div>
+        <div class="service-box" style="border-color:#635bff">
+          <div class="svc-icon">💳</div>
+          <div class="svc-name">Stripe</div>
+          <div class="svc-role">Payments + Refunds</div>
+          <div class="svc-detail">LIVE keys active</div>
+        </div>
+        <div class="service-box" style="border-color:#60a5fa">
+          <div class="svc-icon">📧</div>
+          <div class="svc-name">Namecheap SMTP</div>
+          <div class="svc-role">All Outgoing Email</div>
+          <div class="svc-detail">info@crystalharbortc.com</div>
+        </div>
+        <div class="service-box" style="border-color:#F5A623">
+          <div class="svc-icon">📦</div>
+          <div class="svc-name">USPS API</div>
+          <div class="svc-role">Rates + Labels + Tracking</div>
+          <div class="svc-detail">OAuth2 REST, 3 services</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📁</span> Directory Structure</div>
+      <div class="grid-3">
+        <div>
+          <div style="color:#F5A623;font-weight:600;margin-bottom:8px">src/app/</div>
+          <div style="font-size:12px;color:#c8b49f;line-height:1.8">
+            → Page routes (SSR/Static)<br>
+            → <code>/admin/*</code> — 15 admin pages<br>
+            → <code>/api/*</code> — 35+ API routes<br>
+            → <code>layout.tsx</code> — Root layout<br>
+            → <code>globals.css</code> — Global styles
+          </div>
+        </div>
+        <div>
+          <div style="color:#F5A623;font-weight:600;margin-bottom:8px">src/components/</div>
+          <div style="font-size:12px;color:#c8b49f;line-height:1.8">
+            → <code>layout/</code> — Header, Footer<br>
+            → <code>auth/</code> — Login, Register forms<br>
+            → <code>checkout/</code> — Checkout, Stripe, Summary<br>
+            → <code>products/</code> — Card, Detail, Pricing<br>
+            → <code>mobile/</code> — Touch, Payment methods
+          </div>
+        </div>
+        <div>
+          <div style="color:#F5A623;font-weight:600;margin-bottom:8px">src/lib/ & src/store/</div>
+          <div style="font-size:12px;color:#c8b49f;line-height:1.8">
+            → <code>supabase.ts</code> — Dual client (anon + admin)<br>
+            → <code>orders.ts, auth.ts, email.ts</code><br>
+            → <code>carriers/usps.ts</code> — USPS integration<br>
+            → <code>packing.ts</code> — Box algorithm<br>
+            → Zustand stores: cart, auth, admin
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGES & ROUTES -->
+  <div id="pages" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">🛍️</span> Public Pages</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>/</code></td><td>Homepage — hero, categories, features, how-it-works</td></tr>
+              <tr><td><code>/products</code></td><td>Product catalog</td></tr>
+              <tr><td><code>/products/[cat]/[slug]</code></td><td>Product detail — gallery, options, design, cart</td></tr>
+              <tr><td><code>/cart</code></td><td>Shopping cart (Zustand + localStorage)</td></tr>
+              <tr><td><code>/checkout</code></td><td>Shipping → Payment → Success</td></tr>
+              <tr><td><code>/account</code></td><td>Customer profile, orders, reorder</td></tr>
+              <tr><td><code>/auth/login</code></td><td>Login (detects admin emails)</td></tr>
+              <tr><td><code>/auth/register</code></td><td>Registration</td></tr>
+              <tr><td><code>/auth/forgot-password</code></td><td>Password reset request</td></tr>
+              <tr><td><code>/auth/reset-password</code></td><td>Reset with token</td></tr>
+              <tr><td><code>/orders</code></td><td>Order lookup by number</td></tr>
+              <tr><td><code>/contact</code></td><td>Contact form (sends email)</td></tr>
+              <tr><td><code>/about</code></td><td>About page</td></tr>
+              <tr><td><code>/terms</code></td><td>Terms of service</td></tr>
+              <tr><td><code>/privacy</code></td><td>Privacy policy</td></tr>
+              <tr><td><code>/returns</code></td><td>Return policy</td></tr>
+              <tr><td><code>/refunds</code></td><td>Refund policy</td></tr>
+              <tr><td><code>/offline</code></td><td>PWA offline fallback</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🔧</span> Admin Portal <code>/admin/*</code></div>
+        <p style="font-size:12px;color:#8a8a9a;margin-bottom:12px">Own layout, sidebar nav, separate auth. Hidden from public site.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Route</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>/admin</code></td><td>Dashboard — stats, recent orders</td></tr>
+              <tr><td><code>/admin/orders</code></td><td>Order management + status updates</td></tr>
+              <tr><td><code>/admin/customers</code></td><td>Customer CRUD + password reset</td></tr>
+              <tr><td><code>/admin/products</code></td><td>Product CRUD (add / edit / delete)</td></tr>
+              <tr><td><code>/admin/subscribers</code></td><td>Email subscriber management</td></tr>
+              <tr><td><code>/admin/newsletter</code></td><td>Compose + send + history</td></tr>
+              <tr><td><code>/admin/shipping</code></td><td>Package types, settings, test calc</td></tr>
+              <tr><td><code>/admin/reports</code></td><td>Sales reports</td></tr>
+              <tr><td><code>/admin/analytics</code></td><td>Analytics dashboard</td></tr>
+              <tr><td><code>/admin/seo</code></td><td>SEO settings</td></tr>
+              <tr><td><code>/admin/policies</code></td><td>Store policies editor</td></tr>
+              <tr><td><code>/admin/refund-policies</code></td><td>Refund rules config</td></tr>
+              <tr><td><code>/admin/export</code></td><td>CSV data export</td></tr>
+              <tr><td><code>/admin/settings</code></td><td>Site settings</td></tr>
+              <tr><td><code>/admin/email-test</code></td><td>Email testing tool</td></tr>
+              <tr><td><code>/admin/customization/[id]</code></td><td>Product template/text/pricing</td></tr>
+              <tr><td><code>/admin/design-catalog</code></td><td>Design catalog management</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🎨</span> Customization Module <code>src/modules/customization/</code></div>
+      <div class="grid-3">
+        <div>
+          <div style="color:#E8731A;font-weight:600;font-size:13px;margin-bottom:6px">Canvas Editor</div>
+          <div style="font-size:12px;color:#c8b49f">Fabric.js v6, layer panel, undo/redo, text toolbar, image upload, low-res warnings</div>
+        </div>
+        <div>
+          <div style="color:#E8731A;font-weight:600;font-size:13px;margin-bottom:6px">AI Services</div>
+          <div style="font-size:12px;color:#c8b49f">Image generation, upscaling, style transfer, realistic preview. Mock + OpenAI implementations.</div>
+        </div>
+        <div>
+          <div style="color:#E8731A;font-weight:600;font-size:13px;margin-bottom:6px">Templates & Sharing</div>
+          <div style="font-size:12px;color:#c8b49f">5 built-in templates, social sharing with public page + feedback, save/resume designs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- API ROUTES -->
+  <div id="api" class="section">
+    <p style="font-size:13px;color:#8a8a9a;margin-bottom:20px">All API routes use <code>supabaseAdmin</code> (service role key). Client components call these via <code>fetch()</code> — never query Supabase directly.</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">🔐</span> Authentication</div>
+        <table>
+          <thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/auth/login</code></td><td>Customer login</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/auth/register</code></td><td>Registration</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/auth/check-admin</code></td><td>Admin email detection</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/auth/forgot-password</code></td><td>Password reset email</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/auth/reset-password</code></td><td>Token verify + update</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/admin/auth/login</code></td><td>Admin login</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">💰</span> Orders & Payments</div>
+        <table>
+          <thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/create-payment-intent</code></td><td>Stripe PaymentIntent</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/webhooks/stripe</code></td><td>Webhook verification</td></tr>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/orders/[num]</code></td><td>Order lookup</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/orders/cancel</code></td><td>Customer cancellation</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/calculate-tax</code></td><td>Sales tax (7% IN)</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/refunds/process</code></td><td>Admin refund</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📧</span> Email & Newsletter</div>
+        <table>
+          <thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/send-email</code></td><td>Dispatch by type</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/subscribe-email</code></td><td>Newsletter signup</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/test-email</code></td><td>Email testing</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/admin/newsletter/send</code></td><td>Mass newsletter</td></tr>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/admin/newsletter/history</code></td><td>Send history</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/admin/daily-reminder</code></td><td>Daily summary</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📦</span> Products & Admin</div>
+        <table>
+          <thead><tr><th>Method</th><th>Route</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/products</code></td><td>Public product list</td></tr>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/admin/dashboard</code></td><td>Dashboard stats</td></tr>
+            <tr><td><span class="tag tag-orange">CRUD</span></td><td><code>/api/admin/products/*</code></td><td>Product management</td></tr>
+            <tr><td><span class="tag tag-orange">CRUD</span></td><td><code>/api/admin/orders</code></td><td>Order management</td></tr>
+            <tr><td><span class="tag tag-orange">CRUD</span></td><td><code>/api/admin/customers</code></td><td>Customer management</td></tr>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/admin/reports</code></td><td>Sales reports</td></tr>
+            <tr><td><span class="tag tag-green">GET</span></td><td><code>/api/admin/analytics-reports</code></td><td>Analytics data</td></tr>
+            <tr><td><span class="tag tag-blue">POST</span></td><td><code>/api/admin/export-data</code></td><td>CSV export</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATABASE -->
+  <div id="database" class="section">
+    <p style="font-size:13px;color:#8a8a9a;margin-bottom:20px">Supabase PostgreSQL — RLS enabled on all tables with no policies. Service role key bypasses RLS. <span style="color:#F5A623">Gold = primary key</span> · <span style="color:#E8731A">Orange = foreign key</span></p>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🏪</span> Core Tables</div>
+      <div class="schema-grid">
+        <div class="schema-table">
+          <div class="schema-table-header">customers</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field"><span class="fname">email</span><span class="ftype">text (unique)</span></div>
+            <div class="schema-field"><span class="fname">password_hash</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">first_name, last_name</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">phone</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">address_line_1/2, city, state, postal_code</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">active</span><span class="ftype">boolean</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">products</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field fk"><span class="fname">↗ category_id</span><span class="ftype">→ categories</span></div>
+            <div class="schema-field"><span class="fname">name, slug</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">base_price</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">size_class</span><span class="ftype">default 'small'</span></div>
+            <div class="schema-field"><span class="fname">packing_units</span><span class="ftype">default 1.0</span></div>
+            <div class="schema-field"><span class="fname">packed_weight_lbs</span><span class="ftype">default 0.5</span></div>
+            <div class="schema-field"><span class="fname">is_customizable</span><span class="ftype">boolean</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">orders</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field"><span class="fname">order_number</span><span class="ftype">CH-YYYY-NNN</span></div>
+            <div class="schema-field fk"><span class="fname">↗ customer_id</span><span class="ftype">→ customers (nullable)</span></div>
+            <div class="schema-field"><span class="fname">guest_email</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">status</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">subtotal, shipping_cost, total_amount</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">stripe_payment_intent_id</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">shipping_address</span><span class="ftype">JSONB</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🔗</span> Related Tables</div>
+      <div class="schema-grid">
+        <div class="schema-table">
+          <div class="schema-table-header">categories</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field"><span class="fname">name, slug</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">display_order</span><span class="ftype">int</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">order_items</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field fk"><span class="fname">↗ order_id</span><span class="ftype">→ orders</span></div>
+            <div class="schema-field"><span class="fname">product_name</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">quantity, unit_price, line_total</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">customization_data</span><span class="ftype">JSONB</span></div>
+            <div class="schema-field"><span class="fname">customization_fee</span><span class="ftype">numeric</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">product_options</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field fk"><span class="fname">↗ product_id</span><span class="ftype">→ products</span></div>
+            <div class="schema-field"><span class="fname">option_type</span><span class="ftype">'size'|'color'|custom</span></div>
+            <div class="schema-field"><span class="fname">option_value</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">price_adjustment</span><span class="ftype">numeric</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">pricing_tiers</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field fk"><span class="fname">↗ product_id</span><span class="ftype">→ products</span></div>
+            <div class="schema-field"><span class="fname">min_quantity, max_quantity</span><span class="ftype">int</span></div>
+            <div class="schema-field"><span class="fname">price_per_unit</span><span class="ftype">numeric</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">shipping_packages</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field"><span class="fname">name</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">capacity_units, max_weight_lbs</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">length/width/height_inches</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">fallback_rate</span><span class="ftype">numeric</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">shipping_labels</div>
+          <div class="schema-table-body">
+            <div class="schema-field pk"><span class="fname">🔑 id</span><span class="ftype">uuid</span></div>
+            <div class="schema-field fk"><span class="fname">↗ order_id</span><span class="ftype">→ orders</span></div>
+            <div class="schema-field"><span class="fname">tracking_number</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">label_data</span><span class="ftype">base64 PDF</span></div>
+            <div class="schema-field"><span class="fname">cost, status</span><span class="ftype">numeric/text</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🎨</span> Customization Tables</div>
+      <div class="schema-grid">
+        <div class="schema-table">
+          <div class="schema-table-header">product_templates</div>
+          <div class="schema-table-body">
+            <div class="schema-field"><span class="fname">product_id, color_name</span><span class="ftype">FK + text</span></div>
+            <div class="schema-field"><span class="fname">printable_area_x/y/w/h</span><span class="ftype">numeric</span></div>
+            <div class="schema-field"><span class="fname">physical_width/height_inches</span><span class="ftype">numeric</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">saved_designs</div>
+          <div class="schema-table-body">
+            <div class="schema-field"><span class="fname">user_id, product_id</span><span class="ftype">FKs</span></div>
+            <div class="schema-field"><span class="fname">design_data</span><span class="ftype">JSONB</span></div>
+            <div class="schema-field"><span class="fname">name, thumbnail_url</span><span class="ftype">text</span></div>
+          </div>
+        </div>
+        <div class="schema-table">
+          <div class="schema-table-header">design_templates</div>
+          <div class="schema-table-body">
+            <div class="schema-field"><span class="fname">name, category, description</span><span class="ftype">text</span></div>
+            <div class="schema-field"><span class="fname">layer_data</span><span class="ftype">JSONB</span></div>
+            <div class="schema-field"><span class="fname">product_types</span><span class="ftype">text[]</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> Supporting Tables</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Table</th><th>Purpose</th><th>Key Fields</th></tr></thead>
+          <tbody>
+            <tr><td><code>admin_users</code></td><td>Admin accounts (separate from customers)</td><td>email, password_hash, role</td></tr>
+            <tr><td><code>subscriber_emails</code></td><td>Newsletter subscribers</td><td>email, source, discount_code</td></tr>
+            <tr><td><code>discount_codes</code></td><td>Discount codes</td><td>code, type, value, usage_limit</td></tr>
+            <tr><td><code>newsletter_sends</code></td><td>Newsletter send history</td><td>subject, recipient_count, status</td></tr>
+            <tr><td><code>password_reset_tokens</code></td><td>Password reset (1hr expiry)</td><td>token, customer_id, expires_at</td></tr>
+            <tr><td><code>refund_policies</code></td><td>Refund rules by order status</td><td>status, refund_percentage, conditions</td></tr>
+            <tr><td><code>refund_requests</code></td><td>Refund tracking</td><td>order_id, amount, stripe_refund_id</td></tr>
+            <tr><td><code>shared_designs</code></td><td>Shareable design links</td><td>design_data, share_token, click_count</td></tr>
+            <tr><td><code>site_settings</code></td><td>Key-value site config</td><td>key, value, category</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXTERNAL SERVICES -->
+  <div id="services" class="section">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">🗄️</span> Supabase <span class="tag tag-green">Live</span></div>
+        <table>
+          <tr><td>Type</td><td>PostgreSQL + Storage + REST API</td></tr>
+          <tr><td>Tables</td><td>20+ tables with RLS enabled</td></tr>
+          <tr><td>Access</td><td>Dual client — anon (blocked) + service role (bypasses)</td></tr>
+          <tr><td>Storage</td><td>Print-ready files, design uploads</td></tr>
+          <tr><td>Config</td><td><code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code></td></tr>
+          <tr><td>Key file</td><td><code>src/lib/supabase.ts</code></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">💳</span> Stripe <span class="tag tag-green">LIVE</span></div>
+        <table>
+          <tr><td>Mode</td><td><span class="live-dot"></span>Live keys active</td></tr>
+          <tr><td>Features</td><td>PaymentIntent, Refunds, Webhooks</td></tr>
+          <tr><td>Webhook</td><td><code>/api/webhooks/stripe</code> — signature verified</td></tr>
+          <tr><td>Events</td><td>payment_intent.succeeded, .failed, charge.refunded</td></tr>
+          <tr><td>Config</td><td><code>STRIPE_SECRET_KEY</code>, <code>STRIPE_WEBHOOK_SECRET</code></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📧</span> Email (SMTP) <span class="tag tag-green">Live</span></div>
+        <table>
+          <tr><td>Provider</td><td>Namecheap PrivateEmail</td></tr>
+          <tr><td>Host</td><td><code>mail.privateemail.com:587</code></td></tr>
+          <tr><td>Sender</td><td><code>info@crystalharbortc.com</code> (single sender)</td></tr>
+          <tr><td>Routing</td><td>Reply-To headers per email type</td></tr>
+          <tr><td>Behavior</td><td>Fire & forget, 5s timeout, IPv4 forced</td></tr>
+          <tr><td>Templates</td><td>Order confirmation, status update, welcome, vendor, newsletter, password reset</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📦</span> USPS API <span class="tag tag-yellow">Rates Live / Labels Mock</span></div>
+        <table>
+          <tr><td>Auth</td><td>OAuth2 client credentials → payment auth token</td></tr>
+          <tr><td>Rates</td><td><span class="live-dot"></span>Domestic Prices v3 (3 service levels)</td></tr>
+          <tr><td>Labels</td><td><span class="tag tag-blue">Mock</span> until <code>USPS_ENV=production</code></td></tr>
+          <tr><td>Tracking</td><td>Tracking v3 API wired</td></tr>
+          <tr><td>Account</td><td>MC2 Consulting LLC, EPS: 1000420021</td></tr>
+          <tr><td>Fallback</td><td>Utilization-based flat rates when API unavailable</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">🌐</span> Netlify <span class="tag tag-green">Live</span></div>
+        <table>
+          <tr><td>Plan</td><td>Pro</td></tr>
+          <tr><td>URL</td><td><code>crystal-harbor.netlify.app</code></td></tr>
+          <tr><td>Deploy</td><td>Auto-deploy on push to <code>main</code></td></tr>
+          <tr><td>Plugin</td><td><code>@netlify/plugin-nextjs</code></td></tr>
+          <tr><td>Headers</td><td>Security headers in <code>netlify.toml</code></td></tr>
+          <tr><td>Env vars</td><td>All secrets stored in Netlify dashboard</td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span> Google Analytics <span class="tag tag-red">Placeholder</span></div>
+        <table>
+          <tr><td>Status</td><td>GA4 code integrated, measurement ID is <code>G-XXXXXXXXXX</code></td></tr>
+          <tr><td>Events</td><td>Page views, add to cart, begin checkout, purchase</td></tr>
+          <tr><td>Files</td><td><code>GoogleAnalytics.tsx</code>, <code>lib/analytics.ts</code></td></tr>
+          <tr><td>Needed</td><td>Real GA4 measurement ID from Tim</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA FLOWS -->
+  <div id="flows" class="section">
+    <div class="card">
+      <div class="card-title"><span class="icon">🛒</span> Order Lifecycle</div>
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-title">Browse</div>
+          <div class="step-detail">Product catalog<br>Categories & search</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-title">Customize</div>
+          <div class="step-detail">Fabric.js editor<br>AI tools, templates</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-title">Add to Cart</div>
+          <div class="step-detail">Zustand store<br>localStorage</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-title">Checkout</div>
+          <div class="step-detail">Shipping address<br>Tax calc (7% IN)</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:#635bff">
+          <div class="step-title">Payment</div>
+          <div class="step-detail">Stripe Elements<br>PaymentIntent</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step" style="border-color:#4ade80">
+          <div class="step-title">Order Created</div>
+          <div class="step-detail">Supabase insert<br>CH-YYYY-NNN</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-title">Email Sent</div>
+          <div class="step-detail">Confirmation<br>Fire & forget</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="step-title">Print Files</div>
+          <div class="step-detail">300 DPI export<br>Supabase Storage</div>
+        </div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="flow">
+          <div class="flow-step" style="border-color:#F5A623">
+            <div class="step-title">Webhook</div>
+            <div class="step-detail">Stripe verifies<br>server-side backup</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">Admin Manages</div>
+            <div class="step-detail">Status updates<br>Vendor forwarding</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">Ship Labels</div>
+            <div class="step-detail">USPS API<br>4×6" PDF labels</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">Status Email</div>
+            <div class="step-detail">Tracking number<br>Customer notified</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step" style="border-color:#4ade80">
+            <div class="step-title">Delivered ✓</div>
+            <div class="step-detail">USPS tracking<br>Order complete</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><span class="icon">🔐</span> Authentication Flow</div>
+        <div class="flow" style="flex-wrap:wrap">
+          <div class="flow-step">
+            <div class="step-title">Login Form</div>
+            <div class="step-detail">Email + password<br>Admin detection on blur</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">API Validates</div>
+            <div class="step-detail">bcrypt compare<br>Case-insensitive email</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">Zustand Store</div>
+            <div class="step-detail">User object saved<br>→ localStorage</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:#1e1e2e;border-radius:8px;font-size:12px;color:#ef4444">
+          ⚠️ No JWTs, no server sessions. Auth is purely client-side localStorage. Anyone with a valid user ID can access protected pages.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">📦</span> Shipping Calculation</div>
+        <div class="flow" style="flex-wrap:wrap">
+          <div class="flow-step">
+            <div class="step-title">Cart Items</div>
+            <div class="step-detail">packing_units<br>packed_weight_lbs</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">Packing Algo</div>
+            <div class="step-detail">Optimal boxes<br>by units + weight</div>
+          </div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step">
+            <div class="step-title">USPS Rates</div>
+            <div class="step-detail">3 service levels<br>Ground/Priority/Express</div>
+          </div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#8a8a9a;text-align:center">Falls back to utilization-based flat rates when USPS API unavailable</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📧</span> Email Types</div>
+      <div class="service-grid">
+        <div class="service-box" style="border-color:#4ade80">
+          <div class="svc-icon">📬</div>
+          <div class="svc-name">Order Confirmation</div>
+          <div class="svc-role">On successful payment</div>
+        </div>
+        <div class="service-box" style="border-color:#60a5fa">
+          <div class="svc-icon">🔄</div>
+          <div class="svc-name">Status Update</div>
+          <div class="svc-role">Admin changes status</div>
+        </div>
+        <div class="service-box" style="border-color:#ef4444">
+          <div class="svc-icon">❌</div>
+          <div class="svc-name">Cancellation</div>
+          <div class="svc-role">Customer or admin cancel</div>
+        </div>
+        <div class="service-box" style="border-color:#F5A623">
+          <div class="svc-icon">👋</div>
+          <div class="svc-name">Welcome</div>
+          <div class="svc-role">New registration</div>
+        </div>
+        <div class="service-box" style="border-color:#E8731A">
+          <div class="svc-icon">🏭</div>
+          <div class="svc-name">Vendor Forward</div>
+          <div class="svc-role">Order details to vendor</div>
+        </div>
+        <div class="service-box" style="border-color:#c084fc">
+          <div class="svc-icon">🔑</div>
+          <div class="svc-name">Password Reset</div>
+          <div class="svc-role">Token link (1hr expiry)</div>
+        </div>
+        <div class="service-box" style="border-color:#f472b6">
+          <div class="svc-icon">📰</div>
+          <div class="svc-name">Newsletter</div>
+          <div class="svc-role">Mass send to subscribers</div>
+        </div>
+        <div class="service-box" style="border-color:#8a8a9a">
+          <div class="svc-icon">📋</div>
+          <div class="svc-name">Daily Reminder</div>
+          <div class="svc-role">Admin summary (cron)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECURITY -->
+  <div id="security" class="section">
+    <div class="card">
+      <div class="card-title"><span class="icon">🛡️</span> Security Model</div>
+      <div class="security-item">
+        <div class="security-icon">🗄️</div>
+        <div>
+          <div class="security-title">Row Level Security (RLS)</div>
+          <div class="security-desc">Enabled on ALL tables with NO policies. Anon key (exposed in frontend) is completely blocked. Service role key (API routes only) bypasses RLS. Client components must use fetch() to API routes — never query Supabase directly.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">💳</div>
+        <div>
+          <div class="security-title">Stripe Webhook Verification</div>
+          <div class="security-desc">All webhook events verified via signing secret (<code>whsec_*</code>). Handles payment_intent.succeeded, payment_intent.payment_failed, and charge.refunded events server-side.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🔒</div>
+        <div>
+          <div class="security-title">Admin Portal Hidden</div>
+          <div class="security-desc">No public links to admin. Header, footer, and popups hidden on /admin/* routes. Admin detection only via email blur on customer login form.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">📦</div>
+        <div>
+          <div class="security-title">USPS Labels Guarded</div>
+          <div class="security-desc"><code>USPS_ENV=production</code> required for real label creation. Mock labels generated otherwise. Auto-void on cancellation reclaims postage.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🖼️</div>
+        <div>
+          <div class="security-title">Print Files Protected</div>
+          <div class="security-desc">Server validates <code>payment_intent_id</code> exists before accepting print file uploads. Customers never get access to production files.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🔑</div>
+        <div>
+          <div class="security-title">Password Handling</div>
+          <div class="security-desc">All passwords bcrypt-hashed. Password reset via secure token with 1-hour expiry. Case-insensitive email matching via <code>ilike</code>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:#ef444444">
+      <div class="card-title" style="color:#ef4444"><span class="icon">⚠️</span> Known Security Gaps</div>
+      <div class="security-item">
+        <div class="security-icon">🚫</div>
+        <div>
+          <div class="security-title">No Server-Side Auth Validation</div>
+          <div class="security-desc">Auth is purely client-side localStorage. No JWTs, no session tokens. Anyone with a valid user ID in localStorage can access protected pages. API routes don't validate caller identity.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🚫</div>
+        <div>
+          <div class="security-title">No Rate Limiting</div>
+          <div class="security-desc">API routes have no rate limiting or abuse prevention. Login, registration, and email endpoints are vulnerable to brute force.</div>
+        </div>
+      </div>
+      <div class="security-item">
+        <div class="security-icon">🚫</div>
+        <div>
+          <div class="security-title">No Email Verification</div>
+          <div class="security-desc">Customer registration doesn't verify email addresses. Anyone can register with any email.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
