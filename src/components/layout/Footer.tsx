@@ -37,9 +37,11 @@ export default function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="mb-4">
-              <span className="font-script text-2xl tracking-wide" style={{ color: '#C0C0C0' }}>
-                DearPast
-              </span>
+              <img
+                src="/images/logo/dearpast-logo-cropped.png"
+                alt="DearPast"
+                className="h-12 w-auto object-contain"
+              />
             </div>
             <p className="text-secondary-400 mb-4">
               Custom printed products made simple. Upload your design, choose your product, and we'll handle the rest.

@@ -42,13 +42,13 @@ export default function Header() {
   return (
     <header className="bg-primary-600 shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <img
-              src="/images/logo/dearpast-logo.jpg"
+              src="/images/logo/dearpast-logo-cropped.png"
               alt="DearPast"
-              className="h-12 md:h-14 w-auto object-contain"
+              className="h-14 md:h-16 w-auto object-contain"
             />
           </Link>
 
