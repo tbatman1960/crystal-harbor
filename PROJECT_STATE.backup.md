@@ -1,7 +1,7 @@
 # Project State: Crystal Harbor Trading Company
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-19
 
 ---
 
@@ -16,6 +16,8 @@
 - **Analytics:** Google Analytics 4 (placeholder `G-XXXXXXXXXX` — needs real ID)
 - **Forms:** react-hook-form
 - **PDF:** jsPDF + html2canvas (for order PDFs in admin)
+- **Canvas:** Fabric.js v6 (product customization editor)
+- **USPS:** OAuth2 API — Domestic Prices v3 (rates), Labels v3 (shipping labels), Tracking v3, Payments v3 (payment auth)
 - **Dev Environment:** macOS (ARM64), Node v24.13.1, npm, zsh
 
 ## Architecture Summary
@@ -136,10 +138,18 @@ crystal-harbor/
 │   │   ├── mobile-detection.ts     # Device detection utilities
 │   │   ├── pwa.ts                  # PWA install prompt handling
 │   │   └── pdf-generator.ts        # Order PDF generation for admin
-│   └── store/                       # Zustand state stores (3 files)
-│       ├── cartStore.ts            # Shopping cart (persisted to localStorage)
-│       ├── authStore.ts            # Customer auth state (persisted)
-│       └── adminStore.ts           # Admin auth state (persisted)
+│   ├── store/                       # Zustand state stores (3 files)
+│   │   ├── cartStore.ts            # Shopping cart (persisted to localStorage)
+│   │   ├── authStore.ts            # Customer auth state (persisted)
+│   │   └── adminStore.ts           # Admin auth state (persisted)
+│   └── modules/
+│       └── customization/          # Self-contained customization module
+│           ├── components/         # Editor, Modal, AI tools, Templates, Sharing
+│           ├── hooks/              # useCanvasEditor, useCustomizationConfig, useUndoRedo
+│           ├── services/           # AI abstraction: imageGeneration, upscaling, styleTransfer, realisticPreview
+│           ├── types/              # DesignSpecification, Layer types
+│           ├── utils/              # pricing, resolution
+│           └── index.ts            # Barrel export
 ├── public/
 │   ├── icons/                       # PWA icons (72px to 512px + SVG)
 │   ├── images/
@@ -197,6 +207,19 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | `uploaded_images` | (exists in DB) | Image uploads |
 | `design_catalog` | (exists in DB) | Design catalog |
 | `shipping_rates` | (exists in DB) | Shipping rates |
+
+### Customization Tables
+
+| Table | Key Fields | Purpose |
+|-------|-----------|---------|
+| `product_templates` | id, product_id, color_name, image_url, printable_area_x/y/width/height, physical_width/height_inches | Print area templates per product color |
+| `product_customization_settings` | id, product_id, max_characters, max_lines, available_fonts, available_colors, base_fee, per_text_element_fee, per_image_fee, ai_generation_fee, ai_upscaling_fee, style_transfer_fee, max_ai_generations | Per-product customization config |
+| `saved_designs` | id, user_id, product_id, design_data (JSONB), name, thumbnail_url | Customer saved designs |
+| `design_templates` | id, name, category, description, thumbnail_url, layer_data (JSONB), product_types, is_active, display_order | Pre-made design templates |
+| `template_categories` | id, slug, name, description, icon_name, display_order, is_active | Template category organization |
+| `shared_designs` | id, design_data (JSONB), share_token (unique), customer_id, allow_feedback, click_count | Shareable design links |
+| `design_comments` | id, shared_design_id, commenter_name, comment_text | Feedback on shared designs |
+| `ai_prompt_examples` | id, prompt_text, category, product_types, display_order, is_active | Admin-managed AI prompt examples |
 
 ### Tables that DO NOT exist (referenced in code but never created)
 - None currently — all referenced tables have been created.
@@ -350,11 +373,17 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Shipping label generation (2026-04-02):** Admin order detail has "Create Shipping Labels" button. Generates labels per package using packing algorithm. Mock labels via jsPDF (4×6" PDF with barcode pattern). Labels stored in `shipping_labels` table. Print/track buttons per package. Tracking numbers included in customer shipping emails.
 - **USPS live rates (2026-04-07):** API credentials configured (MC2 Consulting LLC account). Fixed endpoint from `/prices/v3/domestic/price` to `/prices/v3/base-rates/search`. Fixed mail class `GROUND_ADVANTAGE` to `USPS_GROUND_ADVANTAGE`. Now fetches all 3 service levels (Ground Advantage, Priority Mail, Priority Mail Express) in parallel with real USPS pricing. Falls back to mock rates on API failure. USPS_ENV=testing (TEM sandbox).
 - **Checkout UX improvements (2026-04-07):** Added "Continue Shopping" link and "Clear Cart" button below submit buttons on both checkout steps (shipping form and payment form). Keeps navigation options visible throughout checkout flow.
+- **Product customization module — Prompt 1 (2026-04-09):** Full customization editor at `src/modules/customization/`. Admin config at `/admin/customization/[productId]` with 3 tabs (templates/text/pricing). Product templates with visual print area editor (drag to draw, edges/corners to resize). Canvas editor with Fabric.js v6, layer panel, undo/redo, text toolbar, image upload, low-res warnings. `is_customizable` + 5 `customization_allow_*` boolean columns on products. Design catalog admin at `/admin/design-catalog`.
+- **Product customization module — Prompt 2 (2026-04-10):** Cart integration (customization_data JSONB + customization_fee on order_items), checkout flow, print-ready file generation (client-side 300 DPI canvas → Supabase Storage), admin order view with design specs/download, manufacturer PDF with customization specs, save/resume designs, edit from cart, reorder with same design. Login required for customization with redirect.
+- **Product customization module — Prompt 3 (2026-04-12):** AI service abstraction layer (mock + OpenAI implementations), AI image generation UI with prompt field/examples/session gallery/cost controls, AI image upscaling with before/after comparison, style transfer with 7 artistic styles, realistic preview, design templates (5 built-in), social sharing with public page + feedback, mobile optimization, admin AI prompt examples. All features work with mock implementations without API keys.
+- **Customization bug fixes (2026-04-13–14):** Restored product templates API overwritten by sub-agent. Fixed settings save (max_ai_generations column missing, sanitized allowed fields). Added `max_ai_generations` column to DB. Replaced alert() with toast notifications for add-to-cart feedback. Force-dynamic product pages for fresh data. Fixed product delete (clean up related records first). Implemented actual product delete from admin list (was stubbed).
+- **USPS Labels API wired (2026-04-19):** USPS approved label creation on existing credentials. Two-step auth: OAuth token → payment authorization token (EPS account 1000420021). Labels guarded behind `USPS_ENV=production` — mock labels generated in test mode. Auto-void labels on order cancellation to reclaim postage. `shipping_labels` table created. Mock label generation tested and working (4x6" PDF for thermal printers).
+- **Print files for all orders (2026-04-19):** Print-ready files now generated for both customized products (client-side canvas render) AND catalog design orders (server fetches original image). Vendor always gets the production image. Admin can download via "Download Print File" button on order detail. Server validates payment before accepting uploads.
 
 ### In Progress
-- **USPS Labels API access:** Rates and tracking work with live API. Labels API returns 401 (insufficient OAuth scope) — app only has "Public Access" product, needs Shipping Suite/Labels product added. Tim contacted USPS support; they need account details to grant access. CRID: 55939760, MIDs: 904153252/904155410, EPS: 1000420021/1000419844/1000419846. Pending USPS response.
-- **USPS env vars on Netlify:** Need to add USPS_CLIENT_ID, USPS_CLIENT_SECRET, and USPS_ENV=testing to Netlify environment variables for live site to use USPS rates.
-- **USPS production switch:** Currently using TEM sandbox (apis-tem.usps.com). Switch USPS_ENV to "production" after thorough testing.
+- **Netlify usage limit reached:** Tim's current Netlify subscription hit its usage cap. Cannot deploy until subscription updated or next billing cycle.
+- **End-to-end customization test:** Full flow (customize product → cart → checkout → print file + label) not yet tested with a real customized order.
+- **USPS production switch:** Labels work in mock mode. Set `USPS_ENV=production` in Netlify when ready to ship real orders. Labels use EPS account 1000420021.
 
 ### Known Issues
 - **Footer newsletter input:** Email input may appear cut off on some viewports
@@ -444,6 +473,20 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 
 31. **USPS new REST APIs over old Web Tools (2026-04-02):** USPS deprecated Web Tools. New integration uses developers.usps.com OAuth2 APIs (Domestic Prices v3, Domestic Labels v3, Tracking v3). Labels require USPS Ship enrollment + Enterprise Payment Account. Mock rates/labels work seamlessly without credentials.
 
+32. **Fabric.js v6 for canvas editor (2026-04-09):** Chosen over Konva.js for better IText editing, mature serialization, and larger ecosystem. Canvas editor is self-contained module at `src/modules/customization/`.
+
+33. **Percentage-based layer positioning (2026-04-09):** Layer positions stored as % of printable area for resolution independence across different product sizes.
+
+34. **AI service abstraction with factory pattern (2026-04-12):** Swappable implementations (mock/DALL-E/Stability). Factory function returns mock if no API key configured. Mock implementations generate real visible images using canvas API, not empty placeholders.
+
+35. **Print files only after payment (2026-04-14):** Print-ready files generated on order success page after Stripe payment confirmed. Server API validates `payment_intent_id` exists before accepting uploads. Customers never get access to production files.
+
+36. **Catalog design images included in vendor package (2026-04-19):** Even non-customized orders with catalog designs need the image for the vendor. Server fetches catalog image URL and stores in Supabase Storage alongside customized print files.
+
+37. **USPS label creation guarded by env var (2026-04-19):** `USPS_ENV=production` required for real labels. Without it, mock labels generated. Prevents accidental charges during testing. Auto-void on cancellation reclaims postage from EPS account.
+
+38. **Two "templates" concepts (2026-04-13):** Product templates (`product_templates` table) define print areas per product color. Design templates (`design_templates` table) are pre-made starting layouts customers can use. Different admin pages, different API routes.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -467,7 +510,7 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Google Analytics 4** | Website analytics | `.env.local` (NEXT_PUBLIC_GA_MEASUREMENT_ID) — placeholder value | `src/components/GoogleAnalytics.tsx`, `src/lib/analytics.ts` |
 | **Netlify** | Hosting + CDN + auto-deploy | `netlify.toml`, Netlify dashboard env vars | GitHub webhook triggers deploy on push to `main` |
 | **GitHub** | Source code repository | `https://github.com/tbatman1960/crystal-harbor` | Remote: origin |
-| **USPS** | Shipping rates, labels, tracking | `.env.local` (USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ENV) — not yet configured | `src/lib/carriers/usps.ts`, `src/lib/carriers/index.ts` — mock fallback when unconfigured |
+| **USPS** | Shipping rates, labels, tracking | `.env.local` (USPS_CLIENT_ID, USPS_CLIENT_SECRET, USPS_ENV, USPS_CRID, USPS_MID, USPS_EPS_ACCOUNT) — rates live, labels mock until USPS_ENV=production | `src/lib/carriers/usps.ts`, `src/lib/carriers/index.ts` — mock fallback when unconfigured |
 
 ## Credentials & Access (SENSITIVE)
 
@@ -482,6 +525,50 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-04-19
+- **Worked on:** USPS Labels API integration, label auto-void on cancellation, print files for catalog designs, shipping_labels table, mock label testing
+- **Key changes:**
+  - Confirmed USPS labels API is active on existing credentials (scope includes `labels`)
+  - Built two-step auth: OAuth token → payment authorization token via Payments v3 API
+  - Added `X-Payment-Authorization-Token` header to label creation requests
+  - Guarded real label creation behind `USPS_ENV=production` to prevent test charges
+  - Added `voidUSPSLabel()` function — auto-voids labels on order cancellation
+  - Created `shipping_labels` table (was missing — code referenced it but migration never existed)
+  - Fixed base URLs from `apis-tem.usps.com` to `api.usps.com` (production endpoint)
+  - Added USPS_CRID, USPS_MID, USPS_EPS_ACCOUNT env vars to .env.local and Netlify
+  - Tested mock label creation locally — generates valid 4x6" PDF
+  - Updated print file generation to include catalog design images (not just customized products)
+  - Cleaned up ~2GB of old Crystal Harbor backups from disk
+- **Decisions made:**
+  - Mock labels in test mode, real labels only with USPS_ENV=production
+  - EPS account 1000420021 is the active payment account (others inactive)
+  - Auto-void labels on cancellation — don't fail the cancel if void fails
+  - All orders get print files for vendor — customized AND catalog designs
+
+### 2026-04-13–14
+- **Worked on:** Customization module bug fixes, settings save issues, product management fixes, add-to-cart feedback
+- **Key changes:**
+  - Restored product templates API overwritten by sub-agent (moved design templates to `/api/admin/design-templates/`)
+  - Fixed settings save: `max_ai_generations` column missing from DB, added ALTER TABLE, sanitized allowed fields list
+  - Replaced alert() with green toast notification for add-to-cart feedback
+  - Force-dynamic on all product pages (was ISR cached, new products not appearing)
+  - Fixed product delete: clean up related records (customization settings, templates, options, pricing tiers) before deleting product
+  - Implemented product delete from admin list (was stubbed with "not implemented" alert)
+- **Decisions made:**
+  - Sanitize API fields to known columns — prevents one missing column from breaking entire save
+  - force-dynamic over ISR for product pages — always fresh data
+
+### 2026-04-12
+- **Worked on:** Customization Prompt 3 Steps 1-9 (AI features, templates, sharing, mobile, admin prompts)
+- **Key changes:**
+  - Steps 1-4 via sub-agent: AI service abstraction layer, image generation UI, upscaling, style transfer
+  - Steps 5-9 via sub-agent: realistic preview, design templates, social sharing, mobile optimization, admin AI prompt examples
+  - 3 new SQL migrations: design_templates, sharing tables, ai_prompt_examples
+  - All features work with mock implementations without API keys
+- **Decisions made:**
+  - AI mock implementations generate real images using canvas API
+  - Style transfer shares generation limit with AI generation
 
 ### 2026-04-07
 - **Worked on:** USPS API credentials setup, live rate integration fix, checkout UX improvements, Labels API investigation
@@ -601,31 +688,4 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
   - USPS Web Tools registration pending — Tim will provide User ID
   - Custom domain, GA4 ID, real product photos still pending Tim's input
 
-### 2026-03-24
-- **Worked on:** Stripe live integration, webhook endpoint, AGENTS.md session protocols, Netlify issue
-- **Key changes:**
-  - Updated `.env.local` with live Stripe keys
-  - Removed `dev_test_payment` bypass from CheckoutForm.tsx
-  - Created Stripe webhook endpoint at `src/app/api/webhooks/stripe/route.ts`
-  - Added `STRIPE_WEBHOOK_SECRET` to `.env.local`
-  - Tim updated Netlify env vars with live Stripe keys + webhook secret
-  - Updated `AGENTS.md` with Session Management Protocols
-- **Decisions made:**
-  - Webhook handles 3 events: payment_intent.succeeded, payment_intent.payment_failed, charge.refunded
-- **Issues discovered:**
-  - Netlify free tier usage limit exceeded (resolved 2026-03-25 with Pro upgrade)
-
-### 2026-03-23
-- **Worked on:** Customer detail page enhancements, stock product images, logo integration, color rebrand, admin login email prefill, PROJECT_STATE.md generation
-- **Key changes:**
-  - Added tappable phone/email links and order-specific mailto on customer detail page
-  - Downloaded 19 stock photos from Unsplash, replaced all placeholder camera icons
-  - Updated product database image_url fields
-  - Integrated Crystal Harbor logo, then reverted to styled text matching logo's font/colors
-  - Added Dancing Script font for brand name
-  - Rebranded accent colors from lime/coral to gold/silver-blue
-  - Fixed admin login to accept prefilled email from customer login redirect
-- **Decisions made:**
-  - Use Dancing Script Google Font to match logo's handwriting style
-  - Gold + Silver Blue accent palette replacing Lime + Coral
-  - Stock photos as temporary product images until real photography available
+_(Older session logs archived — see SESSION_HISTORY.md for sessions before 2026-03-25)_

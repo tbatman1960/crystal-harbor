@@ -1,7 +1,7 @@
-# Project State: Crystal Harbor Trading Company
+# Project State: DearPast (formerly Crystal Harbor Trading Company)
 
 **Project Type:** Code (E-commerce Web Application)
-**Last Updated:** 2026-04-19
+**Last Updated:** 2026-04-30
 
 ---
 
@@ -379,6 +379,7 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 - **Customization bug fixes (2026-04-13–14):** Restored product templates API overwritten by sub-agent. Fixed settings save (max_ai_generations column missing, sanitized allowed fields). Added `max_ai_generations` column to DB. Replaced alert() with toast notifications for add-to-cart feedback. Force-dynamic product pages for fresh data. Fixed product delete (clean up related records first). Implemented actual product delete from admin list (was stubbed).
 - **USPS Labels API wired (2026-04-19):** USPS approved label creation on existing credentials. Two-step auth: OAuth token → payment authorization token (EPS account 1000420021). Labels guarded behind `USPS_ENV=production` — mock labels generated in test mode. Auto-void labels on order cancellation to reclaim postage. `shipping_labels` table created. Mock label generation tested and working (4x6" PDF for thermal printers).
 - **Print files for all orders (2026-04-19):** Print-ready files now generated for both customized products (client-side canvas render) AND catalog design orders (server fetches original image). Vendor always gets the production image. Admin can download via "Download Print File" button on order detail. Server validates payment before accepting uploads.
+- **DearPast rebrand (2026-04-23):** Complete rebrand from "Crystal Harbor Trading Company" to "DearPast". New color scheme (dark brown/sunset orange/golden yellow/cream) derived from logo. All 199 source files updated — 0 "Crystal Harbor" references remain. Logo cropped to transparent PNG with sunset icon + script text. Header and footer use actual logo image. PWA manifest updated. Email templates rebranded. Repo name/domain/email unchanged pending new domain.
 
 ### In Progress
 - **Netlify usage limit reached:** Tim's current Netlify subscription hit its usage cap. Cannot deploy until subscription updated or next billing cycle.
@@ -487,6 +488,8 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 
 38. **Two "templates" concepts (2026-04-13):** Product templates (`product_templates` table) define print areas per product color. Design templates (`design_templates` table) are pre-made starting layouts customers can use. Different admin pages, different API routes.
 
+39. **DearPast rebrand preserves infrastructure names (2026-04-23):** Repo stays `crystal-harbor`, email stays `crystalharbortc.com`, Netlify site name unchanged. Only user-visible text and colors changed. Infrastructure names update when Tim secures a new domain.
+
 ## Conventions & Preferences
 
 - **File organization:** Pages in `src/app/`, components in `src/components/` (grouped by feature), business logic in `src/lib/`, state stores in `src/store/`
@@ -525,6 +528,24 @@ All tables are in Supabase (PostgreSQL). **RLS is enabled on all tables with no 
 | **Business Phone** | (317) 997-5503 | In footer, tappable link |
 
 ## Session Log
+
+### 2026-04-23–30
+- **Worked on:** Full rebrand from Crystal Harbor to DearPast, logo processing
+- **Key changes:**
+  - New color palette: dark brown (#5B3A1E), sunset orange (#E8731A), golden yellow (#F5A623), cream (#FFF8F0)
+  - Updated Tailwind config with new color values (kept accent-lime/accent-coral class names)
+  - Replaced all "Crystal Harbor" / "Crystal Harbor Trading Company" references across 44 files
+  - Cropped logo from original image: removed black bars + cream background, exported as transparent PNG
+  - Header uses logo image (h-14/h-16) with increased header height (h-20)
+  - Footer uses logo image instead of styled text
+  - PWA manifest: name, short_name, theme_color, background_color updated
+  - All email templates rebranded with new colors + name
+  - Total codebase: 42,102 lines across 199 files
+- **Decisions made:**
+  - Keep Tailwind class names `accent-lime`/`accent-coral` — too many refs to rename, just changed values
+  - Keep repo name `crystal-harbor`, email domain `crystalharbortc.com`, Netlify site name — change when new domain ready
+  - Transparent PNG logo for header/footer so it works on any background color
+- **Commits:** `45d0c6e` (bulk rebrand), `6812ba5` (logo image in header), `7f2e9c8` (cropped transparent logo + footer)
 
 ### 2026-04-19
 - **Worked on:** USPS Labels API integration, label auto-void on cancellation, print files for catalog designs, shipping_labels table, mock label testing
