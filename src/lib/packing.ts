@@ -35,242 +35,158 @@ export interface PackingResult {
 
 /**
  * Calculates the optimal packing for a list of items using available package types.
- * Tries different combinations and picks the one with lowest total fallback cost.
+ * Tries different strategies and picks the one with lowest total fallback cost.
  */
 export function calculateOptimalPacking(
   items: PackingItem[],
   packageTypes: PackageType[]
 ): PackingResult {
-  // Calculate total requirements
   const totalUnits = items.reduce((sum, item) => sum + (item.quantity * item.packing_units), 0);
   const totalWeight = items.reduce((sum, item) => sum + (item.quantity * item.weight_lbs), 0);
 
   if (totalUnits === 0) {
-    return {
-      boxes: [],
-      total_packages: 0,
-      total_weight: 0,
-      total_units: 0
-    };
+    return { boxes: [], total_packages: 0, total_weight: 0, total_units: 0 };
   }
 
-  // Sort package types by capacity ascending for efficient algorithm
-  const sortedPackages = [...packageTypes].sort((a, b) => a.capacity_units - b.capacity_units);
+  // Average weight per packing unit (used for weight constraint estimation)
+  const weightPerUnit = totalUnits > 0 ? totalWeight / totalUnits : 0;
 
-  let bestPacking: PackedBox[] = [];
+  // Sort package types by capacity ascending
+  const sortedPackages = [...packageTypes]
+    .filter(p => p.capacity_units > 0)
+    .sort((a, b) => a.capacity_units - b.capacity_units);
+
+  if (sortedPackages.length === 0) {
+    return { boxes: [], total_packages: 0, total_weight: 0, total_units: 0 };
+  }
+
+  let bestPacking: PackedBox[] | null = null;
   let bestCost = Infinity;
 
-  // Try different packing strategies
-  const strategies = [
-    () => packWithSingleType(totalUnits, totalWeight, sortedPackages),
-    () => packLargestFirst(totalUnits, totalWeight, sortedPackages)
-  ];
-
-  for (const strategy of strategies) {
-    const packing = strategy();
-    if (packing && packing.length > 0) {
-      const cost = calculateFallbackCost(packing);
-      if (cost < bestCost) {
-        bestCost = cost;
-        bestPacking = packing;
-      }
+  // Strategy 1: Try each single package type
+  for (const pkgType of sortedPackages) {
+    const packing = packAllWithType(totalUnits, weightPerUnit, pkgType);
+    const cost = totalFallbackCost(packing);
+    if (cost < bestCost) {
+      bestCost = cost;
+      bestPacking = packing;
     }
   }
 
-  // If no valid packing found, use the largest available package
-  if (bestPacking.length === 0) {
-    const largestPackage = sortedPackages[sortedPackages.length - 1];
-    if (largestPackage) {
-      bestPacking = createFallbackPacking(totalUnits, totalWeight, largestPackage);
-    }
+  // Strategy 2: Greedy largest-first (fill big boxes, then use smaller for remainder)
+  const greedyResult = packGreedyLargestFirst(totalUnits, weightPerUnit, sortedPackages);
+  const greedyCost = totalFallbackCost(greedyResult);
+  if (greedyCost < bestCost) {
+    bestCost = greedyCost;
+    bestPacking = greedyResult;
   }
+
+  const boxes = bestPacking || [];
 
   return {
-    boxes: bestPacking,
-    total_packages: bestPacking.length,
-    total_weight: bestPacking.reduce((sum, box) => sum + box.gross_weight, 0),
+    boxes,
+    total_packages: boxes.length,
+    total_weight: boxes.reduce((sum, box) => sum + box.gross_weight, 0),
     total_units: totalUnits
   };
 }
 
 /**
- * Try using all boxes of the same type for each available package type
+ * Determine how many units fit in one box of a given type,
+ * respecting both capacity and weight limits.
  */
-function packWithSingleType(totalUnits: number, totalWeight: number, packageTypes: PackageType[]): PackedBox[] | null {
-  let bestPacking: PackedBox[] | null = null;
-  let bestCost = Infinity;
+function unitsPerBox(weightPerUnit: number, pkgType: PackageType): number {
+  const byCapacity = Math.floor(pkgType.capacity_units);
+  const byWeight = weightPerUnit > 0
+    ? Math.floor(pkgType.max_weight_lbs / weightPerUnit)
+    : byCapacity;
+  return Math.max(1, Math.min(byCapacity, byWeight));
+}
 
-  for (const packageType of packageTypes) {
-    const packing = tryPackingWithType(totalUnits, totalWeight, packageType);
-    if (packing && packing.length > 0) {
-      const cost = calculateFallbackCost(packing);
-      if (cost < bestCost) {
-        bestCost = cost;
-        bestPacking = packing;
-      }
-    }
+/**
+ * Pack all units using a single package type.
+ */
+function packAllWithType(totalUnits: number, weightPerUnit: number, pkgType: PackageType): PackedBox[] {
+  const perBox = unitsPerBox(weightPerUnit, pkgType);
+  const numBoxes = Math.ceil(totalUnits / perBox);
+  const boxes: PackedBox[] = [];
+  let remaining = totalUnits;
+
+  for (let i = 0; i < numBoxes; i++) {
+    const units = Math.min(remaining, perBox);
+    const weight = units * weightPerUnit;
+    boxes.push({
+      package_type: pkgType,
+      total_units: units,
+      total_weight: weight,
+      gross_weight: weight + pkgType.empty_weight_lbs,
+      utilization: units / pkgType.capacity_units
+    });
+    remaining -= units;
   }
 
-  return bestPacking;
+  return boxes;
 }
 
 /**
- * Try packing starting with largest boxes, using smaller for remainder
+ * Greedy packing: fill the largest package first, then use smaller for leftovers.
  */
-function packLargestFirst(totalUnits: number, totalWeight: number, packageTypes: PackageType[]): PackedBox[] | null {
-  const reversedPackages = [...packageTypes].reverse(); // Largest first
-  return greedyPacking(totalUnits, totalWeight, reversedPackages);
-}
-
-/**
- * Greedy packing algorithm using packages in order
- */
-function greedyPacking(remainingUnits: number, remainingWeight: number, packageTypes: PackageType[]): PackedBox[] | null {
+function packGreedyLargestFirst(totalUnits: number, weightPerUnit: number, sortedPackages: PackageType[]): PackedBox[] {
   const boxes: PackedBox[] = [];
-  let unitsLeft = remainingUnits;
-  let weightLeft = remainingWeight;
+  let remaining = totalUnits;
+  // Work from largest to smallest
+  const largestFirst = [...sortedPackages].reverse();
 
-  while (unitsLeft > 0) {
+  while (remaining > 0) {
     let packed = false;
 
-    for (const packageType of packageTypes) {
-      const canFitUnits = Math.floor(packageType.capacity_units);
-      const canFitWeight = packageType.max_weight_lbs;
+    for (const pkgType of largestFirst) {
+      const perBox = unitsPerBox(weightPerUnit, pkgType);
 
-      // Calculate how much we can fit in this package
-      const unitsToFit = Math.min(unitsLeft, canFitUnits);
-      
-      // Estimate weight per unit for weight constraint
-      const avgWeightPerUnit = remainingWeight / remainingUnits;
-      const maxUnitsByWeight = Math.floor(canFitWeight / avgWeightPerUnit);
-      const actualUnits = Math.min(unitsToFit, maxUnitsByWeight);
-
-      if (actualUnits > 0) {
-        const actualWeight = (actualUnits / remainingUnits) * remainingWeight;
-        
-        if (actualWeight <= canFitWeight) {
-          boxes.push({
-            package_type: packageType,
-            total_units: actualUnits,
-            total_weight: actualWeight,
-            gross_weight: actualWeight + packageType.empty_weight_lbs,
-            utilization: actualUnits / packageType.capacity_units
-          });
-
-          unitsLeft -= actualUnits;
-          weightLeft -= actualWeight;
-          packed = true;
-          break;
-        }
+      // Only use this box size if we can fill at least half of it,
+      // OR it's the smallest available option
+      const isSmallest = pkgType === largestFirst[largestFirst.length - 1];
+      if (remaining >= perBox || isSmallest) {
+        const units = Math.min(remaining, perBox);
+        const weight = units * weightPerUnit;
+        boxes.push({
+          package_type: pkgType,
+          total_units: units,
+          total_weight: weight,
+          gross_weight: weight + pkgType.empty_weight_lbs,
+          utilization: units / pkgType.capacity_units
+        });
+        remaining -= units;
+        packed = true;
+        break;
       }
     }
 
+    // Safety valve: if nothing packed (shouldn't happen), use smallest box
     if (!packed) {
-      // Use the largest package as fallback
-      const largestPackage = packageTypes[packageTypes.length - 1];
-      if (largestPackage) {
-        boxes.push(...createFallbackPacking(unitsLeft, weightLeft, largestPackage));
-      }
-      break;
+      const smallest = sortedPackages[0];
+      const units = Math.min(remaining, Math.max(1, Math.floor(smallest.capacity_units)));
+      const weight = units * weightPerUnit;
+      boxes.push({
+        package_type: smallest,
+        total_units: units,
+        total_weight: weight,
+        gross_weight: weight + smallest.empty_weight_lbs,
+        utilization: units / smallest.capacity_units
+      });
+      remaining -= units;
     }
   }
 
-  return boxes.length > 0 ? boxes : null;
-}
-
-/**
- * Try to pack everything using only one package type
- */
-function tryPackingWithType(totalUnits: number, totalWeight: number, packageType: PackageType): PackedBox[] | null {
-  const unitsPerBox = Math.floor(packageType.capacity_units);
-  const weightPerBox = packageType.max_weight_lbs;
-
-  if (unitsPerBox <= 0) return null;
-
-  // Calculate boxes needed for unit constraint
-  const boxesForUnits = Math.ceil(totalUnits / unitsPerBox);
-  
-  // Calculate boxes needed for weight constraint
-  const boxesForWeight = Math.ceil(totalWeight / weightPerBox);
-
-  // Need the higher of the two
-  const totalBoxes = Math.max(boxesForUnits, boxesForWeight);
-
-  const boxes: PackedBox[] = [];
-  let remainingUnits = totalUnits;
-  let remainingWeight = totalWeight;
-
-  for (let i = 0; i < totalBoxes; i++) {
-    const unitsInBox = Math.min(remainingUnits, unitsPerBox);
-    const weightInBox = Math.min(remainingWeight, weightPerBox);
-
-    // Ensure we don't exceed weight limits
-    const actualUnitsInBox = Math.min(unitsInBox, Math.floor(weightPerBox / (totalWeight / totalUnits)));
-    const actualWeightInBox = (actualUnitsInBox / totalUnits) * totalWeight;
-
-    boxes.push({
-      package_type: packageType,
-      total_units: actualUnitsInBox,
-      total_weight: actualWeightInBox,
-      gross_weight: actualWeightInBox + packageType.empty_weight_lbs,
-      utilization: actualUnitsInBox / packageType.capacity_units
-    });
-
-    remainingUnits -= actualUnitsInBox;
-    remainingWeight -= actualWeightInBox;
-  }
-
   return boxes;
 }
 
 /**
- * Create a fallback packing when no optimal solution found
+ * Total fallback cost = sum of fallback_rate for each box used.
+ * Each box costs its full fallback rate regardless of utilization.
  */
-function createFallbackPacking(totalUnits: number, totalWeight: number, packageType: PackageType): PackedBox[] {
-  const boxes: PackedBox[] = [];
-  const unitsPerBox = Math.floor(packageType.capacity_units);
-  const weightPerBox = packageType.max_weight_lbs;
-
-  if (unitsPerBox <= 0) {
-    // If package can't fit anything, create one box anyway
-    return [{
-      package_type: packageType,
-      total_units: totalUnits,
-      total_weight: totalWeight,
-      gross_weight: totalWeight + packageType.empty_weight_lbs,
-      utilization: 1 // Force 100% utilization for fallback
-    }];
-  }
-
-  let remainingUnits = totalUnits;
-  let remainingWeight = totalWeight;
-
-  while (remainingUnits > 0 || remainingWeight > 0) {
-    const unitsInBox = Math.min(remainingUnits, unitsPerBox);
-    const weightInBox = Math.min(remainingWeight, weightPerBox);
-
-    boxes.push({
-      package_type: packageType,
-      total_units: unitsInBox,
-      total_weight: weightInBox,
-      gross_weight: weightInBox + packageType.empty_weight_lbs,
-      utilization: unitsInBox / packageType.capacity_units
-    });
-
-    remainingUnits -= unitsInBox;
-    remainingWeight -= weightInBox;
-  }
-
-  return boxes;
-}
-
-/**
- * Calculate total fallback cost for a packing solution
- */
-function calculateFallbackCost(boxes: PackedBox[]): number {
-  return boxes.reduce((total, box) => {
-    return total + (box.utilization * box.package_type.fallback_rate);
-  }, 0);
+function totalFallbackCost(boxes: PackedBox[]): number {
+  return boxes.reduce((total, box) => total + box.package_type.fallback_rate, 0);
 }
 
 /**
