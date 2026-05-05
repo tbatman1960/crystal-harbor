@@ -167,10 +167,23 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
       const opts: ShippingOption[] = data.options || []
       setShippingOptions(opts)
 
-      // Auto-select the cheapest option
+      // Auto-select the cheapest option only if nothing is currently selected
+      // (preserves user's choice if shipping re-fetches for same zip)
       const selectable = opts.filter(o => o.cost !== null)
-      if (selectable.length > 0) {
+      if (selectable.length > 0 && !selectedShipping) {
         setSelectedShipping(selectable[0])
+      } else if (selectable.length > 0 && selectedShipping) {
+        // If user had a selection, try to match it in the new results
+        const match = selectable.find(o => 
+          o.method_id === selectedShipping.method_id && 
+          o.service_code === selectedShipping.service_code
+        )
+        if (match) {
+          setSelectedShipping(match)
+        } else {
+          // Previous selection no longer available — fall back to cheapest
+          setSelectedShipping(selectable[0])
+        }
       }
     } catch (err) {
       console.error('Shipping fetch error:', err)
@@ -191,14 +204,15 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
     }
   }, [items])
 
-  // Debounce zip code changes
+  // Debounce zip code changes — only fetch on Step 1 (shipping form)
   useEffect(() => {
+    if (currentStep !== 1) return
     if (!watchedZip || watchedZip.length < 5) return
     const timer = setTimeout(() => {
       fetchShippingOptions(watchedZip)
     }, 600)
     return () => clearTimeout(timer)
-  }, [watchedZip, fetchShippingOptions])
+  }, [watchedZip, fetchShippingOptions, currentStep])
 
   const onShippingSubmit = async (data: ShippingAddress) => {
     setError('')
