@@ -132,10 +132,10 @@ async function calculateFallbackRates(packages: PackedBox[]): Promise<ShippingRa
   const minPerPackage = parseFloat(settingsMap.get('shipping_fallback_min_per_package') || '4.99');
   const markupPct = parseFloat(settingsMap.get('shipping_fallback_markup_pct') || '0') / 100;
 
-  // Calculate cost per package based on utilization × fallback_rate
+  // Calculate cost per package — each box costs its full fallback rate regardless of utilization
   let totalCost = 0;
   const perPackageDetails = packages.map(box => {
-    const baseCost = box.utilization * box.package_type.fallback_rate;
+    const baseCost = box.package_type.fallback_rate;
     const actualCost = Math.max(baseCost, minPerPackage);
     const finalCost = actualCost * (1 + markupPct);
     
