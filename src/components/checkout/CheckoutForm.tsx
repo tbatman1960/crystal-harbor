@@ -43,6 +43,13 @@ interface ShippingOption {
     weight: number
     dimensions: string
   }>
+  breakdown?: Array<{
+    package_name: string
+    cost: number
+    weight: number
+  }>
+  total_units?: number
+  total_packages?: number
 }
 
 interface CheckoutFormProps {
@@ -164,7 +171,12 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
       }
 
       const data = await res.json()
-      const opts: ShippingOption[] = data.options || []
+      const packingSummary = data.packing_summary || {}
+      const opts: ShippingOption[] = (data.options || []).map((opt: ShippingOption) => ({
+        ...opt,
+        total_units: packingSummary.total_units,
+        total_packages: packingSummary.total_packages,
+      }))
       setShippingOptions(opts)
 
       // Auto-select the cheapest option only if nothing is currently selected
@@ -565,13 +577,48 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
             {selectedShipping && selectedShipping.cost !== null && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+                  <span className="text-gray-600">Subtotal ({items.reduce((sum, i) => sum + i.quantity, 0)} items)</span>
                   <span className="font-medium">${subtotal.toFixed(2)}</span>
                 </div>
+
+                {/* Shipping Breakdown */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping ({selectedShipping.name})</span>
                   <span className="font-medium">{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
                 </div>
+                {(selectedShipping.packages || selectedShipping.breakdown) && (
+                  <div className="ml-4 pl-3 border-l-2 border-gray-200 space-y-1 text-xs text-gray-500">
+                    {selectedShipping.total_units != null && (
+                      <div className="flex justify-between">
+                        <span>📦 Packing units</span>
+                        <span>{selectedShipping.total_units} units</span>
+                      </div>
+                    )}
+                    {selectedShipping.total_packages != null && (
+                      <div className="flex justify-between">
+                        <span>📋 Packages required</span>
+                        <span>{selectedShipping.total_packages} package{selectedShipping.total_packages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {selectedShipping.packages && selectedShipping.packages.map((pkg, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          Box {i + 1}: {pkg.package_type} ({pkg.dimensions}, {pkg.weight.toFixed(1)} lbs)
+                        </span>
+                        {selectedShipping.breakdown && selectedShipping.breakdown[i] && (
+                          <span>${selectedShipping.breakdown[i].cost.toFixed(2)}</span>
+                        )}
+                      </div>
+                    ))}
+                    {selectedShipping.total_packages != null && (
+                      <div className="flex justify-between">
+                        <span>🏷️ Shipping labels</span>
+                        <span>{selectedShipping.total_packages} label{selectedShipping.total_packages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Tax ({(taxResult.tax_rate * 100).toFixed(0)}% {taxResult.tax_jurisdiction})</span>
@@ -642,13 +689,46 @@ export default function CheckoutForm({ mode, user, onBack }: CheckoutFormProps) 
             {selectedShipping && (
               <div className="text-sm text-secondary-600 mt-2 pt-2 border-t border-gray-200 space-y-1">
                 <div className="flex justify-between">
-                  <span>Subtotal:</span>
+                  <span>Subtotal ({items.reduce((sum, i) => sum + i.quantity, 0)} items):</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping ({selectedShipping.name}):</span>
                   <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
                 </div>
+                {/* Shipping Breakdown */}
+                {(selectedShipping.packages || selectedShipping.breakdown) && (
+                  <div className="ml-3 pl-3 border-l-2 border-gray-200 space-y-0.5 text-xs text-gray-500">
+                    {selectedShipping.total_units != null && (
+                      <div className="flex justify-between">
+                        <span>📦 Packing units</span>
+                        <span>{selectedShipping.total_units} units</span>
+                      </div>
+                    )}
+                    {selectedShipping.total_packages != null && (
+                      <div className="flex justify-between">
+                        <span>📋 Packages</span>
+                        <span>{selectedShipping.total_packages} package{selectedShipping.total_packages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    {selectedShipping.packages && selectedShipping.packages.map((pkg, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          Box {i + 1}: {pkg.package_type} ({pkg.weight.toFixed(1)} lbs)
+                        </span>
+                        {selectedShipping.breakdown && selectedShipping.breakdown[i] && (
+                          <span>${selectedShipping.breakdown[i].cost.toFixed(2)}</span>
+                        )}
+                      </div>
+                    ))}
+                    {selectedShipping.total_packages != null && (
+                      <div className="flex justify-between">
+                        <span>🏷️ Shipping labels</span>
+                        <span>{selectedShipping.total_packages} label{selectedShipping.total_packages !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span>Tax:</span>
