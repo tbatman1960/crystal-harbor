@@ -5,7 +5,7 @@ export default function About() {
       <p className="eyebrow mb-5 text-clay">A slower kind of shopping</p>
       <h1>Objects with a little more meaning.</h1>
       <p className="mt-8 text-lg">
-        Crystal Harbor is a small, independently run shop for jewelry, natural
+        SnuggleBug is a small, independently run shop for jewelry, natural
         crystals, beaded accessories, and little things that make a home feel
         like yours.
       </p>

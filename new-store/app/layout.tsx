@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'Crystal Harbor · Objects with meaning',
-    template: '%s · Crystal Harbor',
+    default: 'SnuggleBug · Objects with meaning',
+    template: '%s · SnuggleBug',
   },
   description:
     'Thoughtfully chosen jewelry, crystals, and everyday treasures. Small things, lasting meaning.',
@@ -37,11 +37,7 @@ export default async function RootLayout({
           <header className="border-b border-ink/10">
             <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
               <Link className="font-serif text-2xl tracking-tight" href="/">
-                {store?.store_name || (
-                  <>
-                    earth <span className="italic text-clay">&</span> thread
-                  </>
-                )}
+                {store?.store_name || 'SnuggleBug'}
                 <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
                   little objects, lasting meaning
                 </span>
@@ -70,7 +66,9 @@ export default async function RootLayout({
           <footer className="mt-20 border-t border-ink/15 bg-sage/40 py-12">
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
-                <p className="font-serif text-2xl">Crystal Harbor</p>
+                <p className="font-serif text-2xl">
+                  {store?.store_name || 'SnuggleBug'}
+                </p>
                 <p className="mt-3 text-sm">
                   A little closer to the things that matter.
                 </p>
@@ -89,7 +87,7 @@ export default async function RootLayout({
                 <p className="mt-2">Carefully packed. Shipped with USPS.</p>
                 <p className="mt-5 text-ink/70">
                   © {new Date().getFullYear()}{' '}
-                  {store?.store_name || 'Crystal Harbor'}
+                  {store?.store_name || 'SnuggleBug'}
                 </p>
               </div>
             </div>

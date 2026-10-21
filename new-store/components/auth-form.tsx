@@ -24,7 +24,7 @@ export function AuthForm({
           : 'Welcome back';
   return (
     <div className="shell max-w-lg py-16">
-      <p className="eyebrow mb-4 text-clay">Your Earth & Thread account</p>
+      <p className="eyebrow mb-4 text-clay">Your SnuggleBug account</p>
       <h1 className="text-4xl">{title}</h1>
       <form
         className="mt-8 space-y-5"

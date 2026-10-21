@@ -4,7 +4,7 @@ This `new-store/` directory contains the new inventory storefront. The existing 
 
 From the repository root, run `cd new-store`, then follow the setup below. Netlify must use Node 22 and the `new-store` base directory. Preview environment variables must point to the new Supabase project and Stripe test mode, not the existing live store.
 
-# Crystal Harbor
+# SnuggleBug
 
 A mobile-first physical-goods shop built with Next.js 14 App Router, TypeScript, Tailwind, Supabase, Stripe Checkout, fixed product shipping, and Resend. Customer and admin pages share an accessible, understated storefront. No custom card form and no AI features.
 
