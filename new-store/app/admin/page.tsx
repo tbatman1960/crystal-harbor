@@ -8,6 +8,8 @@ export default async function Dashboard() {
     client
       .from('products')
       .select('id,name,inventory_count')
+      .eq('track_inventory', true)
+      .eq('is_active', true)
       .lte('inventory_count', 5)
       .order('inventory_count')
       .limit(30),

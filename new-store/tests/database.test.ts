@@ -354,5 +354,76 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       assert.equal(rows.rows[1].price_cents, 3499);
     },
   );
+  await t.test(
+    'untracked products reserve and release without changing inventory, even after tracking toggles',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777';
+      const did = '88888888-8888-4888-8888-888888888888';
+      await pg.query(
+        `insert into products(id,name,slug,sku,price_cents,weight_lbs,inventory_count,is_active,shipping_first_unit_cents,shipping_additional_unit_cents,track_inventory) values($1,'On demand','on-demand','DEMAND',1000,null,0,true,700,100,false)`,
+        [pid],
+      );
+      const snapshots = JSON.stringify([
+        {
+          product_id: pid,
+          name: 'On demand',
+          sku: 'DEMAND',
+          unit_price_cents: 1000,
+          quantity: 2,
+          shipping_first_unit_cents: 700,
+          shipping_additional_unit_cents: 100,
+        },
+      ]);
+      await pg.query(
+        'select reserve_checkout($1,null,$2,$3,$3,$4,2000,800,0,$5)',
+        [did, 'guest@example.com', address, snapshots, 'Standard shipping'],
+      );
+      const draft = await pg.query<{
+        items: { inventory_reserved: boolean }[];
+      }>('select items from checkout_drafts where id=$1', [did]);
+      assert.equal(draft.rows[0].items[0].inventory_reserved, false);
+      await pg.query('update products set track_inventory=true where id=$1', [
+        pid,
+      ]);
+      await pg.query('select release_checkout($1)', [did]);
+      await pg.query('select release_checkout($1)', [did]);
+      assert.equal(
+        (
+          await pg.query<{ inventory_count: number }>(
+            'select inventory_count from products where id=$1',
+            [pid],
+          )
+        ).rows[0].inventory_count,
+        0,
+      );
+      const trackedDraft = '99999999-9999-4999-8999-999999999999';
+      await pg.query('update products set inventory_count=2 where id=$1', [
+        pid,
+      ]);
+      await pg.query(
+        'select reserve_checkout($1,null,$2,$3,$3,$4,2000,800,0,$5)',
+        [
+          trackedDraft,
+          'guest@example.com',
+          address,
+          snapshots,
+          'Standard shipping',
+        ],
+      );
+      await pg.query('update products set track_inventory=false where id=$1', [
+        pid,
+      ]);
+      await pg.query('select release_checkout($1)', [trackedDraft]);
+      assert.equal(
+        (
+          await pg.query<{ inventory_count: number }>(
+            'select inventory_count from products where id=$1',
+            [pid],
+          )
+        ).rows[0].inventory_count,
+        2,
+      );
+    },
+  );
   await pg.close();
 });

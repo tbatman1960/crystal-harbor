@@ -1,4 +1,5 @@
 'use client';
+import { hasStock, quantityLimit } from '@/lib/availability';
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
 import { money } from '@/lib/types';
@@ -135,9 +136,7 @@ export function CartPage({
                       {p
                         ? money(p.price_cents)
                         : 'Remove this item to continue'}
-                      {p &&
-                        p.inventory_count < i.quantity &&
-                        ' · Insufficient stock'}
+                      {p && !hasStock(p, i.quantity) && ' · Insufficient stock'}
                     </p>
                     {p &&
                       p.shipping_group !== 'blankets' &&

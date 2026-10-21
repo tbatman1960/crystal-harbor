@@ -61,6 +61,10 @@ The confirmation URL has an unguessable Stripe session capability and shows only
 
 Billing address is collected before checkout and snapshotted, and Stripe independently collects the card's billing address for payment verification. The shipping destination and selected rate are fixed before redirect; Stripe does not permit changing shipping details on its hosted page.
 
+### Optional inventory
+
+Admin → Products has a Track inventory checkbox. The six actual blanket designs use no inventory tracking and no weight; fixed shipping still applies and the five-blanket order limit remains. Tracked items continue to reserve stock atomically. Checkout snapshots whether stock was reserved, so an expired payment never adds phantom stock if tracking is changed later. Sample products are retained but inactive.
+
 ### Product shipping: first unit + additional units
 
 For the six imported blanket designs, all sizes share the `blankets` shipping group. Shipping is $7 once per order plus $1 per additional blanket, across mixed designs and sizes. Maximum five blankets per order; the server checks this before any free-shipping override and again when creating Checkout. Admin → Products → Shipping calculation selects this group. Use matching $7/$1 rates on every grouped blanket. Other products retain the per-product calculation below.

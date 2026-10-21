@@ -56,7 +56,10 @@ export default async function Products({
                 {p.size_label ? ` — ${p.size_label}` : ''}
               </h2>
               <p className="mt-1 text-sm">
-                {p.sku} · {money(p.price_cents)} · {p.inventory_count} available
+                {p.sku} · {money(p.price_cents)} ·{' '}
+                {p.track_inventory === false
+                  ? 'Inventory not tracked'
+                  : `${p.inventory_count} available`}
                 · {p.is_active ? 'Active' : 'Inactive'}
               </p>
             </Link>

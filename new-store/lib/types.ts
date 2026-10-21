@@ -20,7 +20,8 @@ export type Product = {
   shipping_first_unit_cents: number | null;
   shipping_additional_unit_cents: number;
   sku: string;
-  weight_lbs: number;
+  weight_lbs: number | null;
+  track_inventory?: boolean;
   inventory_count: number;
   is_active: boolean;
   product_images: {

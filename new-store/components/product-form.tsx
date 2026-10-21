@@ -12,8 +12,9 @@ const blank = {
   size_label: null as string | null,
   price_cents: 100,
   sku: '',
-  weight_lbs: 0.1,
+  weight_lbs: 0.1 as number | null,
   inventory_count: 1,
+  track_inventory: true,
   shipping_group: null as 'blankets' | null,
   shipping_first_unit_cents: null as number | null,
   shipping_additional_unit_cents: 0,
@@ -38,7 +39,9 @@ export function ProductForm({
           size_label: product.size_label,
           price_cents: product.price_cents,
           sku: product.sku,
-          weight_lbs: Number(product.weight_lbs),
+          weight_lbs:
+            product.weight_lbs === null ? null : Number(product.weight_lbs),
+          track_inventory: product.track_inventory !== false,
           inventory_count: product.inventory_count,
           shipping_group: product.shipping_group ?? null,
           shipping_first_unit_cents: product.shipping_first_unit_cents,
@@ -125,32 +128,48 @@ export function ProductForm({
             }
           />
         </label>
+        <label className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={value.track_inventory}
+            onChange={(e) =>
+              setValue({
+                ...value,
+                track_inventory: e.target.checked,
+                weight_lbs: e.target.checked ? (value.weight_lbs ?? 0.1) : null,
+              })
+            }
+          />
+          Track inventory (turn off for printed-on-demand blankets)
+        </label>
         <div className="field-grid">
           {[
             ['price_cents', 'Price (cents)'],
             ['weight_lbs', 'Weight (lbs)'],
             ['inventory_count', 'Available inventory'],
-          ].map(([key, label]) => (
-            <label key={key}>
-              {label}
-              <input
-                type="number"
-                required
-                min={
-                  key === 'inventory_count'
-                    ? 0
-                    : key === 'weight_lbs'
-                      ? 0.001
-                      : 1
-                }
-                step={key === 'weight_lbs' ? 0.001 : 1}
-                value={value[key as 'price_cents']}
-                onChange={(e) =>
-                  setValue({ ...value, [key]: Number(e.target.value) })
-                }
-              />
-            </label>
-          ))}
+          ]
+            .filter(([key]) => value.track_inventory || key === 'price_cents')
+            .map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  type="number"
+                  required
+                  min={
+                    key === 'inventory_count'
+                      ? 0
+                      : key === 'weight_lbs'
+                        ? 0.001
+                        : 1
+                  }
+                  step={key === 'weight_lbs' ? 0.001 : 1}
+                  value={value[key as 'price_cents'] ?? ''}
+                  onChange={(e) =>
+                    setValue({ ...value, [key]: Number(e.target.value) })
+                  }
+                />
+              </label>
+            ))}
           <label>
             SKU
             <input

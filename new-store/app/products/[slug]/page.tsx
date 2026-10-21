@@ -18,7 +18,9 @@ export default async function Product({
   const { data: sizes, error: sizesError } = data.design_slug
     ? await db()
         .from('products')
-        .select('id,slug,size_label,price_cents,inventory_count')
+        .select(
+          'id,slug,size_label,price_cents,inventory_count,track_inventory',
+        )
         .eq('design_slug', data.design_slug)
         .eq('is_active', true)
         .order('price_cents')

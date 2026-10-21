@@ -1,4 +1,5 @@
 import type { Product } from './types';
+import { hasStock } from './availability';
 export function productTitle(product: Pick<Product, 'name' | 'size_label'>) {
   return product.size_label
     ? `${product.name} — ${product.size_label}`
@@ -14,7 +15,7 @@ export function groupCatalog(products: Product[]) {
     groups.set(key, [...(groups.get(key) || []), product]);
   }
   return [...groups.values()].map((variants) => {
-    const available = variants.filter((p) => p.inventory_count > 0);
+    const available = variants.filter((p) => hasStock(p));
     const choices = available.length ? available : variants;
     const product = [...choices].sort(
       (a, b) => a.price_cents - b.price_cents || a.slug.localeCompare(b.slug),

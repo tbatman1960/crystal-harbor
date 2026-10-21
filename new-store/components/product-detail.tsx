@@ -1,4 +1,5 @@
 'use client';
+import { hasStock, quantityLimit } from '@/lib/availability';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -14,7 +15,12 @@ export function ProductDetail({
   product: Product;
   sizes?: Pick<
     Product,
-    'id' | 'slug' | 'size_label' | 'price_cents' | 'inventory_count'
+    | 'id'
+    | 'slug'
+    | 'size_label'
+    | 'price_cents'
+    | 'inventory_count'
+    | 'track_inventory'
   >[];
 }) {
   const router = useRouter();
@@ -73,7 +79,7 @@ export function ProductDetail({
               {sizes.map((size) => (
                 <option key={size.id} value={size.slug}>
                   {size.size_label || 'Standard'} — {money(size.price_cents)}
-                  {size.inventory_count === 0 ? ' · Sold out' : ''}
+                  {!hasStock(size) ? ' · Sold out' : ''}
                 </option>
               ))}
             </select>
@@ -99,7 +105,7 @@ export function ProductDetail({
               min={1}
               max={Math.min(
                 p.shipping_group === 'blankets' ? BLANKET_ORDER_LIMIT : 99,
-                p.inventory_count,
+                quantityLimit(p),
               )}
               value={quantity}
               onChange={(e) =>
@@ -107,7 +113,7 @@ export function ProductDetail({
                   Math.max(
                     1,
                     Math.min(
-                      p.inventory_count,
+                      quantityLimit(p),
                       p.shipping_group === 'blankets'
                         ? BLANKET_ORDER_LIMIT
                         : 99,
@@ -120,13 +126,13 @@ export function ProductDetail({
           </label>
           <button
             className="btn flex-1"
-            disabled={!ready || p.inventory_count === 0}
+            disabled={!ready || !hasStock(p)}
             onClick={() => {
               add(p.id, quantity);
               setAdded(true);
             }}
           >
-            {p.inventory_count ? 'Add to bag' : 'Sold out'}
+            {hasStock(p) ? 'Add to bag' : 'Sold out'}
           </button>
         </div>
         {added && (

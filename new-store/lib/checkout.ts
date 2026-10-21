@@ -1,4 +1,5 @@
 import 'server-only';
+import { hasStock } from './availability';
 import { productTitle } from './catalog-presentation';
 import { db, check } from './supabase';
 import { settings } from './data';
@@ -17,7 +18,7 @@ export async function quote(items: CartItem[], address: Address) {
   const products = (data || []) as Product[];
   const lines = items.map((item) => {
     const p = products.find((p) => p.id === item.product_id);
-    if (!p || p.inventory_count < item.quantity)
+    if (!p || !hasStock(p, item.quantity))
       throw new Error(
         'A product is unavailable or has insufficient stock. Update your cart.',
       );
