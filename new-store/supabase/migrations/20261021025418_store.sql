@@ -114,3 +114,18 @@ $$;
 create function public.customer_metrics(p_offset integer default 0) returns table(id uuid,email text,full_name text,order_count bigint,lifetime_value bigint) language sql stable security invoker set search_path=public as $$ select p.id,p.email,p.full_name,count(o.id),coalesce(sum(o.total_cents),0)::bigint from profiles p left join orders o on o.user_id=p.id and o.status<>'cancelled' where is_admin() group by p.id order by p.email limit 50 offset p_offset $$;
 revoke all on function dashboard_metrics(), customer_metrics(integer) from public,anon;
 grant execute on function dashboard_metrics(), customer_metrics(integer) to authenticated;
+
+-- Explicit API privileges work with Supabase's opt-in Data API defaults.
+-- These grants permit access to the tables; RLS still authorizes each row.
+grant usage on schema public to anon, authenticated, service_role;
+grant select on categories, products, product_images to anon, authenticated;
+grant select on profiles, carts, cart_items, orders, order_items, settings to authenticated;
+grant insert, update, delete on categories, products, product_images, carts, cart_items to authenticated;
+grant update(full_name, default_shipping_address) on profiles to authenticated;
+grant update on settings to authenticated;
+revoke update on orders from authenticated;
+grant update(status, tracking_number) on orders to authenticated;
+revoke all on checkout_drafts, email_jobs from anon, authenticated;
+grant select, insert, update, delete on profiles, categories, products, product_images, carts, cart_items, settings, checkout_drafts, orders, order_items, email_jobs to service_role;
+grant usage, select on sequence orders_order_number_seq to service_role;
+grant execute on function is_admin() to anon, authenticated, service_role;

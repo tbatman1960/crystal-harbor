@@ -4,7 +4,7 @@ This `new-store/` directory contains the new inventory storefront. The existing 
 
 From the repository root, run `cd new-store`, then follow the setup below. Netlify must use Node 22 and the `new-store` base directory. Preview environment variables must point to the new Supabase project and Stripe test mode, not the existing live store.
 
-# Earth & Thread
+# Crystal Harbor
 
 A mobile-first physical-goods shop built with Next.js 14 App Router, TypeScript, Tailwind, Supabase, Stripe Checkout, fixed product shipping, and Resend. Customer and admin pages share an accessible, understated storefront. No custom card form and no AI features.
 
@@ -22,7 +22,7 @@ Use Node.js 22 LTS and npm. Install dependencies with `npm ci`, copy `.env.examp
    supabase db push
    ```
 
-   This applies both SQL files in `supabase/migrations`, including tables, constraints, RLS, auth trigger, transactional RPCs, and a public `products` image bucket (5 MB, JPEG/PNG/WebP only). For an isolated local stack, use `supabase start` then `supabase db reset` instead. Do not run reset against production.
+   This applies all three SQL files in `supabase/migrations`, including tables, constraints, RLS, auth trigger, transactional RPCs, and a public `products` image bucket (5 MB, JPEG/PNG/WebP only). For an isolated local stack, use `supabase start` then `supabase db reset` instead. Do not run reset against production.
 
 2. Set Supabase Auth Site URL to your canonical `SITE_URL`. Allow `https://YOUR_DOMAIN/auth/callback` and `http://localhost:3000/auth/callback` as redirect URLs. Enable email/password and email confirmations. Configure production SMTP for **Supabase Auth emails**; Resend transactional order email is separate. Enable Auth rate limits and strong password settings in Supabase. Signup and recovery use Supabase's PKCE code exchange. Reset links must return through `/auth/callback?next=/auth?mode=update`.
 3. Register the owner's account through `/auth?mode=register`, confirm the email, then promote that specific account using the Supabase SQL editor:
@@ -71,7 +71,7 @@ New or migrated products have an unset first-unit charge. Configure it explicitl
 
 Both the quote and Stripe session creation reload shipping charges from the database. The stock reservation transaction checks that those rates have not changed between calculation and reservation. Customers supply product IDs and quantities, never authoritative shipping amounts. The final shipping total is snapshotted on the checkout draft/order, so later product edits do not change existing orders.
 
-Apply both migrations in order with `supabase db push`, including `202610210001_product_shipping.sql`. Tests apply both files. **Use a separate Supabase project for this new storefront**: the existing DearPast database has a different schema. Do not apply this initial schema to an existing live store's database.
+Apply all three migrations in order with `supabase db push`, including `20261021025428_product_shipping.sql`. Tests apply all migration files. **Use a separate Supabase project for this new storefront**: the existing DearPast database has a different schema. Do not apply this initial schema to an existing live store's database.
 
 USPS client credentials are no longer required. The original USPS rate module and legacy settings are retained for a possible future carrier-rate mode, but active checkout does not call them. Shipping labels/postage purchase remain manual; enter USPS tracking in admin to send the shipping email.
 
@@ -122,3 +122,25 @@ Browser components hold only cart/form state and call same-origin JSON routes. A
 Guest carts use localStorage; logged-in carts are written transactionally to Supabase. On login the guest and saved carts merge by maximum quantity, then writes are serialized. Addresses are US-only and quantities limited to 99 per line. Server price, stock, tax and shipping calculation is authoritative. The original schema grants no client write permission for order creation or email jobs; users cannot self-promote. Product images are public by design. No payment card data passes through the application.
 
 Optional GA4 is configured in admin (`G-…`). Tracking loads only after visitors explicitly allow it; consent is stored locally and can be reset in their browser. No tracking ID means no analytics script.
+
+
+## Provisioned preview database
+
+The dedicated project **Crystal Harbor Storefront** (`vwljlpiwbuxzvbrwfuar`) has the three migrations recorded using the exact versions in `supabase/migrations/`. It is independent of the original DearPast database. When linking the CLI to this project, run `supabase migration list` before `supabase db push`; applied versions should already match. Do not reapply initial schema SQL manually.
+
+Netlify preview: `https://deploy-preview-1--crystal-harbor.netlify.app`. Configure the **Deploy Previews** context only, preserving production credentials:
+
+| Variable | Preview value/source |
+| --- | --- |
+| `SITE_URL` | `https://deploy-preview-1--crystal-harbor.netlify.app` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://vwljlpiwbuxzvbrwfuar.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | New project's publishable key (the legacy variable name accepts a modern publishable key) |
+| `SUPABASE_SERVICE_ROLE_KEY` | New project's server-only secret key or legacy service role key |
+| `STRIPE_SECRET_KEY` | Existing Stripe account's **test-mode** secret key |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the new test endpoint `/api/webhooks/stripe` |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Resend credentials and verified sender |
+| `CRON_SECRET` | A new random secret |
+
+The payment helper rejects live Stripe keys on deploy previews and branch deploys. Existing live keys stay scoped to the existing production deployment. Supabase dashboard: set Auth Site URL to the preview URL and allow `https://deploy-preview-1--crystal-harbor.netlify.app/auth/callback` and the reset callback URL `/auth/callback?next=/auth?mode=update`. Register/confirm the owner's account before granting its `profiles.is_admin` flag. Database access is configured, but this does not configure production SMTP or Auth redirects automatically.
+
+The new project's security advisor has no warning/error findings after the security migration. Two informational notices about missing RLS policies on `checkout_drafts` and `email_jobs` are intentional: both are server-only with client grants revoked, so adding customer policies would weaken the boundary. Existing production-table findings are outside this migration and remain unchanged.

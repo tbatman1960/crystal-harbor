@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 
 // Run real Postgres/WASM, mocking only the Supabase-managed schemas and roles.
@@ -20,18 +20,16 @@ test('migration, RLS, and transactional order invariants', async (t) => {
  alter default privileges in schema public grant select,insert,update,delete on tables to anon,authenticated,service_role;
  alter default privileges in schema public grant usage,select on sequences to anon,authenticated,service_role;
  `);
-  await pg.exec(
-    readFileSync('supabase/migrations/202610200001_store.sql', 'utf8').replace(
-      'create extension if not exists pgcrypto;',
-      '',
-    ),
-  );
-  await pg.exec(
-    readFileSync(
-      'supabase/migrations/202610210001_product_shipping.sql',
-      'utf8',
-    ),
-  );
+  for (const file of readdirSync('supabase/migrations')
+    .filter((f) => f.endsWith('.sql'))
+    .sort()) {
+    await pg.exec(
+      readFileSync(`supabase/migrations/${file}`, 'utf8').replace(
+        'create extension if not exists pgcrypto;',
+        '',
+      ),
+    );
+  }
   const owner = '11111111-1111-4111-8111-111111111111';
   const other = '22222222-2222-4222-8222-222222222222';
   const admin = '33333333-3333-4333-8333-333333333333';
@@ -170,9 +168,9 @@ test('migration, RLS, and transactional order invariants', async (t) => {
           (await pg.query('select * from order_items')).rows.length,
           0,
         );
-        assert.equal(
-          (await pg.query('select * from checkout_drafts')).rows.length,
-          0,
+        await assert.rejects(
+          pg.query('select * from checkout_drafts'),
+          /permission denied/,
         );
       });
       await role(owner, async () => {
@@ -181,9 +179,9 @@ test('migration, RLS, and transactional order invariants', async (t) => {
           (await pg.query('select * from order_items')).rows.length,
           1,
         );
-        assert.equal(
-          (await pg.query('select * from email_jobs')).rows.length,
-          0,
+        await assert.rejects(
+          pg.query('select * from email_jobs'),
+          /permission denied/,
         );
       });
       await role(admin, async () => {

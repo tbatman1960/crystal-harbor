@@ -115,7 +115,7 @@ async function seed() {
           price_cents: price,
           shipping_first_unit_cents: cat === 'objects-home' ? 799 : 499,
           shipping_additional_unit_cents: cat === 'objects-home' ? 200 : 100,
-          sku: `ET-${String(index + 1).padStart(3, '0')}`,
+          sku: `CH-${String(index + 1).padStart(3, '0')}`,
           weight_lbs: weight,
           inventory_count: stock,
           is_active: true,

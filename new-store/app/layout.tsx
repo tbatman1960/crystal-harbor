@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'Earth & Thread · Objects with meaning',
-    template: '%s · Earth & Thread',
+    default: 'Crystal Harbor · Objects with meaning',
+    template: '%s · Crystal Harbor',
   },
   description:
     'Thoughtfully chosen jewelry, crystals, and everyday treasures. Small things, lasting meaning.',
@@ -70,7 +70,7 @@ export default async function RootLayout({
           <footer className="mt-20 border-t border-ink/15 bg-sage/40 py-12">
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
-                <p className="font-serif text-2xl">earth & thread</p>
+                <p className="font-serif text-2xl">Crystal Harbor</p>
                 <p className="mt-3 text-sm">
                   A little closer to the things that matter.
                 </p>
@@ -89,7 +89,7 @@ export default async function RootLayout({
                 <p className="mt-2">Carefully packed. Shipped with USPS.</p>
                 <p className="mt-5 text-ink/70">
                   © {new Date().getFullYear()}{' '}
-                  {store?.store_name || 'Earth & Thread'}
+                  {store?.store_name || 'Crystal Harbor'}
                 </p>
               </div>
             </div>
