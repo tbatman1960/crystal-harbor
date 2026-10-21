@@ -14,11 +14,12 @@ export default async function Contact() {
       </p>
       <h2 className="mt-10">Shipping</h2>
       <p className="mt-4">
-        We ship within the United States using USPS. Each product has a
-        first-unit shipping charge and an optional charge for each additional
-        unit. Charges for different products are combined and shown before
-        payment. Carrier delivery estimates are not guarantees. We’ll email your
-        tracking number once your order is on its way.
+        We ship within the United States using USPS. Blanket shipping is $7 for
+        one blanket, plus $1 for each additional blanket in the same order. Mix
+        designs and sizes, with a maximum of five blankets per order ($11
+        shipping). Other products use the shipping charges shown at checkout.
+        Carrier delivery estimates are not guarantees. We’ll email your tracking
+        number once your order is on its way.
       </p>
     </article>
   );

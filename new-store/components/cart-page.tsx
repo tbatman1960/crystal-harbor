@@ -2,6 +2,7 @@
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
 import { money } from '@/lib/types';
+import { BLANKET_ORDER_LIMIT } from '@/lib/pricing';
 import { productTitle } from '@/lib/catalog-presentation';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -35,6 +36,15 @@ export function CartPage({
       n +
       (products.find((p) => p.id === i.product_id)?.price_cents || 0) *
         i.quantity,
+    0,
+  );
+  const blanketCount = items.reduce(
+    (n, i) =>
+      n +
+      (products.find((p) => p.id === i.product_id)?.shipping_group ===
+      'blankets'
+        ? i.quantity
+        : 0),
     0,
   );
   const current = JSON.stringify({ items, address });
@@ -92,6 +102,18 @@ export function CartPage({
     <div className="shell py-12">
       <h1>Your bag</h1>
       <Notice error={cartError} />
+      {blanketCount > 0 && (
+        <p className="notice mt-4">
+          Blankets share one shipping charge across designs and sizes: $7 for
+          the first, plus $1 each additional. Maximum {BLANKET_ORDER_LIMIT}{' '}
+          blankets per order.
+        </p>
+      )}
+      {blanketCount > BLANKET_ORDER_LIMIT && (
+        <Notice
+          error={`Your bag contains ${blanketCount} blankets. Reduce it to ${BLANKET_ORDER_LIMIT} before checkout.`}
+        />
+      )}
       <div className="mt-8 grid gap-10 lg:grid-cols-[1.3fr_1fr]">
         <div>
           <section aria-label="Cart items" className="divide-y divide-ink/15">
@@ -117,16 +139,19 @@ export function CartPage({
                         p.inventory_count < i.quantity &&
                         ' · Insufficient stock'}
                     </p>
-                    {p && p.shipping_first_unit_cents !== null && (
-                      <p className="mb-2 text-xs text-ink/70">
-                        Standard shipping for these units:{' '}
-                        {money(
-                          p.shipping_first_unit_cents +
-                            (i.quantity - 1) * p.shipping_additional_unit_cents,
-                        )}
-                        . Any order-level free shipping applies at checkout.
-                      </p>
-                    )}
+                    {p &&
+                      p.shipping_group !== 'blankets' &&
+                      p.shipping_first_unit_cents !== null && (
+                        <p className="mb-2 text-xs text-ink/70">
+                          Standard shipping for these units:{' '}
+                          {money(
+                            p.shipping_first_unit_cents +
+                              (i.quantity - 1) *
+                                p.shipping_additional_unit_cents,
+                          )}
+                          . Any order-level free shipping applies at checkout.
+                        </p>
+                      )}
                     <button
                       className="link text-sm"
                       onClick={() =>
@@ -144,7 +169,11 @@ export function CartPage({
                       aria-label={`Quantity for ${p?.name || 'item'}`}
                       type="number"
                       min={1}
-                      max={99}
+                      max={
+                        p?.shipping_group === 'blankets'
+                          ? BLANKET_ORDER_LIMIT
+                          : 99
+                      }
                       value={i.quantity}
                       onChange={(e) =>
                         setItems(
@@ -154,7 +183,12 @@ export function CartPage({
                                   ...j,
                                   quantity: Math.max(
                                     1,
-                                    Math.min(99, parseInt(e.target.value) || 1),
+                                    Math.min(
+                                      p?.shipping_group === 'blankets'
+                                        ? BLANKET_ORDER_LIMIT
+                                        : 99,
+                                      parseInt(e.target.value) || 1,
+                                    ),
                                   ),
                                 }
                               : j,

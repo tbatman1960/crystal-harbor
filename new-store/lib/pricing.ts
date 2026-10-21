@@ -18,12 +18,15 @@ export function fallback(subtotal: number, s: Settings) {
 
 export type ProductShippingLine = {
   product_id: string;
+  shipping_group?: 'blankets' | null;
   quantity: number;
   shipping_first_unit_cents: number | null;
   shipping_additional_unit_cents: number;
 };
 
-/** Each distinct product pays its first-unit charge once, then its additional-unit charge. */
+export const BLANKET_ORDER_LIMIT = 5;
+
+/** Blanket designs share one shipping charge; other products retain per-product rates. */
 export function productShipping(lines: ProductShippingLine[]) {
   const grouped = new Map<string, ProductShippingLine>();
   for (const line of lines) {
@@ -42,7 +45,11 @@ export function productShipping(lines: ProductShippingLine[]) {
         'Shipping is unavailable for a product in your cart. Please contact the store.',
       );
     }
-    const existing = grouped.get(line.product_id);
+    const key =
+      line.shipping_group === 'blankets'
+        ? 'group:blankets'
+        : `product:${line.product_id}`;
+    const existing = grouped.get(key);
     if (
       existing &&
       (existing.shipping_first_unit_cents !== first ||
@@ -50,11 +57,16 @@ export function productShipping(lines: ProductShippingLine[]) {
     ) {
       throw new Error('Shipping rates changed. Please refresh your cart.');
     }
-    grouped.set(line.product_id, {
+    grouped.set(key, {
       ...line,
       quantity: (existing?.quantity || 0) + line.quantity,
     });
   }
+  const blankets = grouped.get('group:blankets');
+  if (blankets && blankets.quantity > BLANKET_ORDER_LIMIT)
+    throw new Error(
+      `Your cart can contain a maximum of ${BLANKET_ORDER_LIMIT} blankets per order, across all designs and sizes.`,
+    );
   const amount = [...grouped.values()].reduce(
     (total, line) =>
       total +

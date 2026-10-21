@@ -44,6 +44,7 @@ export const productSchema = z.object({
     .default(null),
   size_label: z.string().trim().min(1).max(80).nullable().default(null),
   price_cents: z.number().int().positive().max(10000000),
+  shipping_group: z.literal('blankets').nullable().default(null),
   shipping_first_unit_cents: z.number().int().min(0).max(1000000),
   shipping_additional_unit_cents: z.number().int().min(0).max(1000000),
   sku: z.string().trim().min(1).max(100),

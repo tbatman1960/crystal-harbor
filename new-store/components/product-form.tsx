@@ -14,6 +14,7 @@ const blank = {
   sku: '',
   weight_lbs: 0.1,
   inventory_count: 1,
+  shipping_group: null as 'blankets' | null,
   shipping_first_unit_cents: null as number | null,
   shipping_additional_unit_cents: 0,
   category_id: null as string | null,
@@ -39,6 +40,7 @@ export function ProductForm({
           sku: product.sku,
           weight_lbs: Number(product.weight_lbs),
           inventory_count: product.inventory_count,
+          shipping_group: product.shipping_group ?? null,
           shipping_first_unit_cents: product.shipping_first_unit_cents,
           shipping_additional_unit_cents:
             product.shipping_additional_unit_cents,
@@ -203,10 +205,28 @@ export function ProductForm({
           <legend className="px-2 font-semibold">
             Shipping for this product
           </legend>
+          <label>
+            Shipping calculation
+            <select
+              value={value.shipping_group || ''}
+              onChange={(e) =>
+                setValue({
+                  ...value,
+                  shipping_group:
+                    e.target.value === 'blankets' ? 'blankets' : null,
+                })
+              }
+            >
+              <option value="">Per product</option>
+              <option value="blankets">
+                Combined blankets (maximum 5 per order)
+              </option>
+            </select>
+          </label>
           <p className="text-sm text-ink/70">
-            Set a first-unit charge and an optional charge for each additional
-            unit of this same product. Different products’ charges are added
-            together.
+            {value.shipping_group === 'blankets'
+              ? 'Blanket designs and sizes share one first-unit charge, then one additional-unit charge for each remaining blanket. Keep both rates the same on every blanket size. Maximum five blankets per order.'
+              : 'Each distinct product has its own first-unit charge; additional units use its additional-unit charge.'}
           </p>
           <div className="field-grid">
             <label>

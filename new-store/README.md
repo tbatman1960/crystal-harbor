@@ -63,6 +63,8 @@ Billing address is collected before checkout and snapshotted, and Stripe indepen
 
 ### Product shipping: first unit + additional units
 
+For the six imported blanket designs, all sizes share the `blankets` shipping group. Shipping is $7 once per order plus $1 per additional blanket, across mixed designs and sizes. Maximum five blankets per order; the server checks this before any free-shipping override and again when creating Checkout. Admin → Products → Shipping calculation selects this group. Use matching $7/$1 rates on every grouped blanket. Other products retain the per-product calculation below.
+
 The active checkout uses fixed rates saved on each product, without contacting USPS. In **Admin → Products**, set **First unit shipping ($)** and **Each additional unit ($)**. The form accepts dollars; the server stores integer cents.
 
 For quantity `q` of a product, shipping is `first_unit + (q - 1) × additional_unit`. Charges for distinct products are added together. For example, a bracelet configured at $5 first / $1 additional costs $7 to ship for 3 bracelets. Adding 2 dishes configured at $7.99 first / $2 additional adds $9.99, making combined shipping $16.99. Set the additional charge to $0 to keep one fixed charge for any quantity of that product; set both to $0 to offer free shipping for that product.

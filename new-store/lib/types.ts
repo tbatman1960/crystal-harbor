@@ -16,6 +16,7 @@ export type Product = {
   design_slug: string | null;
   size_label: string | null;
   price_cents: number;
+  shipping_group?: 'blankets' | null;
   shipping_first_unit_cents: number | null;
   shipping_additional_unit_cents: number;
   sku: string;

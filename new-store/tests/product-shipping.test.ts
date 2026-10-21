@@ -102,3 +102,73 @@ test('admin shipping input requires valid nonnegative integer cents', () => {
     false,
   );
 });
+
+test('blankets share a single first-unit charge across designs and sizes', () => {
+  const blanket = {
+    ...line,
+    shipping_group: 'blankets' as const,
+    shipping_first_unit_cents: 700,
+    shipping_additional_unit_cents: 100,
+  };
+  for (let count = 1; count <= 5; count++) {
+    const cart = Array.from({ length: count }, (_, i) => ({
+      ...blanket,
+      product_id: `design-size-${i}`,
+    }));
+    assert.equal(productShipping(cart).amount, 700 + (count - 1) * 100);
+  }
+  assert.equal(
+    productShipping([
+      { ...blanket, quantity: 2 },
+      { ...blanket, product_id: 'other-size', quantity: 3 },
+    ]).amount,
+    1100,
+  );
+});
+test('six blankets are rejected for both a single SKU and mixed designs', () => {
+  const blanket = {
+    ...line,
+    shipping_group: 'blankets' as const,
+    shipping_first_unit_cents: 700,
+    shipping_additional_unit_cents: 100,
+  };
+  assert.throws(
+    () => productShipping([{ ...blanket, quantity: 6 }]),
+    /maximum of 5 blankets/,
+  );
+  assert.throws(
+    () =>
+      productShipping([
+        { ...blanket, quantity: 3 },
+        { ...blanket, product_id: 'other', quantity: 3 },
+      ]),
+    /maximum of 5 blankets/,
+  );
+});
+test('other merchandise keeps its per-product shipping alongside blankets', () => {
+  const blanket = {
+    ...line,
+    product_id: 'blanket',
+    shipping_group: 'blankets' as const,
+    shipping_first_unit_cents: 700,
+    shipping_additional_unit_cents: 100,
+    quantity: 2,
+  };
+  assert.equal(productShipping([blanket, line]).amount, 1300);
+});
+test('inconsistent rates within the blanket group fail closed', () => {
+  const blanket = {
+    ...line,
+    shipping_group: 'blankets' as const,
+    shipping_first_unit_cents: 700,
+    shipping_additional_unit_cents: 100,
+  };
+  assert.throws(
+    () =>
+      productShipping([
+        blanket,
+        { ...blanket, product_id: 'other', shipping_first_unit_cents: 900 },
+      ]),
+    /rates changed/,
+  );
+});

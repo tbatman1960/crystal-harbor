@@ -27,6 +27,7 @@ export async function quote(items: CartItem[], address: Address) {
       sku: p.sku,
       unit_price_cents: p.price_cents,
       quantity: item.quantity,
+      shipping_group: p.shipping_group,
       shipping_first_unit_cents: p.shipping_first_unit_cents,
       shipping_additional_unit_cents: p.shipping_additional_unit_cents,
       weight_lbs: Number(p.weight_lbs),
@@ -37,6 +38,8 @@ export async function quote(items: CartItem[], address: Address) {
     0,
   );
   const s = await settings();
+  // Validate the combined blanket limit even when free shipping applies.
+  const fixedRate = productShipping(lines);
   return {
     lines,
     subtotal,
@@ -45,7 +48,7 @@ export async function quote(items: CartItem[], address: Address) {
       s.free_shipping_threshold_cents !== null &&
       subtotal >= s.free_shipping_threshold_cents
         ? [{ id: 'free', name: 'Free standard shipping', amount: 0 }]
-        : [productShipping(lines)],
+        : [fixedRate],
     settings: s,
   };
 }

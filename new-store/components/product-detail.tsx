@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from './cart-provider';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
+import { BLANKET_ORDER_LIMIT } from '@/lib/pricing';
 export function ProductDetail({
   product: p,
   sizes = [],
@@ -82,13 +83,24 @@ export function ProductDetail({
         ) : null}
         <p className="mt-5 text-xl">{money(p.price_cents)}</p>
         <p className="mt-7 whitespace-pre-line text-ink/75">{p.description}</p>
+        {p.shipping_group === 'blankets' && (
+          <p className="notice mt-6">
+            Shipping: {money(p.shipping_first_unit_cents || 0)} for the first
+            blanket, plus {money(p.shipping_additional_unit_cents)} for each
+            additional blanket. Mix designs and sizes, up to{' '}
+            {BLANKET_ORDER_LIMIT} blankets per order.
+          </p>
+        )}
         <div className="mt-8 flex items-end gap-4">
           <label className="w-24">
             Quantity
             <input
               type="number"
               min={1}
-              max={Math.min(99, p.inventory_count)}
+              max={Math.min(
+                p.shipping_group === 'blankets' ? BLANKET_ORDER_LIMIT : 99,
+                p.inventory_count,
+              )}
               value={quantity}
               onChange={(e) =>
                 setQuantity(
@@ -96,7 +108,9 @@ export function ProductDetail({
                     1,
                     Math.min(
                       p.inventory_count,
-                      99,
+                      p.shipping_group === 'blankets'
+                        ? BLANKET_ORDER_LIMIT
+                        : 99,
                       Number(e.target.value) || 1,
                     ),
                   ),
