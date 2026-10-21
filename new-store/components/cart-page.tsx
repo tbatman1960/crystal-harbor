@@ -2,6 +2,7 @@
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
 import { money } from '@/lib/types';
+import { productTitle } from '@/lib/catalog-presentation';
 import Link from 'next/link';
 import { useState } from 'react';
 import { api, Notice } from './ui';
@@ -101,7 +102,9 @@ export function CartPage({
                   <div className="flex-1">
                     <h2 className="text-xl">
                       {p ? (
-                        <Link href={`/products/${p.slug}`}>{p.name}</Link>
+                        <Link href={`/products/${p.slug}`}>
+                          {productTitle(p)}
+                        </Link>
                       ) : (
                         'Product unavailable'
                       )}

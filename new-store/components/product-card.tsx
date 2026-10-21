@@ -2,7 +2,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
-export function ProductCard({ product: p }: { product: Product }) {
+export function ProductCard({
+  product: p,
+  sizeCount = 1,
+}: {
+  product: Product;
+  sizeCount?: number;
+}) {
   const image = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
   )[0];
@@ -25,10 +31,15 @@ export function ProductCard({ product: p }: { product: Product }) {
         </div>
         <div className="mt-4 flex flex-wrap justify-between gap-2">
           <h3 className="text-lg">{p.name}</h3>
-          <p className="text-sm">{money(p.price_cents)}</p>
+          <p className="text-sm">
+            {sizeCount > 1 ? 'From ' : ''}
+            {money(p.price_cents)}
+          </p>
         </div>
         <p className="mt-1 text-xs text-ink/65">
-          A small treasure, thoughtfully chosen
+          {sizeCount > 1
+            ? `${sizeCount} sizes available`
+            : p.size_label || 'Ready to ship'}
         </p>
       </Link>
     </article>

@@ -15,9 +15,18 @@ export default async function Product({
     .maybeSingle();
   check(error);
   if (!data) notFound();
+  const { data: sizes, error: sizesError } = data.design_slug
+    ? await db()
+        .from('products')
+        .select('id,slug,size_label,price_cents,inventory_count')
+        .eq('design_slug', data.design_slug)
+        .eq('is_active', true)
+        .order('price_cents')
+    : { data: [], error: null };
+  check(sizesError);
   return (
     <div className="shell py-10">
-      <ProductDetail product={data} />
+      <ProductDetail key={data.id} product={data} sizes={sizes || []} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import 'server-only';
+import { productTitle } from './catalog-presentation';
 import { db, check } from './supabase';
 import { settings } from './data';
 import { tax, productShipping } from './pricing';
@@ -22,7 +23,7 @@ export async function quote(items: CartItem[], address: Address) {
       );
     return {
       product_id: p.id,
-      name: p.name,
+      name: productTitle(p),
       sku: p.sku,
       unit_price_cents: p.price_cents,
       quantity: item.quantity,

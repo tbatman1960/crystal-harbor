@@ -8,11 +8,11 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
   title: {
-    default: 'SnuggleBug · Objects with meaning',
+    default: 'SnuggleBug · A little comfort. A lot of character.',
     template: '%s · SnuggleBug',
   },
   description:
-    'Thoughtfully chosen jewelry, crystals, and everyday treasures. Small things, lasting meaning.',
+    'Printed blankets in cozy sizes, playful character designs, and seasonal finds. Find your next favorite at SnuggleBug.',
 };
 export default async function RootLayout({
   children,
@@ -32,14 +32,14 @@ export default async function RootLayout({
           </a>
           <Analytics id={store?.ga4_id || null} />
           <div className="bg-ink px-4 py-2 text-center text-xs tracking-widest text-white">
-            THOUGHTFULLY CHOSEN. MADE TO BE KEPT.
+            READY-TO-SHIP FINDS FOR YOUR COZIEST DAYS.
           </div>
           <header className="border-b border-ink/10">
             <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
               <Link className="font-serif text-2xl tracking-tight" href="/">
                 {store?.store_name || 'SnuggleBug'}
                 <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
-                  little objects, lasting meaning
+                  a little comfort, a lot of character
                 </span>
               </Link>
               <nav
@@ -70,7 +70,7 @@ export default async function RootLayout({
                   {store?.store_name || 'SnuggleBug'}
                 </p>
                 <p className="mt-3 text-sm">
-                  A little closer to the things that matter.
+                  For big imaginations and little everyday comforts.
                 </p>
               </div>
               <nav

@@ -304,5 +304,55 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       );
     },
   );
+  await t.test(
+    'admin saves optional design groups and independently stocked sizes',
+    async () => {
+      const fields = {
+        name: 'Sample Blanket',
+        slug: 'blanket-lap',
+        description: 'Preview',
+        price_cents: 2499,
+        sku: 'SB-LAP',
+        weight_lbs: 0.8,
+        inventory_count: 5,
+        category_id: null,
+        is_active: true,
+        shipping_first_unit_cents: 599,
+        shipping_additional_unit_cents: 150,
+        design_slug: 'sample-blanket',
+        size_label: '30 × 40 in',
+      };
+      await role(admin, async () => {
+        await pg.query('select save_product($1,$2)', [
+          JSON.stringify(fields),
+          '[]',
+        ]);
+        await pg.query('select save_product($1,$2)', [
+          JSON.stringify({
+            ...fields,
+            slug: 'blanket-throw',
+            sku: 'SB-THROW',
+            size_label: '50 × 60 in',
+            price_cents: 3499,
+            inventory_count: 8,
+          }),
+          '[]',
+        ]);
+      });
+      const rows = await pg.query<{
+        sku: string;
+        size_label: string;
+        inventory_count: number;
+        price_cents: number;
+      }>(
+        "select sku,size_label,inventory_count,price_cents from products where design_slug='sample-blanket' order by price_cents",
+      );
+      assert.equal(rows.rows.length, 2);
+      assert.equal(rows.rows[0].size_label, '30 × 40 in');
+      assert.equal(rows.rows[0].inventory_count, 5);
+      assert.equal(rows.rows[1].inventory_count, 8);
+      assert.equal(rows.rows[1].price_cents, 3499);
+    },
+  );
   await pg.close();
 });

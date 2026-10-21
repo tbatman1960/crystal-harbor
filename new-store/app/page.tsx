@@ -1,87 +1,113 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { catalog } from '@/lib/data';
+import { groupCatalog } from '@/lib/catalog-presentation';
 import { ProductCard } from '@/components/product-card';
 export const dynamic = 'force-dynamic';
 export default async function Home() {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
+  const featured = groupCatalog(products).slice(0, 4);
   return (
     <>
       <section className="shell py-8 md:py-12">
-        <div className="relative grid overflow-hidden rounded-2xl bg-[#e8e5da] md:min-h-[520px] md:grid-cols-2">
+        <div className="relative grid overflow-hidden rounded-2xl bg-[#efe5df] md:min-h-[550px] md:grid-cols-2">
           <div className="z-10 px-7 py-14 md:px-14 md:py-20">
-            <p className="eyebrow text-clay">Grounded in the everyday</p>
+            <p className="eyebrow text-clay">This season at SnuggleBug</p>
             <h1 className="mt-6 max-w-lg">
-              Small things.
+              Big hugs.
               <br />
-              <em>Deep meaning.</em>
+              <em>Big imaginations.</em>
             </h1>
             <p className="mt-6 max-w-sm text-ink/75">
-              Jewelry, crystals, and collected treasures that bring a little
-              intention to your everyday.
+              Printed blankets with playful characters, in sizes made for little
+              laps, sofa snuggles, and oversized movie nights.
             </p>
             <Link className="btn mt-8" href="/shop">
-              Find your next treasure <span className="ml-8">↗</span>
+              Find your cozy favorite <span className="ml-8">↗</span>
             </Link>
             <p className="mt-8 text-xs tracking-wide">
-              NATURAL BEAUTY. NOTHING EXTRA.
+              PICK YOUR PRINT. CHOOSE YOUR SIZE. GET COZY.
             </p>
           </div>
-          <div
-            className="relative flex min-h-72 items-center justify-center bg-[#d6d8c8] p-10"
-            aria-hidden="true"
-          >
-            <div className="absolute h-64 w-64 rounded-full bg-[#bec7ad]/70 md:h-96 md:w-96" />
-            <div className="relative rotate-[-12deg] rounded-[42%_58%_42%_55%] bg-gradient-to-br from-[#bba1b8] via-[#e3d6db] to-[#826c8f] p-16 shadow-2xl md:p-24">
-              <div className="h-20 w-16 rotate-12 border-l-4 border-white/50 bg-white/10 [clip-path:polygon(50%_0,100%_30%,75%_100%,10%_85%,0_30%)]" />
-            </div>
-            <span className="absolute bottom-7 right-7 text-xs tracking-widest">
-              COLLECTED WITH CARE — 01
+          <div className="relative min-h-[420px] bg-[#e1e5ef] md:min-h-full">
+            <Image
+              src="/blankets/space-pals.svg"
+              alt="Illustration of a SnuggleBug blanket with smiling planets, rockets, and stars"
+              fill
+              priority
+              sizes="(max-width:768px) 100vw, 50vw"
+              className="object-cover"
+            />
+            <span className="absolute left-5 top-5 rounded-full bg-white/90 px-4 py-2 text-xs font-medium">
+              Meet the blanket collection
             </span>
           </div>
         </div>
       </section>
-      <section className="shell py-8">
+      <section className="shell grid gap-4 py-4 sm:grid-cols-3">
+        {[
+          ['kids-lap-blankets', 'Little laps', '30 × 40 in'],
+          ['everyday-throws', 'Everyday snuggles', '50 × 60 in'],
+          ['oversized-comfort', 'Room to get cozy', '60 × 80 in'],
+        ].map(([slug, title, size]) => (
+          <Link
+            key={slug}
+            href={`/shop?category=${slug}`}
+            className="flex items-center justify-between rounded-xl border border-ink/15 bg-white px-5 py-5"
+          >
+            <span>
+              <span className="block font-serif text-xl">{title}</span>
+              <span className="mt-1 block text-xs text-ink/65">{size}</span>
+            </span>
+            <span aria-hidden="true">↗</span>
+          </Link>
+        ))}
+      </section>
+      <section className="shell py-10">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
-            <p className="eyebrow mb-3 text-clay">The considered collection</p>
-            <h2>Meet your everyday favorites</h2>
+            <p className="eyebrow mb-3 text-clay">The cozy season collection</p>
+            <h2>Find your favorite blanket buddy</h2>
           </div>
           <Link href="/shop" className="link whitespace-nowrap text-sm">
             Shop all ↗
           </Link>
         </div>
-        {products.length ? (
+        {featured.length ? (
           <div className="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-4">
-            {products.slice(0, 4).map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {featured.map(({ product, sizeCount }) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                sizeCount={sizeCount}
+              />
             ))}
           </div>
         ) : (
           <div className="panel">
-            <h3>A thoughtful collection is on its way.</h3>
+            <h3>Something cozy is on its way.</h3>
             <p className="mt-2">
-              Connect your Supabase store and run the seed script to bring your
-              collection to life.
+              Check back soon for this season’s latest finds.
             </p>
-            <Link href="/shop" className="link mt-4 inline-block">
+            <Link className="link mt-4 inline-block" href="/shop">
               Explore the shop
             </Link>
           </div>
         )}
       </section>
-      <section className="shell mt-16 grid gap-8 border-y border-ink/15 py-10 sm:grid-cols-3">
+      <section className="shell mt-10 grid gap-8 border-y border-ink/15 py-10 sm:grid-cols-3">
         {[
           [
-            'Chosen with intention',
-            'Beautiful materials. Pieces you will reach for again and again.',
+            'A size for your snuggle',
+            'Little lap blankets, everyday throws, and oversized favorites. Check each listing for its dimensions.',
           ],
           [
-            'Packed with care',
-            'Every order is prepared by hand, from our small shop to your home.',
+            'Ready when you are',
+            'Choose from ready-made items in stock. Every order is packed with care.',
           ],
           [
-            'A personal touch',
-            'A real person behind every parcel. Here whenever you need us.',
+            'New season, new favorites',
+            'Our collection changes over time. There’s always room for another cozy discovery.',
           ],
         ].map(([title, text]) => (
           <div key={title}>

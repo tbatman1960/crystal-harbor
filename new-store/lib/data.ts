@@ -17,7 +17,8 @@ export async function catalog(search = '', category = ''): Promise<Product[]> {
     .from('products')
     .select('*,product_images(*)')
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .order('name');
   if (search) q = q.ilike('name', `%${search.replace(/[%_\\]/g, '')}%`);
   if (category) {
     const { data } = await client

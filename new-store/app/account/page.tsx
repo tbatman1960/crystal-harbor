@@ -40,7 +40,7 @@ export default async function Account() {
           <p className="panel">
             No orders yet.{' '}
             <Link className="link" href="/shop">
-              Find your first treasure
+              Find your next favorite
             </Link>
             .
           </p>

@@ -2,10 +2,21 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCart } from './cart-provider';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
-export function ProductDetail({ product: p }: { product: Product }) {
+export function ProductDetail({
+  product: p,
+  sizes = [],
+}: {
+  product: Product;
+  sizes?: Pick<
+    Product,
+    'id' | 'slug' | 'size_label' | 'price_cents' | 'inventory_count'
+  >[];
+}) {
+  const router = useRouter();
   const images = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
   );
@@ -47,8 +58,28 @@ export function ProductDetail({ product: p }: { product: Product }) {
         </div>
       </section>
       <section className="md:py-8">
-        <p className="eyebrow mb-5 text-clay">A piece to keep close</p>
+        <p className="eyebrow mb-5 text-clay">
+          Ready for your next cozy moment
+        </p>
         <h1 className="text-4xl md:text-5xl">{p.name}</h1>
+        {sizes.length > 1 ? (
+          <label className="mt-6 max-w-sm">
+            Choose a size
+            <select
+              value={p.slug}
+              onChange={(e) => router.push(`/products/${e.target.value}`)}
+            >
+              {sizes.map((size) => (
+                <option key={size.id} value={size.slug}>
+                  {size.size_label || 'Standard'} — {money(size.price_cents)}
+                  {size.inventory_count === 0 ? ' · Sold out' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : p.size_label ? (
+          <p className="mt-4 text-sm">Size: {p.size_label}</p>
+        ) : null}
         <p className="mt-5 text-xl">{money(p.price_cents)}</p>
         <p className="mt-7 whitespace-pre-line text-ink/75">{p.description}</p>
         <div className="mt-8 flex items-end gap-4">

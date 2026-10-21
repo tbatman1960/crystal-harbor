@@ -18,23 +18,22 @@ export default async function Policies() {
         so we can help. Approved refunds go to the original payment method after
         inspection.
       </p>
-      <h2>Natural materials & product safety</h2>
+      <h2>Product details &amp; care</h2>
       <p>
-        Colors and markings of natural materials vary. Crystals and decorative
-        objects are sold as decorative goods with no medical claims. Small parts
-        are not suitable for children. Keep accessories and stones away from
-        young children and pets.
+        Check the dimensions on your selected size before ordering. Follow the
+        care label supplied with the item. Colors may look slightly different
+        across screens; listing illustrations and sample designs are for preview
+        purposes. Blankets are not intended as loose bedding for infants.
       </p>
       <h2>Privacy</h2>
       <p>
         We use your contact information and address to process orders, ship
         parcels, and provide support. Supabase stores account and order data;
         Stripe processes payment details; Resend delivers transactional email;
-        USPS receives shipping destination information for rate calculation and
-        delivery. We do not store card numbers or sell your personal
-        information. Contact us to request access to or deletion of account
-        data, subject to records we must retain for accounting and legal
-        requirements.
+        USPS receives shipping destination information for delivery. We do not
+        store card numbers or sell your personal information. Contact us to
+        request access to or deletion of account data, subject to records we
+        must retain for accounting and legal requirements.
       </p>
       <h2>Payments & cancellations</h2>
       <p>

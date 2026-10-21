@@ -8,6 +8,8 @@ const blank = {
   name: '',
   slug: '',
   description: '',
+  design_slug: null as string | null,
+  size_label: null as string | null,
   price_cents: 100,
   sku: '',
   weight_lbs: 0.1,
@@ -31,6 +33,8 @@ export function ProductForm({
           name: product.name,
           slug: product.slug,
           description: product.description,
+          design_slug: product.design_slug,
+          size_label: product.size_label,
           price_cents: product.price_cents,
           sku: product.sku,
           weight_lbs: Number(product.weight_lbs),
@@ -159,6 +163,42 @@ export function ProductForm({
           Available inventory excludes units already reserved at checkout.
           Adjust for physical stock changes only.
         </p>
+        <fieldset className="space-y-4 rounded-xl border border-ink/20 p-4">
+          <legend className="px-2 font-semibold">
+            Sizes &amp; design families (optional)
+          </legend>
+          <p className="text-sm text-ink/70">
+            Create a separate product/SKU for each size so its price, stock, and
+            shipping stay independent. Use the same design group on matching
+            sizes to show a size selector. Leave both fields blank for other
+            items.
+          </p>
+          <div className="field-grid">
+            <label>
+              Design group slug
+              <input
+                placeholder="space-pals-blanket"
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                maxLength={100}
+                value={value.design_slug || ''}
+                onChange={(e) =>
+                  setValue({ ...value, design_slug: e.target.value || null })
+                }
+              />
+            </label>
+            <label>
+              Size label
+              <input
+                placeholder="Throw · 50 × 60 in"
+                maxLength={80}
+                value={value.size_label || ''}
+                onChange={(e) =>
+                  setValue({ ...value, size_label: e.target.value || null })
+                }
+              />
+            </label>
+          </div>
+        </fieldset>
         <fieldset className="space-y-4 rounded-xl border border-ink/20 p-4">
           <legend className="px-2 font-semibold">
             Shipping for this product

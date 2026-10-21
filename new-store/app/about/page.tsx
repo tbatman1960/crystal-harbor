@@ -2,23 +2,24 @@ export const metadata = { title: 'Our story' };
 export default function About() {
   return (
     <article className="shell max-w-3xl py-16">
-      <p className="eyebrow mb-5 text-clay">A slower kind of shopping</p>
-      <h1>Objects with a little more meaning.</h1>
+      <p className="eyebrow mb-5 text-clay">
+        A little comfort. A lot of character.
+      </p>
+      <h1>Made for your cozy moments.</h1>
       <p className="mt-8 text-lg">
-        SnuggleBug is a small, independently run shop for jewelry, natural
-        crystals, beaded accessories, and little things that make a home feel
-        like yours.
+        SnuggleBug is a small, independently run shop for playful finds and
+        everyday comfort. This season, we’re filling the shelves with printed
+        blankets in character-inspired designs and a choice of sizes.
       </p>
       <p className="mt-6">
-        We choose our collection with care and pack each order by hand. We
-        believe a beautiful object doesn’t need to be complicated. Sometimes
-        it’s a favorite bracelet, a stone on your desk, or a small gift that
-        says “I thought of you.”
+        From a little lap blanket to an oversized movie-night companion, choose
+        the print and size that fit your favorite way to unwind. Our items are
+        sold ready-made from available stock, and each order is packed with
+        care.
       </p>
       <p className="mt-6">
-        Natural stones vary in color, shape, and markings. Those differences are
-        part of their character. Please review each listing’s description before
-        ordering.
+        Our collection will change with the seasons. You’ll find new designs,
+        different items, and the same personal attention behind every parcel.
       </p>
     </article>
   );

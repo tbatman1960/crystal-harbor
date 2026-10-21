@@ -13,6 +13,8 @@ export type Product = {
   name: string;
   slug: string;
   description: string;
+  design_slug: string | null;
+  size_label: string | null;
   price_cents: number;
   shipping_first_unit_cents: number | null;
   shipping_additional_unit_cents: number;

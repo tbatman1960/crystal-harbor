@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { groupCatalog } from '@/lib/catalog-presentation';
 import { catalog, categories } from '@/lib/data';
 import { ProductCard } from '@/components/product-card';
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,7 @@ export default async function Shop({
   return (
     <div className="shell py-12">
       <p className="eyebrow mb-4 text-clay">
-        Find something that feels like you
+        A little comfort, a lot of character
       </p>
       <h1>The collection</h1>
       <div className="my-8 flex flex-col justify-between gap-5 md:flex-row">
@@ -33,7 +34,7 @@ export default async function Shop({
             className={`rounded-full border px-4 py-2 text-sm ${!searchParams.category ? 'bg-ink text-white' : ''}`}
             href="/shop"
           >
-            All treasures
+            Shop all
           </Link>
           {cats.map((c) => (
             <Link
@@ -54,7 +55,7 @@ export default async function Shop({
             id="search"
             name="q"
             defaultValue={searchParams.q}
-            placeholder="Find your treasure…"
+            placeholder="Search designs or products…"
             maxLength={100}
           />
           {searchParams.category && (
@@ -68,17 +69,22 @@ export default async function Shop({
         </form>
       </div>
       <p className="mb-6 text-sm text-ink/65">
-        {products.length} thoughtfully chosen pieces
+        {groupCatalog(products).length} designs &amp; products ·{' '}
+        {products.length} available sizes &amp; options
       </p>
       {products.length ? (
         <div className="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
+          {groupCatalog(products).map(({ product, sizeCount }) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              sizeCount={sizeCount}
+            />
           ))}
         </div>
       ) : (
         <p className="panel">
-          No pieces found. Try another search or check back soon.
+          No items found. Try another search or check back soon.
         </p>
       )}
     </div>

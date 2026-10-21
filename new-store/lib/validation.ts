@@ -36,6 +36,13 @@ export const productSchema = z.object({
   name: z.string().trim().min(2).max(150),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
   description: z.string().max(10000),
+  design_slug: z
+    .string()
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    .max(100)
+    .nullable()
+    .default(null),
+  size_label: z.string().trim().min(1).max(80).nullable().default(null),
   price_cents: z.number().int().positive().max(10000000),
   shipping_first_unit_cents: z.number().int().min(0).max(1000000),
   shipping_additional_unit_cents: z.number().int().min(0).max(1000000),

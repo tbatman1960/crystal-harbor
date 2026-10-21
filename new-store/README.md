@@ -22,7 +22,7 @@ Use Node.js 22 LTS and npm. Install dependencies with `npm ci`, copy `.env.examp
    supabase db push
    ```
 
-   This applies all three SQL files in `supabase/migrations`, including tables, constraints, RLS, auth trigger, transactional RPCs, and a public `products` image bucket (5 MB, JPEG/PNG/WebP only). For an isolated local stack, use `supabase start` then `supabase db reset` instead. Do not run reset against production.
+   This applies all SQL files in `supabase/migrations`, including tables, constraints, RLS, auth trigger, transactional RPCs, and a public `products` image bucket (5 MB, JPEG/PNG/WebP only). For an isolated local stack, use `supabase start` then `supabase db reset` instead. Do not run reset against production.
 
 2. Set Supabase Auth Site URL to your canonical `SITE_URL`. Allow `https://YOUR_DOMAIN/auth/callback` and `http://localhost:3000/auth/callback` as redirect URLs. Enable email/password and email confirmations. Configure production SMTP for **Supabase Auth emails**; Resend transactional order email is separate. Enable Auth rate limits and strong password settings in Supabase. Signup and recovery use Supabase's PKCE code exchange. Reset links must return through `/auth/callback?next=/auth?mode=update`.
 3. Register the owner's account through `/auth?mode=register`, confirm the email, then promote that specific account using the Supabase SQL editor:
@@ -32,7 +32,7 @@ Use Node.js 22 LTS and npm. Install dependencies with `npm ci`, copy `.env.examp
    ```
 
    Regular users cannot write `is_admin`, `email`, or `stripe_customer_id`. There is deliberately no public admin-promotion API.
-4. Load sample data (3 categories, 10 products, placeholder images):
+4. Load sample data (3 categories, 12 blanket size options across 4 designs, placeholder images):
 
    ```sh
    node --env-file=.env.local --import tsx scripts/seed.ts
@@ -71,7 +71,7 @@ New or migrated products have an unset first-unit charge. Configure it explicitl
 
 Both the quote and Stripe session creation reload shipping charges from the database. The stock reservation transaction checks that those rates have not changed between calculation and reservation. Customers supply product IDs and quantities, never authoritative shipping amounts. The final shipping total is snapshotted on the checkout draft/order, so later product edits do not change existing orders.
 
-Apply all three migrations in order with `supabase db push`, including `20261021025428_product_shipping.sql`. Tests apply all migration files. **Use a separate Supabase project for this new storefront**: the existing DearPast database has a different schema. Do not apply this initial schema to an existing live store's database.
+Apply all migrations in order with `supabase db push`, including `20261021025428_product_shipping.sql`. Tests apply all migration files. **Use a separate Supabase project for this new storefront**: the existing DearPast database has a different schema. Do not apply this initial schema to an existing live store's database.
 
 USPS client credentials are no longer required. The original USPS rate module and legacy settings are retained for a possible future carrier-rate mode, but active checkout does not call them. Shipping labels/postage purchase remain manual; enter USPS tracking in admin to send the shipping email.
 
@@ -126,7 +126,7 @@ Optional GA4 is configured in admin (`G-…`). Tracking loads only after visitor
 
 ## Provisioned preview database
 
-The dedicated project **Crystal Harbor Storefront** (`vwljlpiwbuxzvbrwfuar`) has the three migrations recorded using the exact versions in `supabase/migrations/`. It is independent of the original DearPast database. When linking the CLI to this project, run `supabase migration list` before `supabase db push`; applied versions should already match. Do not reapply initial schema SQL manually.
+The dedicated project **Crystal Harbor Storefront** (`vwljlpiwbuxzvbrwfuar`) has all migrations recorded using the exact versions in `supabase/migrations/`. It is independent of the original DearPast database. When linking the CLI to this project, run `supabase migration list` before `supabase db push`; applied versions should already match. Do not reapply initial schema SQL manually.
 
 Netlify preview: `https://deploy-preview-1--crystal-harbor.netlify.app`. Configure the **Deploy Previews** context only, preserving production credentials:
 
@@ -144,3 +144,12 @@ Netlify preview: `https://deploy-preview-1--crystal-harbor.netlify.app`. Configu
 The payment helper rejects live Stripe keys on deploy previews and branch deploys. Existing live keys stay scoped to the existing production deployment. Supabase dashboard: set Auth Site URL to the preview URL and allow `https://deploy-preview-1--crystal-harbor.netlify.app/auth/callback` and the reset callback URL `/auth/callback?next=/auth?mode=update`. Register/confirm the owner's account before granting its `profiles.is_admin` flag. Database access is configured, but this does not configure production SMTP or Auth redirects automatically.
 
 The new project's security advisor has no warning/error findings after the security migration. Two informational notices about missing RLS policies on `checkout_drafts` and `email_jobs` are intentional: both are server-only with client grants revoked, so adding customer policies would weaken the boundary. Existing production-table findings are outside this migration and remain unchanged.
+
+
+## Seasonal blanket catalog and sizes
+
+The seasonal sample catalog now contains 4 original character-print designs (Space Pals, Dino Days, Forest Friends, Rainbow Bears), each in 3 sizes: kids/lap 30 × 40 in, throw 50 × 60 in, and oversized 60 × 80 in. Illustrations, prices, and stock are samples. Replace them with the actual designs, photographs, dimensions, materials, care instructions, and stock you sell.
+
+Each size is an independently stocked product/SKU with its own price and first/additional-unit shipping charges. Products with the same optional `design_slug` appear as one design card with a size selector. The selected size's own product ID goes into the cart; checkout snapshots its size in the item name. Mixed sizes are separate product lines, so each size starts with its own first-unit shipping charge. These fields are optional: future items without sizes remain ordinary products, and categories can be changed in admin.
+
+In the product editor, use the same **Design group slug** on the sizes of a design and a distinct **Size label** for each. Migration `20261021035922_product_design_sizes.sql` adds these optional fields without changing historical orders. The previous jewelry/crystal demo listings in the preview database were archived, not removed; existing live-store inventory was not changed.
