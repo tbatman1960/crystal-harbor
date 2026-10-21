@@ -102,8 +102,8 @@ export default async function Home() {
             'Little lap blankets, everyday throws, and oversized favorites. Check each listing for its dimensions.',
           ],
           [
-            'Ready when you are',
-            'Choose from ready-made items in stock. Every order is packed with care.',
+            'Printed for your cozy moments',
+            'Choose your design and size. Each blanket is printed after you order and packed with care.',
           ],
           [
             'New season, new favorites',

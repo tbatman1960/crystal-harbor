@@ -13,9 +13,8 @@ export default function About() {
       </p>
       <p className="mt-6">
         From a little lap blanket to an oversized movie-night companion, choose
-        the print and size that fit your favorite way to unwind. Our items are
-        sold ready-made from available stock, and each order is packed with
-        care.
+        the print and size that fit your favorite way to unwind. Each blanket is
+        printed after you order, then packed with care.
       </p>
       <p className="mt-6">
         Our collection will change with the seasons. You’ll find new designs,
