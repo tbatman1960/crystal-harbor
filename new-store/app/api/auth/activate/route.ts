@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/supabase';
 import { origin, failure } from '@/lib/http';
-const input = z.object({ token: z.string().regex(/^[a-f0-9]{64}$/i), password: z.string().min(12).max(100) }).strict();
+const input = z.object({ token: z.string().regex(/^[a-f0-9]{56,64}$/i), password: z.string().min(12).max(100) }).strict();
 export async function POST(request: Request) {
   try {
     origin(request);
