@@ -1,0 +1,9 @@
+project_id = "earth-and-thread"
+[db]
+major_version = 15
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+[auth.email]
+enable_signup = true
+enable_confirmations = true
