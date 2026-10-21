@@ -1,10 +1,11 @@
 import { z } from 'zod';
+import { validState } from './us-states';
 export const addressSchema = z.object({
   name: z.string().trim().min(2).max(100),
   line1: z.string().trim().min(3).max(150),
   line2: z.string().trim().max(150).optional(),
   city: z.string().trim().min(2).max(100),
-  state: z.string().regex(/^[A-Z]{2}$/, 'Use a two-letter state code'),
+  state: z.string().refine(validState, 'Choose a valid US state or territory'),
   postal_code: z
     .string()
     .regex(/^\d{5}(-\d{4})?$/, 'Enter a valid US ZIP code'),

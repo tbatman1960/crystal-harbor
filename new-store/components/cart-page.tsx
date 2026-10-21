@@ -103,6 +103,27 @@ export function CartPage({
     <div className="shell py-12">
       <h1>Your bag</h1>
       <Notice error={cartError} />
+      {items.some((i) => !products.some((p) => p.id === i.product_id)) && (
+        <div className="notice mt-4" role="alert">
+          <p>
+            Your bag contains an item that is no longer available, such as an
+            old sample product.
+          </p>
+          <button
+            type="button"
+            className="link mt-2"
+            onClick={() =>
+              setItems(
+                items.filter((i) =>
+                  products.some((p) => p.id === i.product_id),
+                ),
+              )
+            }
+          >
+            Remove unavailable items
+          </button>
+        </div>
+      )}
       {blanketCount > 0 && (
         <p className="notice mt-4">
           Blankets share one shipping charge across designs and sizes: $7 for

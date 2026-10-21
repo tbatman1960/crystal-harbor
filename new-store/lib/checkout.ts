@@ -1,11 +1,13 @@
 import 'server-only';
 import { hasStock } from './availability';
+import { checkPostalState } from './postal';
 import { productTitle } from './catalog-presentation';
 import { db, check } from './supabase';
 import { settings } from './data';
 import { tax, productShipping } from './pricing';
 import type { CartItem, Address, Product } from './types';
 export async function quote(items: CartItem[], address: Address) {
+  await checkPostalState(address);
   const { data, error } = await db()
     .from('products')
     .select('*,product_images(*)')
@@ -18,10 +20,12 @@ export async function quote(items: CartItem[], address: Address) {
   const products = (data || []) as Product[];
   const lines = items.map((item) => {
     const p = products.find((p) => p.id === item.product_id);
-    if (!p || !hasStock(p, item.quantity))
+    if (!p)
       throw new Error(
-        'A product is unavailable or has insufficient stock. Update your cart.',
+        'An item in your cart is no longer available. Remove unavailable items and add your blanket again from the shop.',
       );
+    if (!hasStock(p, item.quantity))
+      throw new Error('A product has insufficient stock. Update your cart.');
     return {
       product_id: p.id,
       name: productTitle(p),
