@@ -3,119 +3,231 @@ import Image from 'next/image';
 import { catalog } from '@/lib/data';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { ProductCard } from '@/components/product-card';
+import { collectionTheme as theme } from '@/lib/collection-theme';
 export const dynamic = 'force-dynamic';
 export default async function Home() {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
-  const featured = groupCatalog(products).slice(0, 4);
+  const designs = groupCatalog(products);
+  const hero =
+    designs.find(({ product }) => product.design_slug === theme.heroDesign)
+      ?.product || designs[0]?.product;
+  const sidekick = designs.find(
+    ({ product }) => product.design_slug === theme.sidekickDesign,
+  )?.product;
+  const image =
+    hero?.product_images.find((i) => i.is_primary)?.url ||
+    hero?.product_images[0]?.url;
+  const sidekickImage =
+    sidekick?.product_images.find((i) => i.is_primary)?.url ||
+    sidekick?.product_images[0]?.url;
   return (
-    <>
-      <section className="shell py-8 md:py-12">
-        <div className="relative grid overflow-hidden rounded-2xl bg-[#efe5df] md:min-h-[550px] md:grid-cols-2">
-          <div className="z-10 px-7 py-14 md:px-14 md:py-20">
-            <p className="eyebrow text-clay">This season at SnuggleBug</p>
-            <h1 className="mt-6 max-w-lg">
-              Big hugs.
+    <div className="collection-page">
+      <section
+        className="shell pb-8 pt-6 md:pb-12 md:pt-10"
+        aria-labelledby="collection-heading"
+      >
+        <div className="sleepover-hero">
+          <div className="hero-copy">
+            <p className="collection-label">
+              <span aria-hidden="true">✦</span> {theme.eyebrow}
+            </p>
+            <h1 id="collection-heading" className="sleepover-title">
+              {theme.headline}
               <br />
-              <em>Big imaginations.</em>
+              <span>{theme.headlineAccent}</span>
             </h1>
-            <p className="mt-6 max-w-sm text-ink/75">
-              Printed blankets with playful characters, in sizes made for little
-              laps, sofa snuggles, and oversized movie nights.
+            <p className="hero-description">{theme.introduction}</p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link className="btn party-button" href="/shop">
+                Find your cozy <span aria-hidden="true">↗</span>
+              </Link>
+              <Link className="btn party-outline" href="#pick-your-print">
+                Meet the collection
+              </Link>
+            </div>
+            <p className="hero-footnote">
+              <span aria-hidden="true">♡</span> Four sizes. From $13. Printed
+              just for your order.
             </p>
-            <Link className="btn mt-8" href="/shop">
-              Find your cozy favorite <span className="ml-8">↗</span>
-            </Link>
-            <p className="mt-8 text-xs tracking-wide">
-              PICK YOUR PRINT. CHOOSE YOUR SIZE. GET COZY.
-            </p>
+            <div className="hero-scribble" aria-hidden="true">
+              a little comfort.
+              <br />
+              <span>a LOT of character.</span>
+            </div>
           </div>
-          <div className="relative min-h-[420px] bg-[#e1e5ef] md:min-h-full">
-            <Image
-              src="/blankets/space-pals.svg"
-              alt="Illustration of a SnuggleBug blanket with smiling planets, rockets, and stars"
-              fill
-              priority
-              sizes="(max-width:768px) 100vw, 50vw"
-              className="object-cover"
-            />
-            <span className="absolute left-5 top-5 rounded-full bg-white/90 px-4 py-2 text-xs font-medium">
-              Meet the blanket collection
+          <div className="hero-art">
+            <span className="hero-star star-one" aria-hidden="true">
+              ✦
+            </span>
+            <span className="hero-star star-two" aria-hidden="true">
+              ✧
+            </span>
+            <div className="hero-photo-frame">
+              {image ? (
+                <Image
+                  src={image}
+                  alt={hero?.name || 'A colorful printed blanket'}
+                  fill
+                  priority
+                  sizes="(max-width:767px) 88vw, 48vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="hero-photo-empty">
+                  <span aria-hidden="true">♡</span>
+                  <p>Your next favorite is on its way.</p>
+                </div>
+              )}
+            </div>
+            <span className="cozy-sticker">
+              Official plans:
+              <br />
+              <strong>stay cozy.</strong>
+              <span aria-hidden="true"> ♡</span>
+            </span>
+            {sidekickImage && sidekick && (
+              <Link
+                className="sidekick-photo"
+                href={`/products/${sidekick.slug}`}
+                aria-label={`Explore ${sidekick.name}`}
+              >
+                <span className="relative block aspect-square overflow-hidden rounded-xl">
+                  <Image
+                    src={sidekickImage}
+                    alt={sidekick.name}
+                    fill
+                    sizes="(max-width:767px) 120px, 170px"
+                    className="object-cover"
+                  />
+                </span>
+                <span className="sidekick-caption">written in the stars ✦</span>
+              </Link>
+            )}
+            <span className="hero-photo-caption">
+              the couch called. it wants this one.
             </span>
           </div>
         </div>
       </section>
-      <section className="shell grid gap-4 py-4 sm:grid-cols-3">
-        {[
-          ['kids-lap-blankets', 'Little laps', '30 × 40 in'],
-          ['everyday-throws', 'Everyday snuggles', '50 × 60 in'],
-          ['oversized-comfort', 'Room to get cozy', '60 × 80 in'],
-        ].map(([slug, title, size]) => (
-          <Link
-            key={slug}
-            href={`/shop?category=${slug}`}
-            className="flex items-center justify-between rounded-xl border border-ink/15 bg-white px-5 py-5"
-          >
-            <span>
-              <span className="block font-serif text-xl">{title}</span>
-              <span className="mt-1 block text-xs text-ink/65">{size}</span>
-            </span>
-            <span aria-hidden="true">↗</span>
-          </Link>
-        ))}
-      </section>
-      <section className="shell py-10">
-        <div className="mb-8 flex items-end justify-between gap-4">
+      <div className="collection-ribbon">
+        <div className="shell flex flex-wrap items-center justify-center gap-x-7 gap-y-2 py-4">
+          <span aria-hidden="true">✦</span>
+          <p>{theme.banner}</p>
+          <span aria-hidden="true">✦</span>
+          <span className="hidden text-sm sm:inline">
+            Movie-night energy, all day long.
+          </span>
+        </div>
+      </div>
+      <section
+        id="pick-your-print"
+        className="shell scroll-mt-6 py-14 md:py-20"
+        aria-labelledby="prints-heading"
+      >
+        <div className="collection-section-heading">
           <div>
-            <p className="eyebrow mb-3 text-clay">The cozy season collection</p>
-            <h2>Find your favorite blanket buddy</h2>
+            <p className="collection-label">{theme.name}</p>
+            <h2 id="prints-heading">Find your blanket personality.</h2>
+            <p className="mt-3 max-w-xl text-ink/75">
+              For the cartoon kid, the pink enthusiast, the horror-movie bestie.
+              There’s a cozy kind of extra for everyone.
+            </p>
           </div>
-          <Link href="/shop" className="link whitespace-nowrap text-sm">
-            Shop all ↗
+          <Link href="/shop" className="collection-text-link">
+            Shop the whole collection <span aria-hidden="true">↗</span>
           </Link>
         </div>
-        {featured.length ? (
-          <div className="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-4">
-            {featured.map(({ product, sizeCount }) => (
+        <div className="mood-tags" aria-label="Browse by mood">
+          <Link href="/shop?q=90s">✦ Throwback favorites</Link>
+          <Link href="/shop?q=pink">♡ Think pink</Link>
+          <Link href="/shop?q=ghostface">✧ Spooky &amp; sweet</Link>
+          <Link href="/shop?q=hello%20kitty">☆ Cosmic cuteness</Link>
+        </div>
+        {designs.length ? (
+          <div className="collection-grid">
+            {designs.map(({ product, sizeCount }, index) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 sizeCount={sizeCount}
+                accent={index}
               />
             ))}
           </div>
         ) : (
           <div className="panel">
             <h3>Something cozy is on its way.</h3>
-            <p className="mt-2">
-              Check back soon for this season’s latest finds.
-            </p>
-            <Link className="link mt-4 inline-block" href="/shop">
+            <p className="mt-2">Check back soon for our next collection.</p>
+            <Link href="/shop" className="link mt-4 inline-block">
               Explore the shop
             </Link>
           </div>
         )}
       </section>
-      <section className="shell mt-10 grid gap-8 border-y border-ink/15 py-10 sm:grid-cols-3">
-        {[
-          [
-            'A size for your snuggle',
-            'Little lap blankets, everyday throws, and oversized favorites. Check each listing for its dimensions.',
-          ],
-          [
-            'Printed for your cozy moments',
-            'Choose your design and size. Each blanket is printed after you order and packed with care.',
-          ],
-          [
-            'New season, new favorites',
-            'Our collection changes over time. There’s always room for another cozy discovery.',
-          ],
-        ].map(([title, text]) => (
-          <div key={title}>
-            <h3>{title}</h3>
-            <p className="mt-3 text-sm text-ink/70">{text}</p>
+      <section className="shell pb-14" aria-labelledby="size-heading">
+        <div className="size-party">
+          <div>
+            <p className="collection-label">Little lap? Whole-couch mood?</p>
+            <h2 id="size-heading">Your cozy. Your size.</h2>
+            <p className="mt-3 max-w-md text-ink/75">
+              Every design comes in all four sizes. Same personality, just the
+              right amount of blanket.
+            </p>
+            <Link
+              className="collection-text-link mt-5 inline-flex"
+              href="/shop"
+            >
+              Pick your perfect fit <span aria-hidden="true">↗</span>
+            </Link>
           </div>
-        ))}
+          <ul className="size-party-grid">
+            {[
+              ['30 × 40', 'The little snuggle', '$13'],
+              ['40 × 50', 'The cozy companion', '$19'],
+              ['50 × 60', 'The couch favorite', '$25'],
+              ['60 × 80', 'The big cozy energy', '$32'],
+            ].map(([size, label, price]) => (
+              <li key={size}>
+                <span className="size-label">{label}</span>
+                <p>
+                  {size}
+                  <span className="text-sm"> in</span>
+                </p>
+                <span className="size-price">{price}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
-    </>
+      <section className="shell pb-8" aria-label="The SnuggleBug way">
+        <div className="cozy-promises">
+          {[
+            [
+              '♡',
+              'Printed for you',
+              'Pick a design and size. We print your blanket after you order.',
+            ],
+            [
+              '✦',
+              'Mix your favorites',
+              'Shipping is $7 for the first blanket, then $1 each extra. Up to five blankets per order.',
+            ],
+            [
+              '✧',
+              'A new mood each season',
+              'Fresh collections, playful finds, and that same feel-good cozy.',
+            ],
+          ].map(([icon, title, text]) => (
+            <div key={title}>
+              <span className="promise-icon" aria-hidden="true">
+                {icon}
+              </span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
