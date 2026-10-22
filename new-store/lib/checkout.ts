@@ -1,12 +1,14 @@
 import 'server-only';
 import { hasStock } from './availability';
 import { checkPostalState } from './postal';
+import { assertShippingDestination } from './shipping-policy';
 import { productTitle } from './catalog-presentation';
 import { db, check } from './supabase';
 import { settings } from './data';
 import { tax, productShipping } from './pricing';
 import type { CartItem, Address, Product } from './types';
 export async function quote(items: CartItem[], address: Address) {
+  assertShippingDestination(address);
   await checkPostalState(address);
   const { data, error } = await db()
     .from('products')
