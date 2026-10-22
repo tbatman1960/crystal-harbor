@@ -35,6 +35,13 @@ export default async function Policies() {
         request access to or deletion of account data, subject to records we
         must retain for accounting and legal requirements.
       </p>
+      <h2>Shipping destinations</h2>
+      <p>
+        We currently ship to U.S. addresses outside Indiana. Orders with an
+        Indiana shipping address cannot be placed. This restriction applies to
+        the delivery address; an Indiana billing address is allowed for an
+        eligible out-of-state delivery.
+      </p>
       <h2>Payments & cancellations</h2>
       <p>
         All prices are in US dollars. Shipping and applicable sales tax are

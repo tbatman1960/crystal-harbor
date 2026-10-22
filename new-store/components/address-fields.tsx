@@ -2,6 +2,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Address } from '@/lib/types';
 import { US_STATES } from '@/lib/us-states';
+import {
+  isRestrictedShippingAddress,
+  SHIPPING_AREA_MESSAGE,
+  INDIANA_SHIPPING_MESSAGE,
+} from '@/lib/shipping-policy';
 import { api } from './ui';
 export const emptyAddress: Address = {
   name: '',
@@ -26,10 +31,12 @@ export function AddressFields({
   value,
   onChange,
   prefix = 'shipping',
+  restrictShipping = false,
 }: {
   value: Address;
   onChange: (a: Address) => void;
   prefix?: string;
+  restrictShipping?: boolean;
 }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [zipMessage, setZipMessage] = useState('');
@@ -84,6 +91,7 @@ export function AddressFields({
       clearTimeout(timer);
     };
   }, [value.postal_code]);
+  const blocked = restrictShipping && isRestrictedShippingAddress(value);
   const mismatch =
     places.length > 0 &&
     !!value.state &&
@@ -96,9 +104,13 @@ export function AddressFields({
     );
   useEffect(() => {
     stateField.current?.setCustomValidity(
-      mismatch ? 'The selected state does not match this ZIP code.' : '',
+      blocked
+        ? INDIANA_SHIPPING_MESSAGE
+        : mismatch
+          ? 'The selected state does not match this ZIP code.'
+          : '',
     );
-  }, [mismatch]);
+  }, [mismatch, blocked]);
   useEffect(() => {
     if (text.trim().length < 4) {
       setSuggestions([]);
@@ -172,8 +184,15 @@ export function AddressFields({
             >
               <option value="">Select a state</option>
               {US_STATES.map(([code, name]) => (
-                <option key={code} value={code}>
+                <option
+                  key={code}
+                  value={code}
+                  disabled={restrictShipping && code === 'IN'}
+                >
                   {name}
+                  {restrictShipping && code === 'IN'
+                    ? ' — delivery unavailable'
+                    : ''}
                 </option>
               ))}
             </select>
@@ -218,6 +237,12 @@ export function AddressFields({
         </div>
       ))}
       <div className="space-y-2 text-sm sm:col-span-2">
+        {restrictShipping && <p>{SHIPPING_AREA_MESSAGE}</p>}
+        {blocked && (
+          <p role="alert" className="text-red-800">
+            {INDIANA_SHIPPING_MESSAGE}
+          </p>
+        )}
         <p role="status">{zipMessage}</p>
         {mismatch && (
           <p role="alert" className="text-red-800">
