@@ -17,8 +17,8 @@ In the crystal-harbor project's Environment variables, preserve the existing val
 | SUPABASE_SERVICE_ROLE_KEY | Copy the new storefront's working Deploy Preview value into Production; mark as secret. Never put the value in GitHub or chat. |
 | STRIPE_SECRET_KEY | Existing Stripe account's live secret key, stored as a secret. |
 | STRIPE_WEBHOOK_SECRET | Secret for a LIVE Stripe endpoint delivering checkout.session.completed and checkout.session.expired to https://crystal-harbor.netlify.app/api/webhooks/stripe |
-| RESEND_API_KEY | Resend key, marked secret; needed for customer and administrator emails. |
-| RESEND_FROM_EMAIL | Sender on a verified Resend domain. |
+| SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASS | Reuse the original working Production SMTP settings; mark SMTP_PASS secret. Resend is optional when SMTP is configured. |
+| SMTP_FROM / SMTP_SECURE | Reuse the authorized SMTP sender and TLS settings. |
 | CRON_SECRET | Random secret used for email retries and checkout reconciliation. |
 
 Do not use the original Supabase project bdcqyconjwevyzjlubce for the new application. The new storefront project vwljlpiwbuxzvbrwfuar already contains the actual products, prices, shipping settings and administrator account.

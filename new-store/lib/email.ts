@@ -1,5 +1,5 @@
 import 'server-only';
-import { Resend } from 'resend';
+import { sendTransactionalEmail } from './mail-transport';
 import { service, check } from './supabase';
 import { settings } from './data';
 import { money } from './types';
@@ -48,17 +48,14 @@ export async function drainEmails() {
           : 'We will email you when your order ships.',
         `Questions? ${s.store_email}`,
       ].join('\n\n');
-      const result = await new Resend(process.env.RESEND_API_KEY).emails.send(
-        {
-          from: process.env.RESEND_FROM_EMAIL!,
-          to: job.kind === 'admin' ? s.admin_alert_email : o.email,
-          replyTo: s.store_email,
-          subject,
-          text,
-        },
-        { idempotencyKey: job.dedupe_key },
-      );
-      if (result.error) throw new Error(result.error.message);
+      await sendTransactionalEmail({
+        to: job.kind === 'admin' ? s.admin_alert_email : o.email,
+        replyTo: s.store_email,
+        defaultFrom: `${s.store_name} <${s.store_email}>`,
+        subject,
+        text,
+        dedupeKey: job.dedupe_key,
+      });
       const { error } = await client
         .from('email_jobs')
         .update({ sent_at: new Date().toISOString() })
