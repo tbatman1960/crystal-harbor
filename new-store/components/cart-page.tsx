@@ -4,6 +4,10 @@ import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
 import { money } from '@/lib/types';
 import { BLANKET_ORDER_LIMIT } from '@/lib/pricing';
+import {
+  isRestrictedShippingAddress,
+  SHIPPING_AREA_MESSAGE,
+} from '@/lib/shipping-policy';
 import { productTitle } from '@/lib/catalog-presentation';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -103,6 +107,7 @@ export function CartPage({
     <div className="shell py-12">
       <h1>Your bag</h1>
       <Notice error={cartError} />
+      <p className="notice mt-4">{SHIPPING_AREA_MESSAGE}</p>
       {items.some((i) => !products.some((p) => p.id === i.product_id)) && (
         <div className="notice mt-4" role="alert">
           <p>
@@ -253,7 +258,11 @@ export function CartPage({
           </label>
           <fieldset>
             <legend className="mb-4 font-semibold">Shipping address</legend>
-            <AddressFields value={address} onChange={setAddress} />
+            <AddressFields
+              value={address}
+              onChange={setAddress}
+              restrictShipping
+            />
           </fieldset>
           <label className="flex items-center gap-3">
             <input
@@ -329,7 +338,10 @@ export function CartPage({
             </div>
           </dl>
           <Notice error={error} />
-          <button className="btn w-full" disabled={pending}>
+          <button
+            className="btn w-full"
+            disabled={pending || isRestrictedShippingAddress(address)}
+          >
             {pending
               ? 'Please wait…'
               : validQuote && rate
