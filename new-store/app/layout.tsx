@@ -13,6 +13,9 @@ export const metadata: Metadata = {
     default: 'SnuggleBug · A little comfort. A lot of character.',
     template: '%s · SnuggleBug',
   },
+  robots: (process.env.SITE_URL || '').includes('deploy-preview-')
+    ? { index: false, follow: false }
+    : undefined,
   description:
     'Printed blankets in cozy sizes, playful character designs, and seasonal finds. Find your next favorite at SnuggleBug.',
 };
@@ -45,7 +48,7 @@ export default async function RootLayout({
           <Analytics id={store?.ga4_id || null} />
           <div className="season-announcement">
             <span aria-hidden="true">✦ </span>
-            {theme.announcement}
+            Your favorite face. A cozy place. Personalized blankets from $13.
             <span aria-hidden="true"> ✦</span>
           </div>
           <header className="border-b border-ink/10">
@@ -58,9 +61,15 @@ export default async function RootLayout({
               </Link>
               <nav
                 aria-label="Main navigation"
-                className="flex items-center gap-5 text-sm"
+                className="flex flex-wrap items-center gap-4 text-sm"
               >
                 <Link href="/shop">Shop</Link>
+                <Link
+                  href="/customize"
+                  className="font-semibold text-[var(--party-pink)]"
+                >
+                  Personalize
+                </Link>
                 <Link href="/about" className="hidden sm:block">
                   Our story
                 </Link>
@@ -92,6 +101,7 @@ export default async function RootLayout({
                 <Link href="/about">Our story</Link>
                 <Link href="/contact">Contact & shipping</Link>
                 <Link href="/policies">Returns & privacy</Link>
+                <Link href="/designs">My saved designs</Link>
               </nav>
               <div className="text-sm">
                 <p>Secure checkout with Stripe</p>

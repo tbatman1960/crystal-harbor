@@ -20,6 +20,8 @@ export type Order = {
     product_sku_snapshot: string;
     unit_price_cents: number;
     quantity: number;
+    personalization_id?: string | null;
+    personalization_snapshot?: { template: string; name: string } | null;
   }[];
 };
 export function OrderView({
@@ -53,6 +55,23 @@ export function OrderView({
                 {i.product_name_snapshot} × {i.quantity}
               </p>
               <p className="text-xs text-ink/60">{i.product_sku_snapshot}</p>
+              {i.personalization_id && (
+                <div className="personalization-summary">
+                  <p>
+                    Approved personalized artwork ·{' '}
+                    {i.personalization_snapshot?.name ||
+                      i.personalization_snapshot?.template}
+                  </p>
+                  <a
+                    className="link"
+                    href={`/api/customizations/${i.personalization_id}?file=artwork`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Download artwork for this blanket ↗
+                  </a>
+                </div>
+              )}
             </div>
             {!packing && <p>{money(i.unit_price_cents * i.quantity)}</p>}
           </div>

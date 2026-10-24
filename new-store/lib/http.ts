@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { PersonalizationError } from './personalization/errors';
 import { ZodError } from 'zod';
 import { ShippingDestinationError } from './shipping-policy';
 export function origin(request: Request) {
@@ -6,6 +7,8 @@ export function origin(request: Request) {
     throw new Error('Invalid origin');
 }
 export function failure(e: unknown) {
+  if (e instanceof PersonalizationError)
+    return NextResponse.json({ error: e.message }, { status: 400 });
   if (e instanceof ShippingDestinationError)
     return NextResponse.json(
       { error: e.message, code: 'SHIPPING_DESTINATION_RESTRICTED' },

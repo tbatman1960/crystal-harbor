@@ -171,3 +171,7 @@ Optional street autocomplete and USPS delivery-point checks use Google Places AP
 The new storefront also supports the original SMTP environment variables: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, and `SMTP_FROM`. Keep their working Production values in Netlify. SMTP takes priority when SMTP_HOST is set, so no Resend account or key is needed. Port 587 uses required STARTTLS; port 465 uses implicit TLS by default. Certificates are verified. Mark SMTP_PASS as secret and use the provider's authorized sender in SMTP_FROM. Missing sender defaults to the store name/store email in settings.
 
 The order email outbox and manual retry remain in use with either provider. SMTP messages use a stable Message-ID per job, but SMTP has no provider idempotency guarantee: concurrent retries or a crash after SMTP acceptance can cause duplicate messages. Resend's idempotency behavior applies only when using Resend. End-to-end SMTP delivery must be verified after configuring Production; a successful build does not establish email delivery.
+
+## Personalized blanket preview
+
+See [PERSONALIZATION-PREVIEW.md](PERSONALIZATION-PREVIEW.md) for the separate review branch, private-photo handling, artwork workflow, test-payment requirements, and print-production limitations.

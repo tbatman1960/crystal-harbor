@@ -1,4 +1,5 @@
 'use client';
+import { cartKey } from '@/lib/personalization/designs';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
@@ -147,7 +148,7 @@ export function CartPage({
             {items.map((i) => {
               const p = products.find((p) => p.id === i.product_id);
               return (
-                <article key={i.product_id} className="flex gap-4 py-6">
+                <article key={cartKey(i)} className="flex gap-4 py-6">
                   <div className="flex-1">
                     <h2 className="text-xl">
                       {p ? (
@@ -158,6 +159,26 @@ export function CartPage({
                         'Product unavailable'
                       )}
                     </h2>
+                    {i.customization_id && (
+                      <div className="personalization-summary">
+                        <strong>Personalized blanket</strong>
+                        <p>
+                          {i.customization_label || 'Your approved artwork'}
+                        </p>
+                        <a
+                          className="link"
+                          href={`/api/customizations/${i.customization_id}?file=artwork`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Download approved artwork ↗
+                        </a>
+                        <p className="mt-1">
+                          Quantity uses this same photo and design. To use
+                          another face, create another personalized blanket.
+                        </p>
+                      </div>
+                    )}
                     <p className="my-2 text-sm">
                       {p
                         ? money(p.price_cents)
@@ -180,9 +201,7 @@ export function CartPage({
                     <button
                       className="link text-sm"
                       onClick={() =>
-                        setItems(
-                          items.filter((j) => j.product_id !== i.product_id),
-                        )
+                        setItems(items.filter((j) => cartKey(j) !== cartKey(i)))
                       }
                     >
                       Remove
@@ -203,7 +222,7 @@ export function CartPage({
                       onChange={(e) =>
                         setItems(
                           items.map((j) =>
-                            j.product_id === i.product_id
+                            cartKey(j) === cartKey(i)
                               ? {
                                   ...j,
                                   quantity: Math.max(

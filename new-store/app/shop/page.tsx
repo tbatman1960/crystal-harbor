@@ -29,6 +29,11 @@ export default async function Shop({
         Big characters, bold prints, and four ways to get comfortable. Your next
         favorite blanket is right here.
       </p>
+      <p className="mt-5">
+        <Link href="/customize" className="personalization-link">
+          ✦ Put your face in the picture — create a personalized blanket →
+        </Link>
+      </p>
       <div className="my-8 flex flex-col justify-between gap-5 md:flex-row">
         <nav
           aria-label="Categories"

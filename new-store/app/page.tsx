@@ -1,5 +1,9 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import {
+  blanketSvg,
+  defaultConfig,
+  templates,
+} from '@/lib/personalization/designs';
 import { catalog } from '@/lib/data';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { ProductCard } from '@/components/product-card';
@@ -8,105 +12,107 @@ export const dynamic = 'force-dynamic';
 export default async function Home() {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
   const designs = groupCatalog(products);
-  const hero =
-    designs.find(({ product }) => product.design_slug === theme.heroDesign)
-      ?.product || designs[0]?.product;
-  const sidekick = designs.find(
-    ({ product }) => product.design_slug === theme.sidekickDesign,
-  )?.product;
-  const image =
-    hero?.product_images.find((i) => i.is_primary)?.url ||
-    hero?.product_images[0]?.url;
-  const sidekickImage =
-    sidekick?.product_images.find((i) => i.is_primary)?.url ||
-    sidekick?.product_images[0]?.url;
   return (
     <div className="collection-page">
       <section
-        className="shell pb-8 pt-6 md:pb-12 md:pt-10"
-        aria-labelledby="collection-heading"
+        className="shell pt-6 pb-10 md:pt-10"
+        aria-labelledby="personalized-heading"
       >
-        <div className="sleepover-hero">
-          <div className="hero-copy">
+        <div className="custom-hero">
+          <div className="self-center">
             <p className="collection-label">
-              <span aria-hidden="true">✦</span> {theme.eyebrow}
+              A LITTLE COZY. A WHOLE LOT OF YOU.
             </p>
-            <h1 id="collection-heading" className="sleepover-title">
-              {theme.headline}
+            <h1 id="personalized-heading" className="mt-5">
+              Their face.
               <br />
-              <span>{theme.headlineAccent}</span>
+              Their name.
+              <br />
+              <span>Their favorite gift.</span>
             </h1>
-            <p className="hero-description">{theme.introduction}</p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link className="btn party-button" href="/shop">
-                Find your cozy <span aria-hidden="true">↗</span>
-              </Link>
-              <Link className="btn party-outline" href="#pick-your-print">
-                Meet the collection
-              </Link>
-            </div>
-            <p className="hero-footnote">
-              <span aria-hidden="true">♡</span> Four sizes. From $13. Printed
-              just for your order.
+            <p className="mt-6 max-w-md text-ink/75">
+              Big smiles come wrapped in little moments. Make a blanket starring
+              someone you love, or find a ready-to-love print from our cozy
+              collection.
             </p>
-            <div className="hero-scribble" aria-hidden="true">
-              a little comfort.
-              <br />
-              <span>a LOT of character.</span>
-            </div>
-          </div>
-          <div className="hero-art">
-            <span className="hero-star star-one" aria-hidden="true">
-              ✦
-            </span>
-            <span className="hero-star star-two" aria-hidden="true">
-              ✧
-            </span>
-            <div className="hero-photo-frame">
-              {image ? (
-                <Image
-                  src={image}
-                  alt={hero?.name || 'A colorful printed blanket'}
-                  fill
-                  priority
-                  sizes="(max-width:767px) 88vw, 48vw"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="hero-photo-empty">
-                  <span aria-hidden="true">♡</span>
-                  <p>Your next favorite is on its way.</p>
-                </div>
-              )}
-            </div>
-            <span className="cozy-sticker">
-              Official plans:
-              <br />
-              <strong>stay cozy.</strong>
-              <span aria-hidden="true"> ♡</span>
-            </span>
-            {sidekickImage && sidekick && (
-              <Link
-                className="sidekick-photo"
-                href={`/products/${sidekick.slug}`}
-                aria-label={`Explore ${sidekick.name}`}
-              >
-                <span className="relative block aspect-square overflow-hidden rounded-xl">
-                  <Image
-                    src={sidekickImage}
-                    alt={sidekick.name}
-                    fill
-                    sizes="(max-width:767px) 120px, 170px"
-                    className="object-cover"
-                  />
-                </span>
-                <span className="sidekick-caption">written in the stars ✦</span>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Link className="btn party-button" href="/customize">
+                Make it personal ↗
               </Link>
-            )}
-            <span className="hero-photo-caption">
-              the couch called. it wants this one.
-            </span>
+              <Link className="btn party-outline" href="/shop">
+                Shop all blankets
+              </Link>
+            </div>
+            <p className="mt-6 text-sm">
+              ♡ Four sizes · From $13 · Preview before you buy
+            </p>
           </div>
+          <div
+            className="custom-hero-art"
+            aria-label="Examples of original personalized blanket artwork"
+          >
+            {(['disco', 'cosmic'] as const).map((template, i) => (
+              <div
+                key={template}
+                role="img"
+                aria-label={`${template} illustrated blanket example`}
+                dangerouslySetInnerHTML={{
+                  __html: blanketSvg({
+                    ...defaultConfig,
+                    template,
+                    name: i ? 'MILO' : 'OLIVIA',
+                  }),
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+      <section
+        className="shell pb-12"
+        aria-labelledby="custom-collection-heading"
+      >
+        <div className="collection-section-heading">
+          <div>
+            <p className="collection-label">THE YOU COLLECTION</p>
+            <h2 id="custom-collection-heading">
+              Ordinary blanket? Not your style.
+            </h2>
+            <p className="mt-3 text-ink/75">
+              Three original worlds, one unforgettable face. Yours.
+            </p>
+          </div>
+          <Link className="collection-text-link" href="/customize">
+            Create your blanket ↗
+          </Link>
+        </div>
+        <div className="collection-grid">
+          {templates.map((t) => (
+            <Link className="custom-card" href="/customize" key={t.id}>
+              <div
+                className="custom-card-art"
+                role="img"
+                aria-label={`${t.name} template`}
+                dangerouslySetInnerHTML={{
+                  __html: blanketSvg({
+                    ...defaultConfig,
+                    template: t.id,
+                    name: 'YOUR NAME',
+                  }),
+                }}
+              />
+              <div className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-clay">
+                  Your photo + your name
+                </p>
+                <h3 className="mt-2 text-xl">{t.name}</h3>
+                <p className="mt-2 text-sm text-ink/70">{t.subtitle}</p>
+                <p className="mt-4 font-semibold">
+                  From $13 <span className="float-right">Customize ↗</span>
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
       <div className="collection-ribbon">

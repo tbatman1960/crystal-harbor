@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       data: { user },
     } = await db().auth.getUser();
     const id = crypto.randomUUID();
-    const { error } = await client.rpc('reserve_checkout', {
+    const { error } = await client.rpc('reserve_personalized_checkout', {
       p_id: id,
       p_user: user?.id || null,
       p_email: v.email,

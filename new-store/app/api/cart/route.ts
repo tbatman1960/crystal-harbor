@@ -10,14 +10,14 @@ export async function GET() {
     } = await client.auth.getUser();
     if (!user) return NextResponse.json({ items: [], authenticated: false });
     const { data, error } = await client
-      .from('carts')
-      .select('cart_items(product_id,quantity)')
+      .from('personalization_carts')
+      .select('items')
       .eq('user_id', user.id)
       .maybeSingle();
     check(error);
     return NextResponse.json({
       authenticated: true,
-      items: data?.cart_items || [],
+      items: cartSchema.parse(data?.items || []),
     });
   } catch (e) {
     return failure(e);
@@ -32,7 +32,15 @@ export async function PUT(req: Request) {
       data: { user },
     } = await client.auth.getUser();
     if (!user) throw new Error('Unauthorized');
-    check((await client.rpc('replace_cart', { p_items: items })).error);
+    check(
+      (
+        await client.from('personalization_carts').upsert({
+          user_id: user.id,
+          items,
+          updated_at: new Date().toISOString(),
+        })
+      ).error,
+    );
     return NextResponse.json({ ok: true });
   } catch (e) {
     return failure(e);

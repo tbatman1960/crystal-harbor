@@ -44,7 +44,7 @@ export async function GET(req: Request) {
         if (s.payment_status === 'paid') {
           check(
             (
-              await client.rpc('complete_checkout', {
+              await client.rpc('complete_personalized_checkout', {
                 p_id: d.id,
                 p_session: s.id,
                 p_total: s.amount_total,

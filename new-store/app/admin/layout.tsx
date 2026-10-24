@@ -20,6 +20,7 @@ export default async function AdminLayout({
             ['products', 'Products'],
             ['categories', 'Categories'],
             ['orders', 'Orders'],
+            ['personalizations', 'Artwork'],
             ['customers', 'Customers'],
             ['settings', 'Settings'],
           ].map(([path, name]) => (

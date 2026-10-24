@@ -17,6 +17,9 @@ export default async function AccountLayout({
         <Link className="link" href="/account/profile">
           Profile & address
         </Link>
+        <Link className="link" href="/designs">
+          My saved designs
+        </Link>
         {profile.is_admin && (
           <Link className="link" href="/admin">
             Manage store

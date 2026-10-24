@@ -25,15 +25,35 @@ export default async function Policies() {
         across screens; listing illustrations and sample designs are for preview
         purposes. Blankets are not intended as loose bedding for infants.
       </p>
+      <h2>Personalized blankets &amp; photos</h2>
+      <p>
+        Upload only photos you have permission to use. For a child’s photo, a
+        parent or guardian must authorize its use. Photos are used to prepare
+        your blanket artwork, not to train an AI model. This editor places your
+        portrait into an illustrated template; it is not an AI face-swap
+        service. Review placement, spelling, and size before approving. Contact
+        us promptly about corrections; changes may not be possible once printing
+        begins. Our damaged or incorrect item support still applies.
+      </p>
+      <p>
+        Uploaded portraits and approved artwork are stored in private storage.
+        They are accessible through your browser session, your account when
+        linked, or authorized store administrators. Unordered saved designs
+        expire after 30 days and are removed during housekeeping. Ordered
+        artwork is retained for fulfillment and customer support. You can delete
+        an unordered design from My saved designs, or contact us about deletion
+        of ordered artwork subject to fulfillment and record-retention needs.
+      </p>
       <h2>Privacy</h2>
       <p>
         We use your contact information and address to process orders, ship
         parcels, and provide support. Supabase stores account and order data;
-        Stripe processes payment details; Resend delivers transactional email;
-        USPS receives shipping destination information for delivery. We do not
-        store card numbers or sell your personal information. Contact us to
-        request access to or deletion of account data, subject to records we
-        must retain for accounting and legal requirements.
+        Stripe processes payment details; our configured email provider delivers
+        transactional email; USPS receives shipping destination information for
+        delivery. We do not store card numbers or sell your personal
+        information. Contact us to request access to or deletion of account
+        data, subject to records we must retain for accounting and legal
+        requirements.
       </p>
       <h2>Shipping destinations</h2>
       <p>

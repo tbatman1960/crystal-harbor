@@ -97,6 +97,11 @@ export function ProductDetail({
             {BLANKET_ORDER_LIMIT} blankets per order.
           </p>
         )}
+        {p.shipping_group === 'blankets' && (
+          <Link href="/customize" className="personalization-link">
+            ✦ Want a blanket starring you? Explore personalized designs →
+          </Link>
+        )}
         <div className="mt-8 flex items-end gap-4">
           <label className="w-24">
             Quantity
@@ -151,7 +156,8 @@ export function ProductDetail({
               ? 'Shipping rate awaiting setup'
               : `Shipping: ${money(p.shipping_first_unit_cents)} for the first unit + ${money(p.shipping_additional_unit_cents)} for each additional unit`}
             <br />
-            SKU: {p.sku} · Weight: {p.weight_lbs} lb
+            SKU: {p.sku}
+            {p.weight_lbs !== null ? ` · Weight: ${p.weight_lbs} lb` : ''}
           </p>
         </div>
       </section>

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
         !s.metadata?.draft_id
       )
         throw new Error('Invalid paid session');
-      const { error } = await service().rpc('complete_checkout', {
+      const { error } = await service().rpc('complete_personalized_checkout', {
         p_id: s.metadata.draft_id,
         p_session: s.id,
         p_total: s.amount_total,

@@ -7,9 +7,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ? await Promise.all([catalog(), categories()])
     : [[], []];
   return [
-    ...['', '/shop', '/about', '/contact', '/policies'].map((path) => ({
-      url: `${base}${path}`,
-    })),
+    ...['', '/shop', '/customize', '/about', '/contact', '/policies'].map(
+      (path) => ({
+        url: `${base}${path}`,
+      }),
+    ),
     ...p.map((p) => ({ url: `${base}/products/${p.slug}` })),
     ...c.map((c) => ({ url: `${base}/shop?category=${c.slug}` })),
   ];
