@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
+import { collectionTheme as theme } from '@/lib/collection-theme';
 import Link from 'next/link';
 import { settings } from '@/lib/data';
 import { Analytics } from '@/components/analytics';
@@ -22,7 +24,17 @@ export default async function RootLayout({
   const store = process.env.NEXT_PUBLIC_SUPABASE_URL ? await settings() : null;
   return (
     <html lang="en">
-      <body>
+      <body
+        style={
+          {
+            '--party-pink': theme.colors.pink,
+            '--party-pink-light': theme.colors.pinkLight,
+            '--party-lilac': theme.colors.lilac,
+            '--party-yellow': theme.colors.yellow,
+            '--party-green': theme.colors.green,
+          } as CSSProperties
+        }
+      >
         <CartProvider>
           <a
             href="#main"
@@ -31,12 +43,14 @@ export default async function RootLayout({
             Skip to content
           </a>
           <Analytics id={store?.ga4_id || null} />
-          <div className="bg-ink px-4 py-2 text-center text-xs tracking-widest text-white">
-            READY-TO-SHIP FINDS FOR YOUR COZIEST DAYS.
+          <div className="season-announcement">
+            <span aria-hidden="true">✦ </span>
+            {theme.announcement}
+            <span aria-hidden="true"> ✦</span>
           </div>
           <header className="border-b border-ink/10">
             <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
-              <Link className="font-serif text-2xl tracking-tight" href="/">
+              <Link className="snuggle-wordmark" href="/">
                 {store?.store_name || 'SnuggleBug'}
                 <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
                   a little comfort, a lot of character
@@ -51,10 +65,7 @@ export default async function RootLayout({
                   Our story
                 </Link>
                 <Link href="/account">Account</Link>
-                <Link
-                  href="/cart"
-                  className="rounded-full border border-ink/20 px-4 py-2"
-                >
+                <Link href="/cart" className="party-bag">
                   Bag (<CartCount />)
                 </Link>
               </nav>

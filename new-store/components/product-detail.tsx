@@ -32,7 +32,7 @@ export function ProductDetail({
   const [added, setAdded] = useState(false);
   const { add, ready } = useCart();
   return (
-    <div className="grid gap-10 md:grid-cols-2 md:gap-16">
+    <div className="collection-page grid gap-10 md:grid-cols-2 md:gap-16">
       <section aria-label="Product images">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-sage">
           <Image
@@ -125,7 +125,7 @@ export function ProductDetail({
             />
           </label>
           <button
-            className="btn flex-1"
+            className="btn party-button flex-1"
             disabled={!ready || !hasStock(p)}
             onClick={() => {
               add(p.id, quantity);

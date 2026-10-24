@@ -90,3 +90,582 @@
     box-shadow: none;
   }
 }
+
+/* Seasonal collection styling: colors are supplied by collection-theme.ts. */
+.season-announcement {
+  background: var(--party-lilac);
+  color: #253b32;
+  text-align: center;
+  padding: 0.7rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+.snuggle-wordmark {
+  font-family: ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
+  font-size: 1.9rem;
+  font-weight: 850;
+  letter-spacing: -0.065em;
+  color: var(--party-pink);
+  line-height: 1.1;
+}
+.snuggle-wordmark > span {
+  margin-top: 0.5rem;
+  color: #253b32;
+  letter-spacing: 0.17em;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.party-bag {
+  border: 1px solid #253b3230;
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  background: var(--party-yellow);
+  font-weight: 700;
+  transition: background 0.2s;
+}
+.party-bag:hover {
+  background: var(--party-lilac);
+}
+.sleepover-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  isolation: isolate;
+  border: 1px solid #253b321c;
+  border-radius: 2rem;
+  background: var(--party-pink-light);
+  position: relative;
+  overflow: hidden;
+}
+.hero-copy {
+  padding: clamp(1.6rem, 4.3vw, 4rem);
+  position: relative;
+  z-index: 2;
+  align-self: center;
+}
+.collection-label {
+  font-size: 0.71rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #804052;
+}
+.collection-label > span {
+  color: var(--party-pink);
+  margin-right: 0.3rem;
+  font-size: 1.05rem;
+}
+.sleepover-title {
+  font-family: ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
+  font-size: clamp(2.8rem, 4.8vw, 4.6rem);
+  font-weight: 850;
+  letter-spacing: -0.065em;
+  line-height: 1.05;
+  margin-top: 1.4rem;
+  max-width: 9em;
+}
+.sleepover-title > span {
+  color: var(--party-pink);
+}
+.hero-description {
+  max-width: 26rem;
+  margin-top: 1.5rem;
+  font-size: 1rem;
+  color: #253b32cf;
+}
+.collection-page .party-button,
+.collection-shop .btn {
+  background: var(--party-pink);
+  color: white;
+  gap: 1.8rem;
+  box-shadow: 0 4px 0 #8c1746;
+  font-weight: 750;
+}
+.collection-page .party-button:hover,
+.collection-shop .btn:hover {
+  background: #a91850;
+  transform: translateY(-1px);
+}
+.collection-page .party-outline {
+  color: #253b32;
+  background: transparent;
+  border: 1px solid #253b323b;
+  box-shadow: none;
+}
+.collection-page .party-outline:hover {
+  background: #ffffff9c;
+}
+.hero-footnote {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #253b32c9;
+}
+.hero-footnote > span {
+  font-size: 1.1rem;
+  color: var(--party-pink);
+  margin-right: 0.3rem;
+}
+.hero-scribble {
+  margin-top: 1.8rem;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 1.1rem;
+  transform: rotate(-4deg);
+  display: inline-block;
+  line-height: 1.25;
+  color: #625074;
+}
+.hero-scribble > span {
+  font-weight: 700;
+}
+.hero-art {
+  position: relative;
+  min-height: 610px;
+  background: var(--party-lilac);
+  background-image: radial-gradient(#ffffff70 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 2rem 4.5rem;
+}
+.hero-photo-frame {
+  position: relative;
+  width: 94%;
+  aspect-ratio: 1;
+  border: 10px solid #fffdf9;
+  border-bottom-width: 32px;
+  border-radius: 1.3rem;
+  overflow: hidden;
+  transform: rotate(4deg);
+  box-shadow: 0 16px 36px #40304d29;
+}
+.hero-photo-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--party-green);
+  text-align: center;
+  padding: 2rem;
+}
+.hero-photo-empty > span {
+  font-size: 5rem;
+}
+.hero-star {
+  position: absolute;
+  z-index: 2;
+  color: var(--party-pink);
+  line-height: 1;
+  pointer-events: none;
+}
+.star-one {
+  font-size: 5rem;
+  top: 1rem;
+  right: 1.3rem;
+  transform: rotate(8deg);
+}
+.star-two {
+  font-size: 4rem;
+  bottom: 2rem;
+  left: 1.4rem;
+  color: #253b32;
+}
+.cozy-sticker {
+  position: absolute;
+  top: 1.7rem;
+  left: 0.8rem;
+  z-index: 3;
+  background: var(--party-yellow);
+  padding: 1rem 1.2rem;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  transform: rotate(-12deg);
+  box-shadow: 0 3px 0 #253b3220;
+  border: 1px solid #253b3229;
+}
+.cozy-sticker strong {
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  font-style: italic;
+}
+.sidekick-photo {
+  position: absolute;
+  bottom: 1.9rem;
+  right: 1.5rem;
+  z-index: 3;
+  display: block;
+  width: 29%;
+  max-width: 180px;
+  padding: 0.5rem 0.5rem 0.65rem;
+  border-radius: 0.8rem;
+  background: #fffdf9;
+  transform: rotate(-8deg);
+  box-shadow: 0 5px 20px #253b322b;
+  transition: transform 0.2s;
+}
+.sidekick-photo:hover {
+  transform: rotate(-3deg) translateY(-3px);
+}
+.sidekick-caption {
+  display: block;
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 750;
+  margin-top: 0.4rem;
+}
+.hero-photo-caption {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 2.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  transform: rotate(-3deg);
+}
+.collection-ribbon {
+  background: var(--party-green);
+  border-block: 1px solid #253b321a;
+}
+.collection-ribbon p {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-size: 1.35rem;
+}
+.collection-ribbon span[aria-hidden] {
+  color: var(--party-pink);
+  font-size: 1.7rem;
+}
+.collection-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+.collection-section-heading h2,
+.size-party h2 {
+  margin-top: 0.75rem;
+  font-size: clamp(2rem, 3.7vw, 2.8rem);
+  letter-spacing: -0.04em;
+  line-height: 1.13;
+}
+.collection-text-link {
+  font-size: 0.8rem;
+  font-weight: 750;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 0.3rem;
+  white-space: nowrap;
+}
+.collection-text-link:hover {
+  color: var(--party-pink);
+}
+.mood-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 1.8rem 0 2rem;
+}
+.mood-tags a {
+  border: 1px solid #253b3220;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.75rem;
+  background: white;
+  transition: background 0.2s;
+}
+.mood-tags a:nth-child(2) {
+  background: var(--party-pink-light);
+}
+.mood-tags a:nth-child(3) {
+  background: var(--party-lilac);
+}
+.mood-tags a:nth-child(4) {
+  background: var(--party-yellow);
+}
+.mood-tags a:hover {
+  background: var(--party-green);
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.8rem;
+}
+.party-product {
+  --card-accent: var(--party-lilac);
+  border: 1px solid #253b3220;
+  border-radius: 1.3rem;
+  background: var(--card-accent);
+  overflow: hidden;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  min-width: 0;
+}
+.party-product-1 {
+  --card-accent: var(--party-pink-light);
+}
+.party-product-2 {
+  --card-accent: var(--party-yellow);
+}
+.party-product-3 {
+  --card-accent: var(--party-green);
+}
+.party-product:hover,
+.party-product:focus-within {
+  transform: translateY(-5px);
+  box-shadow: 0 9px 0 #253b3210;
+}
+.party-product-image {
+  margin: 0.6rem 0.6rem 0;
+  border-radius: 0.9rem;
+  background: var(--card-accent);
+}
+.party-product-info {
+  padding: 1.1rem;
+}
+.party-product-name {
+  font-family: Georgia, serif;
+  font-size: 1.2rem;
+  line-height: 1.3;
+  flex: 1 1 65%;
+  letter-spacing: -0.02em;
+}
+.party-product-price {
+  font-size: 0.75rem;
+  font-weight: 750;
+  white-space: nowrap;
+  padding: 0.2rem 0;
+}
+.product-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #253b3230;
+  border-radius: 50%;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: 1rem;
+  flex: none;
+}
+.size-party {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 3rem;
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: var(--party-lilac);
+  border-radius: 1.8rem;
+  border: 1px solid #253b3215;
+}
+.size-party-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.size-party-grid li {
+  position: relative;
+  background: #fffdf9;
+  border: 1px solid #253b3220;
+  border-radius: 1rem;
+  padding: 1.2rem;
+  box-shadow: 0 3px 0 #253b3210;
+}
+.size-party-grid li:nth-child(2) {
+  background: var(--party-yellow);
+}
+.size-party-grid li:nth-child(3) {
+  background: var(--party-pink-light);
+}
+.size-party-grid li:nth-child(4) {
+  background: var(--party-green);
+}
+.size-label {
+  font-size: 0.65rem;
+  font-weight: 750;
+}
+.size-party-grid p {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+  line-height: 1.4;
+  letter-spacing: -0.04em;
+  margin-top: 0.25rem;
+}
+.size-price {
+  display: block;
+  font-weight: 750;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+.cozy-promises {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2.5rem;
+  padding: 2.5rem 0;
+  border-top: 1px solid #253b3220;
+}
+.promise-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  background: var(--party-pink-light);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: var(--party-pink);
+  margin-bottom: 1rem;
+}
+.cozy-promises > div:nth-child(2) .promise-icon {
+  background: var(--party-yellow);
+}
+.cozy-promises > div:nth-child(3) .promise-icon {
+  background: var(--party-lilac);
+}
+.cozy-promises h3 {
+  font-size: 1.25rem;
+}
+.cozy-promises p {
+  font-size: 0.85rem;
+  margin-top: 0.65rem;
+  color: #253b32bd;
+}
+.shop-party-title {
+  font-family: ui-rounded, system-ui, sans-serif;
+  font-weight: 850;
+  letter-spacing: -0.065em;
+  font-size: clamp(2.5rem, 5vw, 4rem);
+}
+.shop-party-title span {
+  color: var(--party-pink);
+}
+@media (max-width: 767px) {
+  .sleepover-hero {
+    grid-template-columns: 1fr;
+    border-radius: 1.4rem;
+  }
+  .hero-copy {
+    padding: 2rem 1.5rem;
+  }
+  .sleepover-title {
+    font-size: clamp(2.8rem, 10vw, 4rem);
+    max-width: 11em;
+  }
+  .hero-scribble {
+    display: none;
+  }
+  .hero-art {
+    min-height: 0;
+    padding: 2.5rem 1.8rem 4rem;
+  }
+  .hero-photo-frame {
+    width: 92%;
+    max-width: 460px;
+  }
+  .hero-star.star-one {
+    font-size: 3.5rem;
+  }
+  .hero-star.star-two {
+    font-size: 3rem;
+    bottom: 1.3rem;
+  }
+  .cozy-sticker {
+    top: 0.7rem;
+    left: 0.7rem;
+    padding: 0.7rem 1rem;
+    font-size: 0.65rem;
+  }
+  .cozy-sticker strong {
+    font-size: 1.15rem;
+  }
+  .hero-photo-caption {
+    left: 1.5rem;
+    font-size: 0.6rem;
+  }
+  .sidekick-photo {
+    bottom: 1.3rem;
+    right: 1rem;
+    max-width: 140px;
+  }
+  .collection-section-heading {
+    display: block;
+  }
+  .collection-section-heading > .collection-text-link {
+    display: inline-flex;
+    margin-top: 1.1rem;
+  }
+  .collection-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .party-product-info {
+    padding: 0.8rem;
+  }
+  .party-product-name {
+    font-size: 1rem;
+    flex-basis: 100%;
+  }
+  .party-product-price {
+    font-size: 0.7rem;
+  }
+  .size-party {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .cozy-promises {
+    grid-template-columns: 1fr;
+    gap: 1.8rem;
+  }
+  .cozy-promises > div {
+    display: grid;
+    grid-template-columns: 2.7rem 1fr;
+    column-gap: 1rem;
+  }
+  .cozy-promises p {
+    grid-column: 2;
+    margin-top: 0.3rem;
+  }
+  .cozy-promises .promise-icon {
+    grid-row: 1/3;
+    margin-bottom: 0;
+  }
+  .mood-tags {
+    gap: 0.5rem;
+  }
+  .mood-tags a {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+  }
+  .season-announcement {
+    font-size: 0.65rem;
+    letter-spacing: 0.035em;
+  }
+  .snuggle-wordmark {
+    font-size: 1.7rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .party-product,
+  .party-button,
+  .sidekick-photo,
+  .party-product-image img {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+@media print {
+  .season-announcement,
+  .hero-star,
+  .cozy-sticker,
+  .sidekick-photo {
+    display: none !important;
+  }
+  .party-product {
+    box-shadow: none;
+  }
+}
