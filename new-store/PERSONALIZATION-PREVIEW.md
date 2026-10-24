@@ -38,3 +38,9 @@ Apply the committed `personalized_blanket_preview` migration once. It adds priva
 6. In another private browser session, the artwork endpoint must deny access.
 7. Log in as admin and open `/admin/personalizations`; view saved artwork and its eventual paid-order link.
 8. Configure test Stripe credentials and webhook to test payment completion, order history, notifications, and downloads after payment.
+
+## Verified preview checks
+
+On the deployed PR #4 preview, a headless Chromium desktop/mobile check uploaded a synthetic test portrait, approved two designs for the same size, preserved both cart lines, quoted $8 shipping, rejected Indiana delivery, downloaded matching 30 × 40 inch artwork, denied artwork access from a separate browser session, and removed both test uploads. No client JavaScript errors or mobile horizontal overflow were observed. No real customer photo or payment was used. Next.js production build, TypeScript, and 47 automated tests passed.
+
+Supabase verification confirmed both new tables have RLS, the storage bucket is private, and anonymous/authenticated roles cannot call the service-only payment RPCs. The existing Supabase Auth warning about disabled leaked-password protection remains; see [Supabase password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Server-only tables intentionally have no public RLS policy.

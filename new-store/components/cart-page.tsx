@@ -152,8 +152,16 @@ export function CartPage({
                   <div className="flex-1">
                     <h2 className="text-xl">
                       {p ? (
-                        <Link href={`/products/${p.slug}`}>
-                          {productTitle(p)}
+                        <Link
+                          href={
+                            i.customization_id
+                              ? '/customize'
+                              : `/products/${p.slug}`
+                          }
+                        >
+                          {i.customization_id
+                            ? `${i.customization_label || 'Personalized blanket'} — ${p.size_label || 'Selected size'}`
+                            : productTitle(p)}
                         </Link>
                       ) : (
                         'Product unavailable'
