@@ -7,7 +7,9 @@ export default async function Artwork() {
   const client = service();
   const { data, error } = await client
     .from('personalizations')
-    .select('id,product_id,config,approved_at,created_at,deleting')
+    .select(
+      'id,product_id,config,approved_at,created_at,deleting,artwork_kind,generation_id',
+    )
     .order('created_at', { ascending: false })
     .limit(100);
   check(error);
@@ -19,6 +21,16 @@ export default async function Artwork() {
         .in('personalization_id', ids)
     : { data: [], error: null };
   check(e);
+  const generationIds = (data || [])
+    .map((row) => row.generation_id)
+    .filter(Boolean);
+  const { data: generated, error: generatedError } = generationIds.length
+    ? await client
+        .from('illustration_jobs')
+        .select('id,width,height')
+        .in('id', generationIds)
+    : { data: [], error: null };
+  check(generatedError);
   return (
     <section>
       <h1>Personalized artwork</h1>
@@ -31,8 +43,9 @@ export default async function Artwork() {
         <ArtworkCleanup />
       </div>
       <p className="text-xs mt-3 text-ink/60">
-        Housekeeping removes up to 100 unordered designs older than 30 days per
-        run. Paid artwork and active checkout artwork are retained.
+        Housekeeping removes up to 100 unordered designs older than 30 days and
+        unapproved illustration jobs older than seven days per run. Paid artwork
+        and active checkout artwork are retained.
       </p>
       <div className="grid gap-4 mt-8 md:grid-cols-2">
         {data?.length ? (
@@ -42,6 +55,19 @@ export default async function Artwork() {
                 {templates.find((t) => t.id === row.config.template)?.name ||
                   'Personalized blanket'}
               </h2>
+              {row.artwork_kind === 'ai' && (
+                <p className="notice mt-3 text-sm">
+                  AI-redrawn artwork · native image{' '}
+                  {generated?.find((g) => g.id === row.generation_id)?.width ||
+                    'unknown'}{' '}
+                  ×{' '}
+                  {generated?.find((g) => g.id === row.generation_id)?.height ||
+                    'unknown'}{' '}
+                  pixels. Review likeness and print resolution; large blankets
+                  may require upscaling before production. The SVG wrapper does
+                  not add image detail.
+                </p>
+              )}
               <p className="mt-2">
                 Name: {row.config.name || 'No name entered'}
               </p>

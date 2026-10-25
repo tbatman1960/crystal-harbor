@@ -560,5 +560,104 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       });
     },
   );
+  await t.test(
+    'illustration budgets, service-only access, approval and cleanup are atomic',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777';
+      const ids = [
+        '01010101-0101-4101-8101-010101010101',
+        '02020202-0202-4202-8202-020202020202',
+        '03030303-0303-4303-8303-030303030303',
+        '04040404-0404-4404-8404-040404040404',
+      ];
+      const reserve = (id: string) =>
+        pg.query('select reserve_illustration($1,$2,$3,$4,$5,$6,$7,3,25)', [
+          id,
+          owner,
+          'a'.repeat(64),
+          'b'.repeat(64),
+          pid,
+          JSON.stringify({ name: 'Illustrated Jane', template: 'disco' }),
+          `illustrations/${id}/portrait.jpg`,
+        ]);
+      await role(other, async () => {
+        await assert.rejects(
+          pg.query('select * from illustration_jobs'),
+          /permission denied/,
+        );
+        await assert.rejects(
+          pg.query('select approve_illustration($1)', [ids[0]]),
+          /permission denied/,
+        );
+      });
+      await reserve(ids[0]);
+      await reserve(ids[1]);
+      await reserve(ids[2]);
+      await assert.rejects(reserve(ids[3]), /Illustration limit/);
+      await assert.rejects(
+        pg.query('select approve_illustration($1)', [ids[0]]),
+        /unavailable/,
+      );
+      const claim = await pg.query(
+        "update illustration_jobs set status='processing' where id=$1 and status='queued' returning id",
+        [ids[0]],
+      );
+      assert.equal(claim.rows.length, 1);
+      assert.equal(
+        (
+          await pg.query(
+            "update illustration_jobs set status='processing' where id=$1 and status='queued' returning id",
+            [ids[0]],
+          )
+        ).rows.length,
+        0,
+      );
+      await pg.query(
+        "update illustration_jobs set status='ready',artwork_path='drawn.svg',width=1024,height=1536 where id=$1",
+        [ids[0]],
+      );
+      await pg.query('select approve_illustration($1)', [ids[0]]);
+      await pg.query('select approve_illustration($1)', [ids[0]]);
+      const proof = await pg.query<{
+        artwork_kind: string;
+        generation_id: string;
+        config: { name: string };
+      }>(
+        'select artwork_kind,generation_id,config from personalizations where id=$1',
+        [ids[0]],
+      );
+      assert.equal(proof.rows.length, 1);
+      assert.equal(proof.rows[0].artwork_kind, 'ai');
+      assert.equal(proof.rows[0].config.name, 'Illustrated Jane');
+      await pg.query(
+        "update illustration_jobs set created_at=now()-interval '8 days' where id=$1",
+        [ids[0]],
+      );
+      assert.equal(
+        (
+          await pg.query<{ prepare_illustration_delete: boolean }>(
+            'select prepare_illustration_delete($1)',
+            [ids[0]],
+          )
+        ).rows[0].prepare_illustration_delete,
+        false,
+      );
+      await pg.query('select prepare_personalization_delete($1)', [ids[0]]);
+      await assert.rejects(
+        pg.query('select approve_illustration($1)', [ids[0]]),
+        /unavailable/,
+      );
+      await pg.query('delete from personalizations where id=$1', [ids[0]]);
+      assert.equal(
+        (
+          await pg.query<{ prepare_illustration_delete: boolean }>(
+            'select prepare_illustration_delete($1)',
+            [ids[0]],
+          )
+        ).rows[0].prepare_illustration_delete,
+        true,
+      );
+    },
+  );
   await pg.close();
 });

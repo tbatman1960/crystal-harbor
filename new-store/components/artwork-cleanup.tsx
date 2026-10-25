@@ -21,7 +21,7 @@ export function ArtworkCleanup() {
             const d = await r.json();
             if (!r.ok) throw new Error(d.error || 'Cleanup failed');
             setMessage(
-              `Removed ${d.removed} expired, unordered designs. Refresh to update this list.`,
+              `Removed ${d.removed} expired, unordered designs and ${d.removedJobs || 0} expired illustration jobs. Refresh to update this list.`,
             );
           } catch (e) {
             setMessage((e as Error).message);

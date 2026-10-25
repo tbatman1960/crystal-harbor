@@ -39,7 +39,34 @@ export async function POST(req: Request) {
       );
       removed++;
     }
-    return NextResponse.json({ removed });
+    const { data: jobs, error: jobError } = await client
+      .from('illustration_jobs')
+      .select('id,source_path,artwork_path')
+      .lt('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
+      .limit(100);
+    check(jobError);
+    let removedJobs = 0;
+    for (const job of jobs || []) {
+      const { data: allowed, error: e } = await client.rpc(
+        'prepare_illustration_delete',
+        { p_id: job.id },
+      );
+      check(e);
+      if (!allowed) continue;
+      check(
+        (
+          await client.storage
+            .from(PHOTO_BUCKET)
+            .remove([job.source_path, job.artwork_path].filter(Boolean))
+        ).error,
+      );
+      check(
+        (await client.from('illustration_jobs').delete().eq('id', job.id))
+          .error,
+      );
+      removedJobs++;
+    }
+    return NextResponse.json({ removed, removedJobs });
   } catch (e) {
     return failure(e);
   }

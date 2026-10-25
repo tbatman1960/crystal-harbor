@@ -174,4 +174,4 @@ The order email outbox and manual retry remain in use with either provider. SMTP
 
 ## Personalized blanket preview
 
-See [PERSONALIZATION-PREVIEW.md](PERSONALIZATION-PREVIEW.md) for the separate review branch, private-photo handling, artwork workflow, test-payment requirements, and print-production limitations.
+See [PERSONALIZATION-PREVIEW.md](PERSONALIZATION-PREVIEW.md) for AI illustration activation, the separate review branch, private-photo handling, background processing, test-payment requirements, and print-production limitations.

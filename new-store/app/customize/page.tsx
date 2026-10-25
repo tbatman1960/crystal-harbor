@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Make a blanket starring you',
   description:
-    'Upload a favorite face, add a name, and approve your own personalized blanket.',
+    'Turn a favorite face into a coordinated illustration, add a name, and approve your personalized blanket.',
 };
 export default async function Customize() {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
@@ -44,7 +44,7 @@ export default async function Customize() {
             [
               '02',
               'Put them in the picture',
-              'Upload a clear photo, position the face, and add their name.',
+              'Upload a clear photo, let us redraw their character, and add their name.',
             ],
             [
               '03',

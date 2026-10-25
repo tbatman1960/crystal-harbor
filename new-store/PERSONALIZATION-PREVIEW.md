@@ -1,46 +1,54 @@
-# Personalized blanket preview
+# AI-illustrated blanket preview
 
-Branch: `preview/personalized-blankets`. This builds on the playful theme preview and must not be merged to production without review. Existing live carts, catalog inventory flags, prices, shipping rules, and Stripe settings are unchanged. The preview uses its own local-storage cart and `personalization_carts` table, sharing the existing Supabase project and account system.
+Preview: https://deploy-preview-4--crystal-harbor.netlify.app/customize
+Branch: `preview/personalized-blankets`, draft PR #4. Do not merge to production until the generated likeness and print-production quality are reviewed.
 
-## What works
+## Workflow
 
-- Original disco, cosmic, and sunshine illustration templates. No copied artwork from the reference retailer.
-- Four existing blanket sizes and prices ($13 / $19 / $25 / $32), selected from the existing active blanket SKUs. Personalization replaces the printed design for that line; the size SKU remains the inventory/price source. Personalization snapshot and artwork determine fulfillment.
-- JPEG / PNG / WebP uploads, local orientation handling and JPEG conversion (which removes original EXIF metadata), face-position/zoom controls, name and body-skin-tone choices, live preview, explicit photo permission and proof approval.
-- Deterministic portrait placement into an oval in original vector artwork. **This is not AI-generated identity transfer or automatic face detection.** No external AI service, API key, or per-generation fee is involved.
-- Private immutable approved portrait and print SVG, stored in the `personalization-private` bucket. No public bucket policy, public signed photo URL, or user photo sent to Stripe. Access checks the creator's HTTP-only cookie, linked account, paid-order ownership, or verified administrator role.
-- Guest cart persistence, separate account cart, multiple independently personalized copies of the same size, authoritative server pricing and shipping, order snapshots, admin artwork queue/downloads, customer artwork downloads, deletion of unordered uploads, and guarded expiry housekeeping.
-- Existing catalog, accounts, admin tools, billing/shipping address forms, Stripe webhook/payment flow, shipping notifications and order emails remain in the application.
+1. Choose an original disco, space, or garden illustration style, a blanket size, and an optional name.
+2. Upload a portrait and confirm photo permission, including parent/guardian permission for a child's photo, and consent to sending the photo to OpenAI.
+3. Request an illustration. A Netlify background function sends the portrait and original illustrated composition together to OpenAI's image-edit endpoint, asking for one fully redrawn character and scene with matching linework, shading, lighting and colors. The face is not pasted onto a drawing. Customer names are rendered deterministically after generation so their spelling does not depend on the model.
+4. Poll progress; refresh or return in the same browser to resume the most recent job. There is no fabricated result when the provider is unavailable.
+5. Review the actual generated artwork, regenerate if desired within limits, then approve it. Only that immutable generated file can be added as an AI-personalized cart line. Changing the style, size, name or portrait requires a new generation. After refresh, upload the photo again if you want to regenerate; original photo bytes are not stored in browser local storage.
+6. Server pricing and shipping remain authoritative. The approved SVG follows the order into customer history and admin fulfillment downloads.
 
-## Limits and review requirements
+Existing catalog, accounts, carts, checkout, order emails and admin features remain. Existing $13 / $19 / $25 / $32 size pricing, $7 plus $1 combined shipping, five-blanket limit, untracked inventory, and Indiana shipping restriction are retained. This branch uses separate preview carts so the live store's saved carts remain unchanged. Original non-AI personalized artwork already approved in this preview remains downloadable.
 
-- Preview payments require Stripe **test** credentials and a matching test webhook destination at the preview URL `/api/webhooks/stripe`. Inherited `sk_live_` credentials are deliberately rejected. Do not create real payments to test this branch.
-- No preview Stripe credentials are added by this change. Without test keys, browsing, personalization, saving, cart and shipping can be reviewed; hosted payment cannot complete.
-- SVG artwork embeds a sanitized JPEG portrait and declares the selected physical dimensions. Open in the printer/RIP software and check fonts, cropping, bleed, colors, and effective photo resolution before printing. A preview approval is not a guarantee that a low-resolution face is suitable for a large print. Original illustrations are vector, portrait pixels are not.
-- Photo thumbnails are not public. Artwork is delivered as an attachment with a restrictive CSP. Never embed private source paths in public catalog images or emails.
-- Source photos are at most 2400 pixels on their long side; using a close-up face is important. No fabric/material/production-time claims have been invented.
-- Unordered designs become unavailable after 30 days. The admin Artwork page has a manual housekeeping action (up to 100 records per run), retaining paid and active-checkout designs. **Automatic scheduled cleanup is not configured.** Ordered artwork is retained for fulfillment/support; the operator handles post-order deletion requests.
-- Clearing a guest browser's cookies loses access to that guest's saved artwork. A signed-in customer can access designs created while signed in. No public recovery link is created for guest artwork.
-- Saving is bounded to 20 designs/hour per server-derived hashed request identity. Deploy-level abuse protection and capacity should be reviewed before a public personalization launch.
-- Google address assistance remains optional, as in the current storefront.
+## Required activation
 
-## Database
+OpenAI API billing is separate from a ChatGPT subscription. Create a project API key with access to the configured image model and set an appropriate provider-side budget/usage limit. Some accounts/models require organization verification or additional access.
 
-Apply the committed `personalized_blanket_preview` migration once. It adds private `personalizations`, owner-protected `personalization_carts`, nullable order-item snapshot fields, a private bucket, and three service-only RPCs. It does not replace the live store's checkout or cart RPCs. Reservation/deletion locks prevent deleting artwork attached to an active checkout, and paid-order snapshots are idempotent on webhook replay.
+In Netlify **Deploy Previews**, set these server-only environment variables (Functions scope; using all scopes is also supported), then redeploy:
 
-## Review
+- `OPENAI_API_KEY`: secret API key. Mark it as containing secret values. Never use a `NEXT_PUBLIC_` prefix.
+- `AI_ILLUSTRATION_ENABLED=true`: explicit activation flag. With either this flag or the API key missing, the preview displays a setup message and generation stays disabled.
+- Optional `OPENAI_IMAGE_MODEL`: defaults to `gpt-image-2.5-sunburst`, verified against the current OpenAI image guide. Change only to an image-edit model supporting the configured parameters (`image[]`, portrait size, high quality, PNG output).
+- Optional `AI_ILLUSTRATION_DAILY_LIMIT`: global attempts per UTC day, default 10, hard maximum 100. Per-request identity limit is three attempts/hour. Failed attempts count toward limits. No automatic provider retries are made.
 
-1. Open `/customize` on a phone and desktop. Upload a photo you have permission to use.
-2. Try each template and size. Position the face, add a name, and approve.
-3. Save to cart. Repeat with a different face using the same size; both lines should remain separate.
-4. Quote shipping for an address outside Indiana. Two blankets cost $8 shipping; six blankets and Indiana destinations are rejected.
-5. Download the approved SVG and check its physical size and portrait placement.
-6. In another private browser session, the artwork endpoint must deny access.
-7. Log in as admin and open `/admin/personalizations`; view saved artwork and its eventual paid-order link.
-8. Configure test Stripe credentials and webhook to test payment completion, order history, notifications, and downloads after payment.
+The existing Supabase URL and service secret are also required in Functions scope for the background worker. The function validates a short-lived HMAC made with the server secret before doing any work. The API key is never returned to the browser. Configure spending alerts/limits in OpenAI as well; local attempt limits are not a dollar-budget guarantee.
 
-## Verified preview checks
+Netlify deploys `generate-illustration-background` with background mode enabled, up to 15 minutes. Generation uses a four-minute provider timeout. Exactly-once database claiming prevents platform retries from repeating a billable image request. The customer API returns a job ID quickly; it does not hold a synchronous function open while drawing.
 
-On the deployed PR #4 preview, a headless Chromium desktop/mobile check uploaded a synthetic test portrait, approved two designs for the same size, preserved both cart lines, quoted $8 shipping, rejected Indiana delivery, downloaded matching 30 × 40 inch artwork, denied artwork access from a separate browser session, and removed both test uploads. No client JavaScript errors or mobile horizontal overflow were observed. No real customer photo or payment was used. Next.js production build, TypeScript, and 47 automated tests passed.
+Preview payment completion separately requires `sk_test_` Stripe credentials and a matching test webhook destination at the preview URL `/api/webhooks/stripe`. Live keys are rejected on previews. No real payment is needed to test illustration generation.
 
-Supabase verification confirmed both new tables have RLS, the storage bucket is private, and anonymous/authenticated roles cannot call the service-only payment RPCs. The existing Supabase Auth warning about disabled leaked-password protection remains; see [Supabase password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Server-only tables intentionally have no public RLS policy.
+## Private data and housekeeping
+
+- Photos are locally re-encoded to JPEG (removing original metadata), then decoded and normalized again server-side. The source and complete generated artwork stay in `personalization-private`, with no public object policy.
+- Only the creating browser cookie/account can generate, inspect, or approve a job. Approved proofs also follow the existing account/order/admin artwork access rules. Customer photos/artwork are not sent to Stripe.
+- `illustration_jobs` has RLS and no public grants. Reservation, approval and cleanup RPCs are service-only. Atomic quotas count failed/queued/finished attempts; simultaneous requests cannot exceed the configured database ceilings.
+- AI requests are sent to OpenAI only after the user clicks Generate with photo consent. Its processing is subject to OpenAI's applicable API terms/data controls, which the operator should review before launch.
+- Unapproved jobs expire after seven days, approved unordered proofs after 30 days. Admin Artwork housekeeping removes expired files in batches; it preserves paid designs and active checkout artwork. Automatic scheduled cleanup is not configured. Job files shared with an approved proof cannot be purged while that proof exists.
+- Job/approval/deletion locks prevent resurrecting deleted designs or deleting artwork needed for an active checkout.
+- Clearing guest cookies loses guest access. Customer emails/order details carry the design name and chosen size; private image URLs are not embedded in email.
+
+## Print-production review is required
+
+The model is requested at 1024 × 1536 pixels and high quality. The downloaded SVG embeds the generated raster artwork and declares the chosen physical size. **A vector wrapper does not create extra image detail.** Native output alone may be insufficient for large blanket printing. The admin Artwork page shows native dimensions and a production-review warning. Review likeness, facial details, crop, fabric bleed, color, and printer requirements. Use a suitable professional upscaling/production workflow before selling large-format prints. This implementation does not claim to perform print upscaling.
+
+AI likeness/style consistency must be evaluated using an authorized real portrait after credentials are configured. Unit tests use synthetic fixtures and mock provider responses; they are not evidence of real likeness quality.
+
+## Validation
+
+Automated tests cover two-image provider requests, redraw prompts, sanitized provider errors, no automatic paid retries, HMAC authentication, atomic quota enforcement, job claiming, idempotent approval, private data access, and cleanup/approval locking, plus existing pricing, order, inventory, RLS, and shipping rules. The Next.js build and a standalone esbuild check cover the server app and background worker. Native `sharp` is a pinned runtime dependency and externalized for the Netlify background bundle.
+
+The previous photo-placement preview was tested in desktop/mobile browsers, including private access denial, separate customized copies, $8 shipping for two blankets, and Indiana rejection. The AI workflow requires a fresh browser smoke check after deployment. An actual OpenAI generation, likeness review, and full test payment/email completion remain pending provider credentials.

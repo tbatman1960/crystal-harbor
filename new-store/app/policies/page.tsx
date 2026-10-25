@@ -28,21 +28,35 @@ export default async function Policies() {
       <h2>Personalized blankets &amp; photos</h2>
       <p>
         Upload only photos you have permission to use. For a child’s photo, a
-        parent or guardian must authorize its use. Photos are used to prepare
-        your blanket artwork, not to train an AI model. This editor places your
-        portrait into an illustrated template; it is not an AI face-swap
-        service. Review placement, spelling, and size before approving. Contact
-        us promptly about corrections; changes may not be possible once printing
-        begins. Our damaged or incorrect item support still applies.
+        parent or guardian must authorize its use. When you request an
+        illustration, your photo and the selected style reference are sent to
+        OpenAI for image editing. AI redraws the person and the surrounding
+        artwork together; results can vary in likeness and detail. We use your
+        photo to create your artwork and fulfill your order. See{' '}
+        <a
+          className="link"
+          href="https://openai.com/policies/privacy-policy/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          OpenAI’s privacy policy
+        </a>{' '}
+        for information about its processing.
       </p>
       <p>
-        Uploaded portraits and approved artwork are stored in private storage.
-        They are accessible through your browser session, your account when
-        linked, or authorized store administrators. Unordered saved designs
-        expire after 30 days and are removed during housekeeping. Ordered
-        artwork is retained for fulfillment and customer support. You can delete
-        an unordered design from My saved designs, or contact us about deletion
-        of ordered artwork subject to fulfillment and record-retention needs.
+        Check the finished drawing, likeness, name, and size before approving.
+        Only the approved artwork is attached to your order. Contact us promptly
+        about corrections; changes may not be possible once printing begins. Our
+        damaged or incorrect item support still applies.
+      </p>
+      <p>
+        Photos and artwork are kept in private storage. Unapproved generation
+        jobs expire after seven days. Approved unordered designs expire after 30
+        days. Expired files are removed during store housekeeping; automatic
+        scheduled cleanup is not configured. Ordered artwork is retained for
+        fulfillment and customer support. You can delete an unordered approved
+        design from My saved designs, or contact us about deleting other photos
+        and ordered artwork, subject to fulfillment and record-retention needs.
       </p>
       <h2>Privacy</h2>
       <p>
