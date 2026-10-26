@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   blanketSizes,
   printGeometry,
@@ -31,6 +31,10 @@ export function ProductionExport({
   id: string;
   initialSize?: string;
 }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    setOpen(!!detailsRef.current?.open);
+  }, []);
   const [open, setOpen] = useState(false),
     [spec, setSpec] = useState<PrintSpec>({
       size:
@@ -58,6 +62,7 @@ export function ProductionExport({
     if (!r.ok) throw new Error(d.error || 'Could not load print files.');
     setJobs(d.items);
     setLoaded(true);
+    return d.items as Job[];
   }
   const processing = jobs.some((j) =>
     ['queued', 'processing'].includes(j.status),
@@ -68,8 +73,12 @@ export function ProductionExport({
       t: ReturnType<typeof setTimeout>;
     async function load() {
       try {
-        await refresh();
-        if (alive) t = setTimeout(load, 4000);
+        const items = await refresh();
+        if (
+          alive &&
+          items.some((j) => ['queued', 'processing'].includes(j.status))
+        )
+          t = setTimeout(load, 4000);
       } catch (e) {
         if (alive) setError((e as Error).message);
       }
@@ -164,6 +173,7 @@ export function ProductionExport({
   }
   return (
     <details
+      ref={detailsRef}
       className="production-export mt-5"
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >

@@ -49,3 +49,7 @@ Files are limited to 48 MB, within a private 50 MB Supabase bucket. If a detaile
 ## Validation
 
 Automated checks cover geometry for every advertised size, memory bounds, bleed, source fitting, real vector paths without embedded images, raster pixels/density, worker authentication, idempotent jobs, service-only access and source-deletion protection. A full 60 × 80 inch PNG was generated locally at 9,000 × 12,000 pixels and 150 PPI; the synthetic fixture used approximately 131 MB RSS and completed in about five seconds. Complex customer artwork may take longer and produce larger files.
+
+## Deployed verification
+
+The preview admin workflow was verified with an isolated temporary test login, which was signed out and removed afterward. The existing approved design produced a 60 × 80 inch SVG with 89,829 actual vector paths (14,721,975 bytes) and a 9,000 × 12,000 PNG tagged at 150 PPI (49,078,722 bytes). Both downloads matched their stored SHA-256 hashes and remain available to the owner for review. Neither file was automatically approved for production. Repeated identical requests reused the same job, incomplete production-review confirmations were rejected, unauthenticated downloads were denied, and the mobile admin panel had no horizontal overflow or JavaScript errors. A separate TIFF smoke test verified 3,000 × 4,000 pixels at 100 PPI. No image-generation API call was made for production exports.
