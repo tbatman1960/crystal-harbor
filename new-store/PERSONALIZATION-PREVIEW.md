@@ -51,7 +51,7 @@ AI likeness/style consistency must be evaluated using an authorized real portrai
 
 Automated tests cover two-image provider requests, redraw prompts, sanitized provider errors, no automatic paid retries, HMAC authentication, atomic quota enforcement, job claiming, idempotent approval, private data access, and cleanup/approval locking, plus existing pricing, order, inventory, RLS, and shipping rules. The Next.js build and a standalone esbuild check cover the server app and background worker. Native `sharp` is a pinned runtime dependency and externalized for the Netlify background bundle.
 
-The previous photo-placement preview was tested in desktop/mobile browsers, including private access denial, separate customized copies, $8 shipping for two blankets, and Indiana rejection. The AI workflow requires a fresh browser smoke check after deployment. An actual OpenAI generation, likeness review, and full test payment/email completion remain pending provider credentials.
+The previous photo-placement preview was tested in desktop/mobile browsers, including private access denial, separate customized copies, $8 shipping for two blankets, and Indiana rejection. The deployed catalog workflow passed a real OpenAI generation using a synthetic portrait and the 90s Nostalgia Overload production design: one upload created one job, the completed PNG preview scrolled into view automatically, approval selected the correct catalog SKU, and PNG/SVG downloads succeeded. An existing approved artwork download and cross-browser access denial also passed. Test files and diagnostic rows were removed. Real-customer likeness review, print-quality review, and a complete test payment/email flow remain separate checks.
 
 ## Catalog preview and download correction
 
