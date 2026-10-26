@@ -437,6 +437,11 @@ export function PersonalizationEditor({
             </p>
           </div>
         )}
+        {!ready && (
+          <p className="notice mt-4" role="status">
+            Preparing the customizer…
+          </p>
+        )}
         <form
           className="space-y-7 mt-7"
           onSubmit={(e) => {
@@ -444,7 +449,7 @@ export function PersonalizationEditor({
             void save();
           }}
         >
-          <fieldset disabled={!!generating}>
+          <fieldset disabled={!!generating || !ready}>
             <legend className="custom-step">
               <span>1</span> Choose a blanket design
             </legend>
@@ -474,7 +479,7 @@ export function PersonalizationEditor({
               ))}
             </div>
           </fieldset>
-          <fieldset disabled={!!generating}>
+          <fieldset disabled={!!generating || !ready}>
             <legend className="custom-step">
               <span>2</span> Choose your cozy size
             </legend>
@@ -496,7 +501,7 @@ export function PersonalizationEditor({
               ))}
             </div>
           </fieldset>
-          <fieldset className="space-y-4" disabled={!!generating}>
+          <fieldset className="space-y-4" disabled={!!generating || !ready}>
             <legend className="custom-step">
               <span>3</span> Meet the main character
             </legend>
