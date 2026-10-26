@@ -659,5 +659,73 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       );
     },
   );
+  await t.test(
+    'production exports are service-only, idempotent, block source deletion and require admin ownership',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777',
+        art = 'abababab-abab-4bab-8bab-abababababab';
+      await pg.query(
+        "insert into personalizations(id,product_id,session_hash,request_hash,config,source_path,artwork_path,approved_at) values($1,$2,repeat('c',64),repeat('d',64),'{}','source','art',now())",
+        [art, pid],
+      );
+      await role(other, async () => {
+        await assert.rejects(
+          pg.query('select * from print_exports'),
+          /permission denied/,
+        );
+        await assert.rejects(
+          pg.query("select reserve_print_export($1,'{}',repeat('a',64),$2)", [
+            art,
+            other,
+          ]),
+          /permission denied/,
+        );
+      });
+      await assert.rejects(
+        pg.query("select reserve_print_export($1,'{}',repeat('a',64),$2)", [
+          art,
+          other,
+        ]),
+        /Forbidden/,
+      );
+      const first = await pg.query<{ id: string }>(
+        "select reserve_print_export($1,$2,repeat('a',64),$3) as id",
+        [art, JSON.stringify({ size: '60x80', format: 'svg' }), admin],
+      );
+      const id = first.rows[0].id;
+      const again = await pg.query<{ id: string }>(
+        "select reserve_print_export($1,$2,repeat('a',64),$3) as id",
+        [art, JSON.stringify({ size: '60x80', format: 'svg' }), admin],
+      );
+      assert.equal(again.rows[0].id, id);
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        false,
+      );
+      await assert.rejects(
+        pg.query('select prepare_print_export_delete($1)', [id]),
+        /still processing/,
+      );
+      await pg.query("update print_exports set status='ready' where id=$1", [
+        id,
+      ]);
+      await pg.query('select prepare_print_export_delete($1)', [id]);
+      await pg.query('delete from print_exports where id=$1', [id]);
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        true,
+      );
+    },
+  );
   await pg.close();
 });

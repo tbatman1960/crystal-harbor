@@ -175,3 +175,7 @@ The order email outbox and manual retry remain in use with either provider. SMTP
 ## Personalized blanket preview
 
 See [PERSONALIZATION-PREVIEW.md](PERSONALIZATION-PREVIEW.md) for AI illustration activation, the separate review branch, private-photo handling, background processing, test-payment requirements, and print-production limitations.
+
+## Production print files
+
+See [PRODUCTION-PRINT.md](PRODUCTION-PRINT.md) for scalable SVG conversion, full-size PNG/JPEG/TIFF exports up to 60 × 80 inches, private background processing and the operator review workflow.

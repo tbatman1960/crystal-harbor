@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { admin, service, check } from '@/lib/supabase';
 import { templates } from '@/lib/personalization/designs';
+import { ProductionExport } from '@/components/production-export';
 import { ArtworkDownload } from '@/components/artwork-download';
 import { ArtworkCleanup } from '@/components/artwork-cleanup';
 export default async function Artwork() {
@@ -36,9 +37,9 @@ export default async function Artwork() {
     <section>
       <h1>Personalized artwork</h1>
       <p className="mt-4 max-w-2xl text-ink/70">
-        Approved designs are linked to paid orders. Download the SVG, review it
-        in your printing software at the selected physical size, and check photo
-        quality before production. Pending designs are not paid orders.
+        Approved designs are linked to paid orders. Create a scalable vector
+        master or a full-size raster print file, inspect the result, and approve
+        it for production. Pending designs are not paid orders.
       </p>
       <div className="mt-6">
         <ArtworkCleanup />
@@ -96,6 +97,7 @@ export default async function Artwork() {
               )}
               {!row.deleting && (
                 <div>
+                  <ProductionExport id={row.id} />
                   <ArtworkDownload id={row.id} />
                   <ArtworkDownload
                     id={row.id}

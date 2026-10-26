@@ -1056,3 +1056,18 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+.production-export {
+  border-top: 1px solid #decfd7;
+  padding-top: 1rem;
+}
+.production-export input[type='checkbox'] {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+}
+.production-export summary {
+  color: #8c2457;
+}
+.production-export select {
+  max-width: 100%;
+}

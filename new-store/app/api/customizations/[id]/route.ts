@@ -65,7 +65,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           error:
-            'This design is attached to an order or active checkout. Contact the store about deletion.',
+            'This design is attached to an order, active checkout, or production export. Contact the store about deletion.',
         },
         { status: 409 },
       );

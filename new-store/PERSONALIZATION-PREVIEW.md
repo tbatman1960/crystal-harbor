@@ -43,7 +43,7 @@ Preview payment completion separately requires `sk_test_` Stripe credentials and
 
 ## Print-production review is required
 
-The model is requested at 1024 × 1536 pixels and high quality. The downloaded SVG embeds the generated raster artwork and declares the chosen physical size. **A vector wrapper does not create extra image detail.** Native output alone may be insufficient for large blanket printing. The admin Artwork page shows native dimensions and a production-review warning. Review likeness, facial details, crop, fabric bleed, color, and printer requirements. Use a suitable professional upscaling/production workflow before selling large-format prints. This implementation does not claim to perform print upscaling.
+The model is requested at 1024 × 1536 pixels and high quality. The downloaded SVG embeds the generated raster artwork and declares the chosen physical size. **A vector wrapper does not create extra image detail.** Native output alone may be insufficient for large blanket printing. The admin Artwork page shows native dimensions and a production-review warning. Review likeness, facial details, crop, fabric bleed, color, and printer requirements. Use a suitable professional upscaling/production workflow before selling large-format prints. The admin production workflow now supplies a true vector conversion and correctly dimensioned raster enlargement. It does not invent new fine detail or replace operator print review; see [PRODUCTION-PRINT.md](PRODUCTION-PRINT.md).
 
 AI likeness/style consistency must be evaluated using an authorized real portrait after credentials are configured. Unit tests use synthetic fixtures and mock provider responses; they are not evidence of real likeness quality.
 

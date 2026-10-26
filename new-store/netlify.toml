@@ -6,5 +6,8 @@ directory = "netlify/functions"
 [functions."generate-illustration-background"]
 node_bundler = "esbuild"
 external_node_modules = ["sharp"]
+[functions."generate-print-background"]
+node_bundler = "esbuild"
+external_node_modules = ["sharp"]
 [[plugins]]
 package = "@netlify/plugin-nextjs"
