@@ -1,3 +1,4 @@
+import { ArtworkDownload } from './artwork-download';
 import { money } from '@/lib/types';
 import type { Address } from '@/lib/types';
 export type Order = {
@@ -62,14 +63,7 @@ export function OrderView({
                     {i.personalization_snapshot?.name ||
                       i.personalization_snapshot?.template}
                   </p>
-                  <a
-                    className="link"
-                    href={`/api/customizations/${i.personalization_id}?file=artwork`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Download artwork for this blanket ↗
-                  </a>
+                  <ArtworkDownload id={i.personalization_id} />
                 </div>
               )}
             </div>

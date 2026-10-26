@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ownedCustomization, PHOTO_BUCKET } from '@/lib/personalization/server';
 import { service, check } from '@/lib/supabase';
+import { renderArtwork } from '@/lib/personalization/artwork';
 import { failure } from '@/lib/http';
 export async function GET(
   req: Request,
@@ -10,15 +11,27 @@ export async function GET(
   try {
     z.string().uuid().parse(params.id);
     const row = await ownedCustomization(params.id);
-    if (new URL(req.url).searchParams.get('file') === 'artwork') {
+    const search = new URL(req.url).searchParams;
+    if (['artwork', 'preview'].includes(search.get('file') || '')) {
+      const format =
+        search.get('file') === 'preview'
+          ? 'png'
+          : z.enum(['png', 'jpg', 'svg']).parse(search.get('format') || 'png');
       const { data, error } = await service()
         .storage.from(PHOTO_BUCKET)
         .download(row.artwork_path);
       check(error);
-      return new NextResponse(await data!.arrayBuffer(), {
+      const rendered = await renderArtwork(
+        Buffer.from(await data!.arrayBuffer()),
+        format,
+      );
+      return new NextResponse(new Uint8Array(rendered.bytes), {
         headers: {
-          'Content-Type': 'image/svg+xml',
-          'Content-Disposition': `attachment; filename="snugglebug-${row.id}.svg"`,
+          'Content-Type': rendered.mime,
+          'Content-Disposition':
+            search.get('file') === 'preview'
+              ? 'inline'
+              : `attachment; filename="snugglebug-${row.id}.${rendered.extension}"`,
           'Cache-Control': 'private, no-store',
           'Content-Security-Policy':
             "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox",

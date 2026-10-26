@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { admin, service, check } from '@/lib/supabase';
 import { templates } from '@/lib/personalization/designs';
+import { ArtworkDownload } from '@/components/artwork-download';
 import { ArtworkCleanup } from '@/components/artwork-cleanup';
 export default async function Artwork() {
   await admin();
@@ -52,7 +53,8 @@ export default async function Artwork() {
           data.map((row) => (
             <article key={row.id} className="panel">
               <h2 className="text-xl">
-                {templates.find((t) => t.id === row.config.template)?.name ||
+                {row.config.reference_name ||
+                  templates.find((t) => t.id === row.config.template)?.name ||
                   'Personalized blanket'}
               </h2>
               {row.artwork_kind === 'ai' && (
@@ -93,12 +95,14 @@ export default async function Artwork() {
                 <p className="text-sm mt-3">Awaiting checkout</p>
               )}
               {!row.deleting && (
-                <a
-                  className="personalization-link"
-                  href={`/api/customizations/${row.id}?file=artwork`}
-                >
-                  Download approved SVG ↗
-                </a>
+                <div>
+                  <ArtworkDownload id={row.id} />
+                  <ArtworkDownload
+                    id={row.id}
+                    format="svg"
+                    label="Download print artwork (SVG)"
+                  />
+                </div>
               )}
             </article>
           ))

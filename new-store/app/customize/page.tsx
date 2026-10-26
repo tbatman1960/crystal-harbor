@@ -6,24 +6,28 @@ export const metadata = {
   description:
     'Turn a favorite face into a coordinated illustration, add a name, and approve your personalized blanket.',
 };
-export default async function Customize() {
+export default async function Customize({
+  searchParams,
+}: {
+  searchParams: { product?: string };
+}) {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
-  // Each original template can be ordered in the existing blanket size SKUs.
-  const sizes = [
-    ...new Map(
-      products
-        .filter((p) => p.shipping_group === 'blankets' && p.is_active)
-        .sort((a, b) => a.price_cents - b.price_cents)
-        .map((p) => [p.size_label, p]),
-    ).values(),
-  ];
+  const blankets = products
+    .filter((p) => p.shipping_group === 'blankets' && p.is_active)
+    .sort((a, b) => a.price_cents - b.price_cents);
+  const initial = blankets.find(
+    (p) => p.slug === searchParams.product || p.id === searchParams.product,
+  );
   return (
     <div className="collection-page shell py-8 md:py-12">
       <p className="mb-5 text-sm text-ink/65">
         Home / Personalized blankets / Your design
       </p>
-      {sizes.length ? (
-        <PersonalizationEditor products={sizes} />
+      {blankets.length ? (
+        <PersonalizationEditor
+          products={blankets}
+          initialProductId={initial?.id}
+        />
       ) : (
         <div className="panel">
           <h1>Personalized blankets are on their way.</h1>
@@ -39,12 +43,12 @@ export default async function Customize() {
             [
               '01',
               'Find their vibe',
-              'Three original worlds. Four cozy sizes. Endless reasons to smile.',
+              'Choose from the same six blanket designs and four sizes in our store.',
             ],
             [
               '02',
               'Put them in the picture',
-              'Upload a clear photo, let us redraw their character, and add their name.',
+              'Confirm photo permission and upload a clear portrait. Your personalized preview appears automatically after processing.',
             ],
             [
               '03',

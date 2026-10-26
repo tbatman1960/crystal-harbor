@@ -5,14 +5,14 @@ Branch: `preview/personalized-blankets`, draft PR #4. Do not merge to production
 
 ## Workflow
 
-1. Choose an original disco, space, or garden illustration style, a blanket size, and an optional name.
+1. Choose one of the six actual active production blanket designs, its size, an optional name, and whether to personalize the main printed face or all prominent printed faces.
 2. Upload a portrait and confirm photo permission, including parent/guardian permission for a child's photo, and consent to sending the photo to OpenAI.
-3. Request an illustration. A Netlify background function sends the portrait and original illustrated composition together to OpenAI's image-edit endpoint, asking for one fully redrawn character and scene with matching linework, shading, lighting and colors. The face is not pasted onto a drawing. Customer names are rendered deterministically after generation so their spelling does not depend on the model.
-4. Poll progress; refresh or return in the same browser to resume the most recent job. There is no fabricated result when the provider is unavailable.
+3. With photo permission confirmed, uploading automatically requests an illustration. A Netlify background function sends the portrait and canonical product-image reference together to OpenAI's image-edit endpoint, asking for one fully redrawn character and scene with matching linework, shading, lighting and colors while preserving the selected print. The face is not pasted onto a drawing. Customer names are rendered deterministically after generation so their spelling does not depend on the model.
+4. The page automatically polls progress and scrolls to the finished PNG preview. refresh or return in the same browser to resume the most recent job. There is no fabricated result when the provider is unavailable.
 5. Review the actual generated artwork, regenerate if desired within limits, then approve it. Only that immutable generated file can be added as an AI-personalized cart line. Changing the style, size, name or portrait requires a new generation. After refresh, upload the photo again if you want to regenerate; original photo bytes are not stored in browser local storage.
 6. Server pricing and shipping remain authoritative. The approved SVG follows the order into customer history and admin fulfillment downloads.
 
-Existing catalog, accounts, carts, checkout, order emails and admin features remain. Existing $13 / $19 / $25 / $32 size pricing, $7 plus $1 combined shipping, five-blanket limit, untracked inventory, and Indiana shipping restriction are retained. This branch uses separate preview carts so the live store's saved carts remain unchanged. Original non-AI personalized artwork already approved in this preview remains downloadable.
+Existing catalog, accounts, carts, checkout, order emails and admin features remain. Existing $13 / $19 / $25 / $32 size pricing, $7 plus $1 combined shipping, five-blanket limit, untracked inventory, and Indiana shipping restriction are retained. This branch uses separate preview carts so the live store's saved carts remain unchanged. Earlier sample-style artwork remains downloadable from My saved designs; the customizer no longer starts with the three sample styles.
 
 ## Required activation
 
@@ -34,7 +34,7 @@ Preview payment completion separately requires `sk_test_` Stripe credentials and
 ## Private data and housekeeping
 
 - Photos are locally re-encoded to JPEG (removing original metadata), then decoded and normalized again server-side. The source and complete generated artwork stay in `personalization-private`, with no public object policy.
-- Only the creating browser cookie/account can generate, inspect, or approve a job. Approved proofs also follow the existing account/order/admin artwork access rules. Customer photos/artwork are not sent to Stripe.
+- Only the creating browser cookie/account can generate, inspect, or approve a job. Phone-friendly PNG previews and PNG/JPEG downloads are rasterized server-side from the complete approved SVG; original SVG files remain available to admins. The download button reports errors and offers an explicit open/save link for mobile browsers. Approved proofs also follow the existing account/order/admin artwork access rules. Customer photos/artwork are not sent to Stripe.
 - `illustration_jobs` has RLS and no public grants. Reservation, approval and cleanup RPCs are service-only. Atomic quotas count failed/queued/finished attempts; simultaneous requests cannot exceed the configured database ceilings.
 - AI requests are sent to OpenAI only after the user clicks Generate with photo consent. Its processing is subject to OpenAI's applicable API terms/data controls, which the operator should review before launch.
 - Unapproved jobs expire after seven days, approved unordered proofs after 30 days. Admin Artwork housekeeping removes expired files in batches; it preserves paid designs and active checkout artwork. Automatic scheduled cleanup is not configured. Job files shared with an approved proof cannot be purged while that proof exists.
@@ -52,3 +52,9 @@ AI likeness/style consistency must be evaluated using an authorized real portrai
 Automated tests cover two-image provider requests, redraw prompts, sanitized provider errors, no automatic paid retries, HMAC authentication, atomic quota enforcement, job claiming, idempotent approval, private data access, and cleanup/approval locking, plus existing pricing, order, inventory, RLS, and shipping rules. The Next.js build and a standalone esbuild check cover the server app and background worker. Native `sharp` is a pinned runtime dependency and externalized for the Netlify background bundle.
 
 The previous photo-placement preview was tested in desktop/mobile browsers, including private access denial, separate customized copies, $8 shipping for two blankets, and Indiana rejection. The AI workflow requires a fresh browser smoke check after deployment. An actual OpenAI generation, likeness review, and full test payment/email completion remain pending provider credentials.
+
+## Catalog preview and download correction
+
+The customizer now uses all 24 active production blanket SKUs grouped into six designs, with four actual sizes each. The selected product ID determines price and shipping, and the server supplies the canonical product name and public product-image URL. References are restricted to the configured Supabase public products bucket; client-provided URLs cannot override the catalog image. Existing approved sample proofs are retained but are not automatically loaded as a new catalog preview.
+
+After explicit photo permission, a newly uploaded photo starts processing once. Name, design and size changes invalidate approval but do not automatically incur another generation; the customer requests an updated preview. Once ready, the completed preview is brought into view automatically. Only that approved result can be added to the cart. PNG is the default customer download, with an explicit open/save link for phones and a retained SVG option for print production.

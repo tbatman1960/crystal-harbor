@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import sharp from 'sharp';
+import { safeCatalogReference } from './catalog-reference';
 import { blanketSvg, customizationConfig, printDimensions } from './designs';
 import {
   generationSettings,
@@ -47,12 +48,39 @@ export async function processIllustration(id: string) {
       .rotate()
       .jpeg({ quality: 94 })
       .toBuffer();
-    const reference = await sharp(
-      Buffer.from(blanketSvg({ ...config, name: '' })),
-    )
-      .resize(768, 1024)
-      .png()
-      .toBuffer();
+    let reference: Buffer;
+    if (config.template === 'catalog') {
+      if (!config.reference_image)
+        throw new IllustrationProviderError('generation_failed');
+      const url = safeCatalogReference(
+        config.reference_image,
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      );
+      const response = await fetch(url, {
+        redirect: 'error',
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!response.ok)
+        throw new IllustrationProviderError('generation_failed');
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (bytes.length > 12000000)
+        throw new IllustrationProviderError('generation_failed');
+      reference = await sharp(bytes, { limitInputPixels: 40000000 })
+        .rotate()
+        .resize({
+          width: 1536,
+          height: 2048,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .png()
+        .toBuffer();
+    } else {
+      reference = await sharp(Buffer.from(blanketSvg({ ...config, name: '' })))
+        .resize(768, 1024)
+        .png()
+        .toBuffer();
+    }
     const generated = await redrawPortrait(
       photo,
       reference,

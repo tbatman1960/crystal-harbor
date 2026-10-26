@@ -98,7 +98,10 @@ export function ProductDetail({
           </p>
         )}
         {p.shipping_group === 'blankets' && (
-          <Link href="/customize" className="personalization-link">
+          <Link
+            href={`/customize?product=${p.slug}`}
+            className="personalization-link"
+          >
             ✦ Want a blanket starring you? Explore personalized designs →
           </Link>
         )}

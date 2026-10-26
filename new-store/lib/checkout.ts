@@ -1,6 +1,9 @@
 import 'server-only';
 import { ownedCustomization } from './personalization/server';
-import { templates, customizationConfig } from './personalization/designs';
+import {
+  customizationLabel,
+  customizationConfig,
+} from './personalization/designs';
 import { hasStock } from './availability';
 import { checkPostalState } from './postal';
 import { assertShippingDestination } from './shipping-policy';
@@ -48,7 +51,7 @@ export async function quote(items: CartItem[], address: Address) {
           ? { personalization_id: custom.id, personalization_snapshot: config }
           : {}),
         name: config
-          ? `${templates.find((t) => t.id === config.template)!.name} personalized blanket — ${p.size_label}${config.name ? ` · ${config.name}` : ''}`
+          ? `${customizationLabel(config)} personalized blanket — ${p.size_label}${config.name ? ` · ${config.name}` : ''}`
           : productTitle(p),
         sku: p.sku,
         unit_price_cents: p.price_cents,

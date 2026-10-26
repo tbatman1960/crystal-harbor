@@ -1,12 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ArtworkDownload } from './artwork-download';
 import { useCart } from './cart-provider';
 export function SavedDesigns() {
   const [items, setItems] = useState<
       {
         id: string;
-        config: { name: string; template: string };
+        config: { name: string; template: string; reference_name?: string };
         created_at: string;
         ordered: boolean;
       }[]
@@ -64,16 +65,17 @@ export function SavedDesigns() {
                 {i.config.name || 'Your personalized blanket'}
               </h2>
               <p className="text-sm mt-2">
-                {i.config.template} ·{' '}
+                {i.config.reference_name || i.config.template} ·{' '}
                 {new Date(i.created_at).toLocaleDateString()} ·{' '}
                 {i.ordered ? 'Ordered' : 'Saved'}
               </p>
-              <a
-                className="personalization-link"
-                href={`/api/customizations/${i.id}?file=artwork`}
-              >
-                Download approved artwork ↗
-              </a>
+              <img
+                className="mt-4 max-h-72 w-auto rounded-xl"
+                src={`/api/customizations/${i.id}?file=preview`}
+                alt={`${i.config.reference_name || 'Personalized blanket'} approved artwork`}
+                loading="lazy"
+              />
+              <ArtworkDownload id={i.id} />
               {!i.ordered && (
                 <button
                   type="button"

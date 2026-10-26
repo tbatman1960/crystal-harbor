@@ -1,5 +1,6 @@
 'use client';
 import { cartKey } from '@/lib/personalization/designs';
+import { ArtworkDownload } from './artwork-download';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
@@ -173,14 +174,7 @@ export function CartPage({
                         <p>
                           {i.customization_label || 'Your approved artwork'}
                         </p>
-                        <a
-                          className="link"
-                          href={`/api/customizations/${i.customization_id}?file=artwork`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Download approved artwork ↗
-                        </a>
+                        <ArtworkDownload id={i.customization_id} />
                         <p className="mt-1">
                           Quantity uses this same photo and design. To use
                           another face, create another personalized blanket.

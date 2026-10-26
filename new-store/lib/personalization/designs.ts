@@ -26,7 +26,10 @@ export const templates = [
   },
 ] as const;
 export const customizationConfig = z.object({
-  template: z.enum(['disco', 'cosmic', 'garden']),
+  template: z.enum(['disco', 'cosmic', 'garden', 'catalog']),
+  reference_name: z.string().trim().max(150).optional(),
+  reference_image: z.string().url().max(2000).optional(),
+  face_mode: z.enum(['main', 'all']).optional(),
   name: z
     .string()
     .trim()
@@ -73,6 +76,8 @@ export function blanketSvg(
   inches?: [number, number],
 ) {
   const c = customizationConfig.parse(config);
+  if (c.template === 'catalog')
+    throw new Error('Use the catalog product image as the reference');
   if (photo && !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo))
     throw new Error('Invalid photo');
   const t = templates.find((t) => t.id === c.template)!;
@@ -94,4 +99,13 @@ export function printDimensions(size: string): [number, number] {
   if (!['30x40', '40x50', '50x60', '60x80'].includes(pair.join('x')))
     throw new Error('Unsupported blanket size');
   return pair;
+}
+
+export function customizationLabel(
+  config: Pick<CustomizationConfig, 'template' | 'reference_name'>,
+) {
+  return config.template === 'catalog'
+    ? config.reference_name || 'Personalized blanket'
+    : templates.find((t) => t.id === config.template)?.name ||
+        'Personalized blanket';
 }

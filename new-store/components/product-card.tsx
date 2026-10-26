@@ -7,17 +7,24 @@ export function ProductCard({
   product: p,
   sizeCount = 1,
   accent = 0,
+  personalize = false,
 }: {
   product: Product;
   sizeCount?: number;
   accent?: number;
+  personalize?: boolean;
 }) {
   const image = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
   )[0];
   return (
     <article className={`party-product party-product-${accent % 4}`}>
-      <Link href={`/products/${p.slug}`} className="group block h-full">
+      <Link
+        href={
+          personalize ? `/customize?product=${p.slug}` : `/products/${p.slug}`
+        }
+        className="group block h-full"
+      >
         <div className="party-product-image relative aspect-[4/5] overflow-hidden">
           <Image
             src={image?.url || '/placeholder.svg'}
@@ -41,9 +48,11 @@ export function ProductCard({
             </p>
           </div>
           <p className="mt-2 flex items-center justify-between gap-2 text-xs text-ink/75">
-            {sizeCount > 1
-              ? `${sizeCount} sizes available`
-              : p.size_label || 'Find your favorite'}
+            {personalize
+              ? 'Personalize this design'
+              : sizeCount > 1
+                ? `${sizeCount} sizes available`
+                : p.size_label || 'Find your favorite'}
             <span className="product-arrow" aria-hidden="true">
               ↗
             </span>

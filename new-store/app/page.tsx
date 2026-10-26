@@ -1,9 +1,6 @@
 import Link from 'next/link';
-import {
-  blanketSvg,
-  defaultConfig,
-  templates,
-} from '@/lib/personalization/designs';
+import Image from 'next/image';
+import { catalogImage } from '@/lib/personalization/catalog-reference';
 import { catalog } from '@/lib/data';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { ProductCard } from '@/components/product-card';
@@ -49,21 +46,19 @@ export default async function Home() {
           </div>
           <div
             className="custom-hero-art"
-            aria-label="Examples of original personalized blanket artwork"
+            aria-label="Actual blanket designs from our store"
           >
-            {(['disco', 'cosmic'] as const).map((template, i) => (
-              <div
-                key={template}
-                role="img"
-                aria-label={`${template} illustrated blanket example`}
-                dangerouslySetInnerHTML={{
-                  __html: blanketSvg({
-                    ...defaultConfig,
-                    template,
-                    name: i ? 'MILO' : 'OLIVIA',
-                  }),
-                }}
-              />
+            {designs.slice(0, 2).map(({ product: p }) => (
+              <div key={p.id}>
+                <Image
+                  src={catalogImage(p) || '/placeholder.svg'}
+                  alt={`${p.name} — original catalog product`}
+                  width={600}
+                  height={800}
+                  priority
+                  className="w-full h-auto object-cover"
+                />
+              </div>
             ))}
           </div>
         </div>
@@ -79,7 +74,7 @@ export default async function Home() {
               Ordinary blanket? Not your style.
             </h2>
             <p className="mt-3 text-ink/75">
-              Three original worlds, one unforgettable face. Yours.
+              Your actual favorite prints. Your photo, drawn into the design.
             </p>
           </div>
           <Link className="collection-text-link" href="/customize">
@@ -87,31 +82,14 @@ export default async function Home() {
           </Link>
         </div>
         <div className="collection-grid">
-          {templates.map((t) => (
-            <Link className="custom-card" href="/customize" key={t.id}>
-              <div
-                className="custom-card-art"
-                role="img"
-                aria-label={`${t.name} template`}
-                dangerouslySetInnerHTML={{
-                  __html: blanketSvg({
-                    ...defaultConfig,
-                    template: t.id,
-                    name: 'YOUR NAME',
-                  }),
-                }}
-              />
-              <div className="p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-clay">
-                  Your photo + your name
-                </p>
-                <h3 className="mt-2 text-xl">{t.name}</h3>
-                <p className="mt-2 text-sm text-ink/70">{t.subtitle}</p>
-                <p className="mt-4 font-semibold">
-                  From $13 <span className="float-right">Customize ↗</span>
-                </p>
-              </div>
-            </Link>
+          {designs.map(({ product, sizeCount }, i) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              sizeCount={sizeCount}
+              accent={i}
+              personalize
+            />
           ))}
         </div>
       </section>
@@ -125,51 +103,6 @@ export default async function Home() {
           </span>
         </div>
       </div>
-      <section
-        id="pick-your-print"
-        className="shell scroll-mt-6 py-14 md:py-20"
-        aria-labelledby="prints-heading"
-      >
-        <div className="collection-section-heading">
-          <div>
-            <p className="collection-label">{theme.name}</p>
-            <h2 id="prints-heading">Find your blanket personality.</h2>
-            <p className="mt-3 max-w-xl text-ink/75">
-              For the cartoon kid, the pink enthusiast, the horror-movie bestie.
-              There’s a cozy kind of extra for everyone.
-            </p>
-          </div>
-          <Link href="/shop" className="collection-text-link">
-            Shop the whole collection <span aria-hidden="true">↗</span>
-          </Link>
-        </div>
-        <div className="mood-tags" aria-label="Browse by mood">
-          <Link href="/shop?q=90s">✦ Throwback favorites</Link>
-          <Link href="/shop?q=pink">♡ Think pink</Link>
-          <Link href="/shop?q=ghostface">✧ Spooky &amp; sweet</Link>
-          <Link href="/shop?q=hello%20kitty">☆ Cosmic cuteness</Link>
-        </div>
-        {designs.length ? (
-          <div className="collection-grid">
-            {designs.map(({ product, sizeCount }, index) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                sizeCount={sizeCount}
-                accent={index}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="panel">
-            <h3>Something cozy is on its way.</h3>
-            <p className="mt-2">Check back soon for our next collection.</p>
-            <Link href="/shop" className="link mt-4 inline-block">
-              Explore the shop
-            </Link>
-          </div>
-        )}
-      </section>
       <section className="shell pb-14" aria-labelledby="size-heading">
         <div className="size-party">
           <div>

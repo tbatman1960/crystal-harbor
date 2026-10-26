@@ -5,6 +5,7 @@ import { service, check } from '@/lib/supabase';
 import { ownedIllustration } from '@/lib/personalization/illustration-server';
 import { PHOTO_BUCKET } from '@/lib/personalization/server';
 import { generationErrorMessages } from '@/lib/personalization/illustration';
+import { renderArtwork } from '@/lib/personalization/artwork';
 import { PersonalizationError } from '@/lib/personalization/errors';
 export async function GET(
   req: Request,
@@ -20,9 +21,13 @@ export async function GET(
         .storage.from(PHOTO_BUCKET)
         .download(job.artwork_path);
       check(error);
-      return new NextResponse(await data!.arrayBuffer(), {
+      const rendered = await renderArtwork(
+        Buffer.from(await data!.arrayBuffer()),
+        'png',
+      );
+      return new NextResponse(new Uint8Array(rendered.bytes), {
         headers: {
-          'Content-Type': 'image/svg+xml',
+          'Content-Type': 'image/png',
           'Content-Disposition': 'inline',
           'Cache-Control': 'private, no-store',
           'Content-Security-Policy':

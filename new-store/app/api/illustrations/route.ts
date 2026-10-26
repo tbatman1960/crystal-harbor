@@ -13,6 +13,10 @@ import {
   generationSettings,
   generationSignature,
 } from '@/lib/personalization/illustration';
+import {
+  catalogImage,
+  safeCatalogReference,
+} from '@/lib/personalization/catalog-reference';
 import { PersonalizationError } from '@/lib/personalization/errors';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,7 +54,7 @@ export async function POST(req: Request) {
         { status: 413 },
       );
     const body = await req.formData();
-    const config = customizationConfig.parse(
+    let config = customizationConfig.parse(
       JSON.parse(String(body.get('config'))),
     );
     const product_id = z.string().uuid().parse(body.get('product_id'));
@@ -95,13 +99,28 @@ export async function POST(req: Request) {
     const client = service();
     const { data: p, error: e } = await client
       .from('products')
-      .select('id,is_active,shipping_group,size_label')
+      .select('id,name,is_active,shipping_group,size_label,product_images(*)')
       .eq('id', product_id)
       .single();
     check(e);
     if (!p?.is_active || p.shipping_group !== 'blankets')
       throw new PersonalizationError('Choose an available blanket size.');
     printDimensions(p.size_label || '');
+    if (config.template === 'catalog') {
+      const image = catalogImage(p);
+      if (!image)
+        throw new PersonalizationError(
+          'This product has no reference photo. Please choose another design.',
+        );
+      config = {
+        ...config,
+        reference_name: p.name,
+        reference_image: safeCatalogReference(
+          image,
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        ),
+      };
+    }
     const session_hash = ensurePhotoSession();
     const request_hash = createHash('sha256')
       .update(
@@ -137,12 +156,10 @@ export async function POST(req: Request) {
     }
     check(
       (
-        await client.storage
-          .from(PHOTO_BUCKET)
-          .upload(path, normalized, {
-            contentType: 'image/jpeg',
-            upsert: false,
-          })
+        await client.storage.from(PHOTO_BUCKET).upload(path, normalized, {
+          contentType: 'image/jpeg',
+          upsert: false,
+        })
       ).error,
     );
     const expires = Date.now() + 10 * 60000;

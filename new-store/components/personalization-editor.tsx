@@ -1,18 +1,19 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from './cart-provider';
 import {
-  blanketSvg,
+  customizationLabel,
   customizationConfig,
   defaultConfig,
-  templates,
-  printDimensions,
   type CustomizationConfig,
 } from '@/lib/personalization/designs';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
 import { hasStock } from '@/lib/availability';
+import { groupCatalog } from '@/lib/catalog-presentation';
+import { catalogImage } from '@/lib/personalization/catalog-reference';
+import { ArtworkDownload } from './artwork-download';
 type Job = {
   id: string;
   status: string;
@@ -23,10 +24,27 @@ type Job = {
   height?: number;
 };
 const DRAFT = 'snuggle-illustration-draft';
-export function PersonalizationEditor({ products }: { products: Product[] }) {
+export function PersonalizationEditor({
+  products,
+  initialProductId,
+}: {
+  products: Product[];
+  initialProductId?: string;
+}) {
+  const first = products.find((p) => p.id === initialProductId) || products[0];
+  const previewRef = useRef<HTMLElement>(null),
+    shown = useRef(''),
+    autoStarted = useRef(false);
+  const [autoRequested, setAutoRequested] = useState(false),
+    [imageVersion, setImageVersion] = useState(0);
   const { add, ready } = useCart();
-  const [config, setConfig] = useState<CustomizationConfig>(defaultConfig),
-    [productId, setProductId] = useState(products[0]?.id || '');
+  const [config, setConfig] = useState<CustomizationConfig>({
+      ...defaultConfig,
+      template: 'catalog',
+      face_mode: 'main',
+      reference_name: first?.name,
+    }),
+    [productId, setProductId] = useState(first?.id || '');
   const [photo, setPhoto] = useState(''),
     [file, setFile] = useState<Blob | null>(null);
   const [consent, setConsent] = useState(false),
@@ -45,20 +63,40 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
   const generating =
     busy || job?.status === 'queued' || job?.status === 'processing';
   const drawable = job && ['ready', 'approved'].includes(job.status);
-  const svg = useMemo(
-    () =>
-      blanketSvg(
-        {
-          ...config,
-          name: customizationConfig.shape.name.safeParse(config.name).success
-            ? config.name
-            : '',
-        },
-        undefined,
-        product?.size_label ? printDimensions(product.size_label) : undefined,
-      ),
-    [config, product],
-  );
+  const designGroups = useMemo(() => groupCatalog(products), [products]);
+  const sizes = products
+    .filter((p) =>
+      product?.design_slug
+        ? p.design_slug === product.design_slug
+        : p.id === product?.id,
+    )
+    .sort((a, b) => a.price_cents - b.price_cents);
+  useEffect(() => {
+    if (
+      autoRequested &&
+      file &&
+      consent &&
+      serviceReady &&
+      !generating &&
+      valid.success &&
+      !autoStarted.current
+    ) {
+      autoStarted.current = true;
+      setAutoRequested(false);
+      void generate();
+    }
+  }, [autoRequested, file, consent, serviceReady, generating]);
+  useEffect(() => {
+    if (drawable && job && shown.current !== job.id) {
+      shown.current = job.id;
+      previewRef.current?.scrollIntoView({
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          ? 'auto'
+          : 'smooth',
+        block: 'start',
+      });
+    }
+  }, [job?.id, job?.status]);
   useEffect(() => {
     let alive = true;
     fetch('/api/illustrations')
@@ -74,11 +112,12 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
       const stored = JSON.parse(localStorage.getItem(DRAFT) || 'null');
       if (
         stored &&
+        stored.config?.template === 'catalog' &&
         customizationConfig.safeParse(stored.config).success &&
         products.some((p) => p.id === stored.product_id) &&
         /^[a-f0-9-]{36}$/.test(stored.id)
       ) {
-        setConfig(stored.config);
+        setConfig(customizationConfig.parse(stored.config));
         setProductId(stored.product_id);
         setJob({ ...stored, status: 'queued' });
       }
@@ -124,6 +163,17 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
       localStorage.removeItem(DRAFT);
     } catch {}
   }
+  function selectProduct(p: Product) {
+    resetDesign();
+    setAutoRequested(false);
+    setProductId(p.id);
+    setConfig((c) => ({
+      ...c,
+      template: 'catalog',
+      reference_name: p.name,
+      reference_image: undefined,
+    }));
+  }
   function change<K extends keyof CustomizationConfig>(
     key: K,
     value: CustomizationConfig[K],
@@ -134,6 +184,8 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
   async function upload(f?: File) {
     if (!f) return;
     resetDesign();
+    autoStarted.current = false;
+    setAutoRequested(false);
     setPhoto('');
     setFile(null);
     setError('');
@@ -183,6 +235,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
         throw new Error('Please choose a smaller photo.');
       setFile(jpeg);
       setPhoto(canvas.toDataURL('image/jpeg', 0.92));
+      setAutoRequested(true);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -249,7 +302,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
         throw new Error(d.error || 'Could not save the approved illustration.');
       add(d.product_id, 1, {
         customization_id: d.id,
-        customization_label: `${templates.find((t) => t.id === d.config.template)!.name}${d.config.name ? ` · ${d.config.name}` : ''}`,
+        customization_label: `${customizationLabel(d.config)}${d.config.name ? ` · ${d.config.name}` : ''}`,
       });
       setJob({ ...job, status: 'approved' });
       setMessage('Your approved illustration is saved and added to your bag.');
@@ -262,35 +315,40 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
   return (
     <div className="personalize-layout">
       <section
-        className="personalize-preview"
+        ref={previewRef}
+        className="personalize-preview scroll-mt-5"
+        aria-live="polite"
         aria-label="Personalized blanket preview"
       >
         <div className="preview-topline">
           <span>✦ YOUR VERY OWN MAIN CHARACTER ✦</span>
           <span className="preview-pill">
-            {drawable ? 'Your illustration' : 'Style reference'}
+            {drawable ? 'Your personalized preview' : 'Original product'}
           </span>
         </div>
         <div className="blanket-mockup">
           {drawable ? (
             <img
               className="block h-auto w-full"
-              src={`/api/illustrations/${job!.id}?image=1`}
-              alt={`AI-redrawn ${templates.find((t) => t.id === config.template)!.name} blanket for ${config.name || 'you'}`}
+              src={`/api/illustrations/${job!.id}?image=1&v=${imageVersion}`}
+              alt={`Personalized ${customizationLabel(config)} blanket preview for ${config.name || 'you'}`}
               onLoad={() => setImageReady(true)}
               onError={() => {
                 setImageReady(false);
                 setError(
-                  'We could not load the finished artwork. Refresh the page to try again.',
+                  'We could not load the finished artwork. Use Reload preview below to try again.',
                 );
               }}
             />
           ) : (
-            <div
-              className="blanket-art"
-              role="img"
-              aria-label="Illustration style reference, not a personalized result"
-              dangerouslySetInnerHTML={{ __html: svg }}
+            <img
+              className="block h-auto w-full"
+              src={
+                product
+                  ? catalogImage(product) || '/placeholder.svg'
+                  : '/placeholder.svg'
+              }
+              alt={`${product?.name || 'Blanket'} — original production product`}
             />
           )}
         </div>
@@ -309,13 +367,45 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
             ? 'Drawn together. Made for you. ♡'
             : generating
               ? 'A little illustration magic is on its way.'
-              : 'Your portrait will be redrawn in this style.'}
+              : 'Your selected blanket, before personalization.'}
         </p>
         <p className="text-xs text-ink/65 mt-3">
           {drawable
             ? 'Check likeness, details, spelling and size before approving. Screen colors may differ from the printed blanket.'
-            : 'This sample shows the selected look. It is not a generated likeness of the person in your photo.'}
+            : 'This is the actual catalog product. After processing, your personalized version will appear here automatically.'}
         </p>
+        {drawable && (
+          <div className="mt-4 space-y-3">
+            <p role="status" className="font-semibold">
+              Your personalized preview is ready.
+            </p>
+            <button
+              type="button"
+              className="link text-sm"
+              onClick={() => {
+                setImageReady(false);
+                setImageVersion((v) => v + 1);
+              }}
+            >
+              Reload preview
+            </button>
+            <a
+              className="link text-sm block"
+              href={`/api/illustrations/${job!.id}?image=1`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open larger preview ↗
+            </a>
+            {job?.status === 'approved' && <ArtworkDownload id={job.id} />}
+          </div>
+        )}
+        {job?.status === 'failed' && (
+          <p className="notice text-red-800" role="alert">
+            {job.error ||
+              'Your photo could not be processed. Please try again.'}
+          </p>
+        )}
       </section>
       <section className="personalize-controls">
         <p className="collection-label">THE YOU COLLECTION · ILLUSTRATED</p>
@@ -330,7 +420,8 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
           A favorite face, redrawn into a world of their own. Matching lines,
           colors, and character—one illustration that belongs together.
         </p>
-        <p className="mt-5 text-2xl font-bold">
+        <h2 className="mt-5 text-xl">{product?.name}</h2>
+        <p className="mt-3 text-2xl font-bold">
           {product ? money(product.price_cents) : 'Choose a size'}{' '}
           <span className="text-sm font-normal">
             · personalized just for you
@@ -355,21 +446,30 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
         >
           <fieldset disabled={!!generating}>
             <legend className="custom-step">
-              <span>1</span> Pick their world
+              <span>1</span> Choose a blanket design
             </legend>
-            <div className="template-options">
-              {templates.map((t) => (
+            <div className="catalog-design-options">
+              {designGroups.map(({ product: p }) => (
                 <button
                   type="button"
-                  key={t.id}
-                  aria-pressed={config.template === t.id}
-                  className={config.template === t.id ? 'selected' : ''}
-                  onClick={() => change('template', t.id)}
+                  key={p.id}
+                  aria-pressed={
+                    product?.design_slug
+                      ? p.design_slug === product.design_slug
+                      : p.id === product?.id
+                  }
+                  onClick={() =>
+                    selectProduct(
+                      products.find(
+                        (v) =>
+                          v.design_slug === p.design_slug &&
+                          v.size_label === product?.size_label,
+                      ) || p,
+                    )
+                  }
                 >
-                  <span style={{ background: t.color, color: t.ink }}>
-                    {t.icon}
-                  </span>
-                  {t.name}
+                  <img src={catalogImage(p) || '/placeholder.svg'} alt="" />
+                  <span>{p.name}</span>
                 </button>
               ))}
             </div>
@@ -379,7 +479,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
               <span>2</span> Choose your cozy size
             </legend>
             <div className="custom-size-options">
-              {products.map((p) => (
+              {sizes.map((p) => (
                 <button
                   type="button"
                   key={p.id}
@@ -387,8 +487,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
                   aria-pressed={productId === p.id}
                   className={productId === p.id ? 'selected' : ''}
                   onClick={() => {
-                    resetDesign();
-                    setProductId(p.id);
+                    selectProduct(p);
                   }}
                 >
                   <strong>{p.size_label}</strong>
@@ -401,6 +500,42 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
             <legend className="custom-step">
               <span>3</span> Meet the main character
             </legend>
+            <label>
+              Name or nickname <span className="font-normal">(optional)</span>
+              <input
+                value={config.name}
+                maxLength={24}
+                placeholder="e.g. Olivia"
+                onChange={(e) => change('name', e.target.value)}
+              />
+            </label>
+            <label>
+              Which printed faces should change?
+              <select
+                value={config.face_mode || 'main'}
+                onChange={(e) =>
+                  change('face_mode', e.target.value as 'main' | 'all')
+                }
+              >
+                <option value="main">Main character face</option>
+                <option value="all">All prominent printed faces</option>
+              </select>
+            </label>
+            <label className="custom-checkbox">
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => {
+                  setConsent(e.target.checked);
+                  setApproved(false);
+                }}
+              />
+              <span>
+                I have permission to use this photo, including a parent or
+                guardian’s permission for a child’s photo. I agree to send the
+                photo to OpenAI to create the illustration.
+              </span>
+            </label>
             <label className="photo-upload">
               {loadingPhoto
                 ? 'Preparing your photo…'
@@ -427,39 +562,18 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
                 </p>
               </div>
             )}
-            <label>
-              Name or nickname <span className="font-normal">(optional)</span>
-              <input
-                value={config.name}
-                maxLength={24}
-                placeholder="e.g. Olivia"
-                onChange={(e) => change('name', e.target.value)}
-              />
-            </label>
+
             <p className="text-xs text-ink/65">
-              Choose the name, size, and style before generating. Changing them
-              creates a new design and requires another generation.
+              Choose your design, size, and name first. With permission
+              confirmed, uploading a photo starts processing automatically.
+              Changes afterward require an updated preview.
             </p>
             {!valid.success && (
               <p role="alert" className="text-red-800">
                 Use letters, numbers, spaces, or simple punctuation in the name.
               </p>
             )}
-            <label className="custom-checkbox">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => {
-                  setConsent(e.target.checked);
-                  setApproved(false);
-                }}
-              />
-              <span>
-                I have permission to use this photo, including a parent or
-                guardian’s permission for a child’s photo. I agree to send the
-                photo to OpenAI to create the illustration.
-              </span>
-            </label>
+
             <button
               type="button"
               className="btn party-button w-full"
@@ -473,8 +587,18 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
               }
               onClick={() => void generate()}
             >
-              {drawable ? 'Draw another version ↻' : 'Create my illustration ✦'}
+              {generating
+                ? 'Processing your photo…'
+                : drawable
+                  ? 'Generate another version ↻'
+                  : 'Generate personalized preview ✦'}
             </button>
+            {autoRequested && !consent && (
+              <p className="notice" role="status">
+                Your photo is ready. Confirm permission above and processing
+                will start automatically.
+              </p>
+            )}
             <p className="text-xs text-ink/65">
               AI drawings can vary. Review likeness and details carefully. Up to
               three generation attempts per hour; availability also depends on
@@ -504,7 +628,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
           )}
           <fieldset disabled={!drawable || !imageReady || !!generating}>
             <legend className="custom-step">
-              <span>4</span> Your illustration. Your approval.
+              <span>4</span> Your preview. Your approval.
             </legend>
             <label className="custom-checkbox">
               <input
@@ -513,7 +637,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
                 onChange={(e) => setApproved(e.target.checked)}
               />
               <span>
-                I have reviewed the generated illustration and approve the
+                I have reviewed the personalized preview and approve the
                 likeness, artwork, spelling, and selected size.
               </span>
             </label>
@@ -534,7 +658,7 @@ export function PersonalizationEditor({ products }: { products: Product[] }) {
               !ready
             }
           >
-            {busy ? 'Saving…' : 'Approve illustration & add to bag →'}
+            {busy ? 'Saving…' : 'Approve preview & add to bag →'}
           </button>
           {message && (
             <p role="status" className="notice">
