@@ -33,9 +33,11 @@ export function PersonalizationEditor({
 }) {
   const first = products.find((p) => p.id === initialProductId) || products[0];
   const previewRef = useRef<HTMLElement>(null),
+    dialogRef = useRef<HTMLDialogElement>(null),
     shown = useRef(''),
     autoStarted = useRef(false);
   const [autoRequested, setAutoRequested] = useState(false),
+    [previewOpen, setPreviewOpen] = useState(false),
     [imageVersion, setImageVersion] = useState(0);
   const { add, ready } = useCart();
   const [config, setConfig] = useState<CustomizationConfig>({
@@ -89,6 +91,7 @@ export function PersonalizationEditor({
   useEffect(() => {
     if (drawable && job && shown.current !== job.id) {
       shown.current = job.id;
+      setPreviewOpen(true);
       previewRef.current?.scrollIntoView({
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
           ? 'auto'
@@ -97,6 +100,18 @@ export function PersonalizationEditor({
       });
     }
   }, [job?.id, job?.status]);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (previewOpen && !dialog.open) dialog.showModal();
+    else if (!previewOpen && dialog.open) dialog.close();
+    if (!previewOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [previewOpen]);
   useEffect(() => {
     let alive = true;
     fetch('/api/illustrations')
@@ -154,6 +169,7 @@ export function PersonalizationEditor({
     };
   }, [job?.id, job?.status, pollVersion]);
   function resetDesign() {
+    setPreviewOpen(false);
     setApproved(false);
     setImageReady(false);
     setMessage('');
@@ -305,6 +321,7 @@ export function PersonalizationEditor({
         customization_label: `${customizationLabel(d.config)}${d.config.name ? ` · ${d.config.name}` : ''}`,
       });
       setJob({ ...job, status: 'approved' });
+      setPreviewOpen(false);
       setMessage('Your approved illustration is saved and added to your bag.');
     } catch (e) {
       setError((e as Error).message);
@@ -314,6 +331,95 @@ export function PersonalizationEditor({
   }
   return (
     <div className="personalize-layout">
+      <dialog
+        ref={dialogRef}
+        aria-labelledby="personalized-preview-title"
+        className="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white p-5 text-ink shadow-xl backdrop:bg-black/60"
+        onCancel={() => setPreviewOpen(false)}
+        onClose={() => setPreviewOpen(false)}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <h2 id="personalized-preview-title" className="text-2xl">
+            Your personalized preview
+          </h2>
+          <button
+            type="button"
+            className="link p-2"
+            onClick={() => setPreviewOpen(false)}
+            autoFocus
+          >
+            Close
+          </button>
+        </div>
+        <p className="mt-2">
+          {product?.name} · {product?.size_label}
+        </p>
+        {drawable && (
+          <img
+            className="mx-auto my-4 max-h-[55dvh] w-auto max-w-full object-contain"
+            src={`/api/illustrations/${job!.id}?image=1&v=${imageVersion}`}
+            alt={`Finished personalized blanket preview for ${config.name || 'you'}`}
+            onLoad={() => setImageReady(true)}
+            onError={() => {
+              setImageReady(false);
+              setError(
+                'Your preview could not load. Close this window and select Reload preview to try again.',
+              );
+            }}
+          />
+        )}
+        {!imageReady && <p role="status">Loading your finished preview…</p>}
+        <p className="text-sm">
+          Check the likeness, artwork, spelling, and size. Screen colors may
+          differ from the printed blanket.
+        </p>
+        <label className="custom-checkbox my-4">
+          <input
+            type="checkbox"
+            checked={approved}
+            disabled={!imageReady || !!generating}
+            onChange={(e) => setApproved(e.target.checked)}
+          />
+          <span>
+            I have reviewed this preview and approve the likeness, artwork,
+            spelling, and selected size.
+          </span>
+        </label>
+        {error && (
+          <p role="alert" className="notice text-red-800">
+            {error}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            className="btn party-button"
+            disabled={
+              !!generating ||
+              !drawable ||
+              !imageReady ||
+              !approved ||
+              !consent ||
+              !ready
+            }
+            onClick={() => void save()}
+          >
+            {busy ? 'Saving…' : 'Approve preview & add to bag →'}
+          </button>
+          <button
+            type="button"
+            className="link p-2"
+            onClick={() => {
+              setPreviewOpen(false);
+              document
+                .querySelector('.personalize-controls')
+                ?.scrollIntoView({ block: 'start' });
+            }}
+          >
+            Make changes
+          </button>
+        </div>
+      </dialog>
       <section
         ref={previewRef}
         className="personalize-preview scroll-mt-5"
@@ -379,6 +485,13 @@ export function PersonalizationEditor({
             <p role="status" className="font-semibold">
               Your personalized preview is ready.
             </p>
+            <button
+              type="button"
+              className="btn party-button w-full"
+              onClick={() => setPreviewOpen(true)}
+            >
+              View personalized preview
+            </button>
             <button
               type="button"
               className="link text-sm"
@@ -624,6 +737,22 @@ export function PersonalizationEditor({
                 Check progress again
               </button>
             </p>
+          )}
+          {drawable && (
+            <div className="notice" role="status">
+              <strong>Your personalized image is ready!</strong>
+              <p className="my-2">
+                Open your preview, check the details, then approve it to add
+                your blanket to your bag.
+              </p>
+              <button
+                type="button"
+                className="btn party-button w-full"
+                onClick={() => setPreviewOpen(true)}
+              >
+                View personalized preview
+              </button>
+            </div>
           )}
           {job?.status === 'failed' && (
             <p className="notice text-red-800" role="alert">
