@@ -179,6 +179,33 @@ export function PersonalizationEditor({
       localStorage.removeItem(DRAFT);
     } catch {}
   }
+  function startOver() {
+    resetDesign();
+    shown.current = '';
+    autoStarted.current = false;
+    setAutoRequested(false);
+    setPhoto('');
+    setFile(null);
+    setConsent(false);
+    setError('');
+    setConfig({
+      ...defaultConfig,
+      template: 'catalog',
+      face_mode: 'main',
+      reference_name: product?.name,
+    });
+    // Allow choosing the same file again after discarding the preview.
+    const input = document.querySelector<HTMLInputElement>(
+      '.photo-upload input',
+    );
+    if (input) input.value = '';
+    setMessage(
+      'Preview declined. Choose your options and upload a photo to start again.',
+    );
+    document
+      .querySelector('.personalize-controls')
+      ?.scrollIntoView({ block: 'start' });
+  }
   function selectProduct(p: Product) {
     resetDesign();
     setAutoRequested(false);
@@ -418,6 +445,36 @@ export function PersonalizationEditor({
           >
             Make changes
           </button>
+        </div>
+        <div className="mt-5 border-t pt-4 space-y-3">
+          <button
+            type="button"
+            className="link block p-2"
+            disabled={busy}
+            onClick={startOver}
+          >
+            Decline preview & start over
+          </button>
+          <Link
+            className={`link block p-2 ${busy ? 'pointer-events-none' : ''}`}
+            href="/shop"
+            aria-disabled={busy}
+            onClick={(e) => {
+              if (busy) {
+                e.preventDefault();
+                return;
+              }
+              resetDesign();
+            }}
+          >
+            Abandon this design & return to shop
+          </Link>
+          <p className="text-xs text-ink/65">
+            Declining does not add this preview to your bag or place an order.
+            Starting over only creates another image when you upload a photo
+            with permission or request generation. Existing items in your bag
+            stay there.
+          </p>
         </div>
       </dialog>
       <section
@@ -752,6 +809,30 @@ export function PersonalizationEditor({
               >
                 View personalized preview
               </button>
+              <div className="mt-3 space-y-2">
+                <button
+                  type="button"
+                  className="link block"
+                  disabled={busy}
+                  onClick={startOver}
+                >
+                  Decline preview & start over
+                </button>
+                <Link
+                  className={`link block ${busy ? 'pointer-events-none' : ''}`}
+                  href="/shop"
+                  aria-disabled={busy}
+                  onClick={(e) => {
+                    if (busy) {
+                      e.preventDefault();
+                      return;
+                    }
+                    resetDesign();
+                  }}
+                >
+                  Abandon this design & return to shop
+                </Link>
+              </div>
             </div>
           )}
           {job?.status === 'failed' && (
@@ -797,9 +878,11 @@ export function PersonalizationEditor({
           {message && (
             <p role="status" className="notice">
               {message}{' '}
-              <Link className="link" href="/cart">
-                View bag & checkout →
-              </Link>
+              {job?.status === 'approved' && (
+                <Link className="link" href="/cart">
+                  View bag & checkout →
+                </Link>
+              )}
             </p>
           )}
           <div className="custom-assurances">
