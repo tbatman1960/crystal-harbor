@@ -3,11 +3,19 @@ import { NextResponse } from 'next/server';
 import { PersonalizationError } from './personalization/errors';
 import { ZodError } from 'zod';
 import { ShippingDestinationError } from './shipping-policy';
+export class OriginError extends Error {}
 export function origin(request: Request) {
   if (request.headers.get('origin') !== new URL(siteUrl()).origin)
-    throw new Error('Invalid origin');
+    throw new OriginError(
+      'This page is out of date. Refresh it and try again.',
+    );
 }
 export function failure(e: unknown) {
+  if (e instanceof OriginError)
+    return NextResponse.json(
+      { error: e.message, code: 'INVALID_ORIGIN' },
+      { status: 403 },
+    );
   if (e instanceof PersonalizationError)
     return NextResponse.json({ error: e.message }, { status: 400 });
   if (e instanceof ShippingDestinationError)
