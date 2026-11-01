@@ -15,7 +15,7 @@ test('preview accepts its configured page origin even when a runtime deploy alia
     assert.doesNotThrow(() =>
       origin(
         new Request(process.env.SITE_URL + '/api/illustrations', {
-          headers: { Origin: process.env.SITE_URL },
+          headers: { Origin: process.env.SITE_URL! },
         }),
       ),
     );
