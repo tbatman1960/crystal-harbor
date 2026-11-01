@@ -1,3 +1,4 @@
+import { BrandWordmark } from '@/components/brand-wordmark';
 import { siteUrl } from '@/lib/site-url';
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
@@ -31,6 +32,22 @@ export default async function RootLayout({
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
   return (
     <html lang="en">
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/fredoka-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/nunito-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body
         className="photo-studio"
         style={
@@ -53,21 +70,15 @@ export default async function RootLayout({
           <Analytics id={store?.ga4_id || null} />
           <div className="season-announcement">
             <span aria-hidden="true">✦ </span>
-            Your photo. Their favorite gift. Blankets from $13.
+            Big smiles. Bigger snuggles. Made with your photo.
             <span aria-hidden="true"> ✦</span>
           </div>
           <header className="border-b border-ink/10">
-            <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
+            <div className="shell fun-header-inner">
               <Link className="snuggle-wordmark" href="/">
-                {store?.store_name || 'SnuggleBug'}
-                <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
-                  a little comfort, a lot of character
-                </span>
+                <BrandWordmark name={store?.store_name || 'SnuggleBug'} />
               </Link>
-              <nav
-                aria-label="Main navigation"
-                className="flex flex-wrap items-center gap-4 text-sm"
-              >
+              <nav aria-label="Main navigation" className="fun-main-nav">
                 <Link href="/shop">Shop</Link>
                 <Link
                   href="/customize"
@@ -79,8 +90,10 @@ export default async function RootLayout({
                   Our story
                 </Link>
                 <Link href="/account">Account</Link>
-                <CartDrawer products={products} />
               </nav>
+              <div className="fun-header-bag">
+                <CartDrawer products={products} />
+              </div>
             </div>
           </header>
           <main id="main" className="min-h-[65vh]">
@@ -89,11 +102,11 @@ export default async function RootLayout({
           <footer className="mt-20 border-t border-ink/15 bg-sage/40 py-12">
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
-                <p className="font-serif text-2xl">
-                  {store?.store_name || 'SnuggleBug'}
-                </p>
+                <Link href="/" className="fun-footer-brand">
+                  <BrandWordmark name={store?.store_name || 'SnuggleBug'} />
+                </Link>
                 <p className="mt-3 text-sm">
-                  For big imaginations and little everyday comforts.
+                  Made for happy dances & movie-night snuggles.
                 </p>
               </div>
               <nav

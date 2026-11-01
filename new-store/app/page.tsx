@@ -1,3 +1,4 @@
+import { HappySparkle } from '@/components/brand-wordmark';
 import { service, check } from '@/lib/supabase';
 import { money } from '@/lib/types';
 import Link from 'next/link';
@@ -30,13 +31,19 @@ export default async function Home() {
                   alt={p.name}
                   fill
                   priority={i < 3}
-                  sizes="(max-width:767px) 48vw, 33vw"
+                  sizes="(max-width:600px) 96vw, 49vw"
                   className="object-cover"
                 />
+                <span className="fun-photo-sparkle">
+                  <HappySparkle />
+                </span>
               </div>
               <div className="landing-product-caption">
                 <h2>{p.name.replace(/^Personalized /, '')}</h2>
-                <span>From {money(p.price_cents)}</span>
+                <div className="fun-card-bottom">
+                  <span className="fun-price">From {money(p.price_cents)}</span>
+                  <span className="fun-make-yours">Make it yours →</span>
+                </div>
               </div>
             </Link>
           </article>
@@ -46,16 +53,14 @@ export default async function Home() {
         <p className="notice">Our blanket collection is coming soon.</p>
       )}
       <div className="landing-shopping-links">
-        <span>
-          Personalize any design · Four sizes · Preview before you buy
-        </span>
+        <span>Your face. Your favorite print. Your kind of cozy.</span>
         <Link href="/shop" className="link">
           View all blankets →
         </Link>
       </div>
       <section className="landing-details" aria-label="Shopping details">
         <details>
-          <summary>How personalization works</summary>
+          <summary>A little photo magic</summary>
           <p>
             Choose a blanket and size, upload your photo, then review your
             personalized preview. Approve your favorite to add it to your bag.

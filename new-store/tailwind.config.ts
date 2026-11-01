@@ -4,10 +4,10 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: '#253b32',
-        cream: '#faf8f2',
-        sage: '#e3e9df',
-        clay: '#a45e45',
+        ink: '#3c2448',
+        cream: '#fffaf6',
+        sage: '#f2e8f7',
+        clay: '#a8215d',
       },
     },
   },
