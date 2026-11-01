@@ -48,6 +48,7 @@ export function PersonalizationEditor({
     [selected, setSelected] = useState<Job | null>(null);
   const [serviceReady, setServiceReady] = useState<boolean | null>(null),
     [busy, setBusy] = useState(false),
+    [uploading, setUploading] = useState(false),
     [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [pollError, setPollError] = useState(''),
@@ -235,6 +236,8 @@ export function PersonalizationEditor({
   async function generate() {
     if (active || busy) return;
     setBusy(true);
+    setUploading(true);
+    setJob(null);
     setError('');
     setMessage('');
     try {
@@ -265,6 +268,7 @@ export function PersonalizationEditor({
     } catch (e) {
       setError((e as Error).message);
     } finally {
+      setUploading(false);
       setBusy(false);
     }
   }
@@ -615,7 +619,7 @@ export function PersonalizationEditor({
             disabled={!ready || !photo || !consent || loading || !serviceReady}
             onClick={() => void generate()}
           >
-            {busy
+            {uploading
               ? 'Uploading…'
               : active
                 ? 'Personalizing…'
@@ -630,9 +634,14 @@ export function PersonalizationEditor({
             contact us.
           </p>
         )}
-        {(active || busy) && (
+        {(active || uploading) && (
           <div className="processing-card" role="status" aria-live="polite">
             <h3>Your preview is on its way</h3>
+            {uploading && (
+              <p className="text-sm mt-2">
+                Uploading your selected photo securely…
+              </p>
+            )}
             <div
               className="stage-track"
               aria-label={`Step ${stageIndex + 1} of 5: ${stageNames[stageIndex]}`}
