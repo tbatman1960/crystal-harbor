@@ -17,29 +17,8 @@ export default async function Home() {
   return (
     <div>
       <section className="studio-hero shell">
-        <div className="studio-hero-copy">
-          <span className="studio-label">
-            LITTLE GIFTS. BIG MAIN-CHARACTER ENERGY.
-          </span>
-          <h1>
-            Their face.
-            <br />
-            Their world.
-            <br />
-            <em>One happy blanket.</em>
-          </h1>
-          <p>Your favorite photo, made into their new favorite thing.</p>
-          <Link className="btn" href="#blankets">
-            Find your blanket <span aria-hidden="true">↗</span>
-          </Link>
-          <div className="studio-hero-facts">
-            <span>From $13</span>
-            <span>4 cozy sizes</span>
-            <span>Preview before you buy</span>
-          </div>
-        </div>
         <div className="studio-hero-gallery">
-          {designs.slice(0, 2).map(({ product: p }, i) => (
+          {designs.slice(0, 3).map(({ product: p }, i) => (
             <Link
               href={`/products/${p.slug}`}
               key={p.id}
@@ -51,18 +30,22 @@ export default async function Home() {
                 height={750}
                 alt={p.name}
                 priority
+                sizes="(max-width:767px) 46vw, 31vw"
               />
               <span>
-                {i ? 'Big personality.' : 'Your next cozy obsession.'} ↗
+                {p.name.replace(/^Personalized /, '').replace(/ Blanket$/, '')}
               </span>
             </Link>
           ))}
-          <span className="hero-sticker" aria-hidden="true">
-            MADE
-            <br />
-            FOR YOU
-            <br />✦
-          </span>
+        </div>
+        <div className="studio-hero-copy">
+          <div>
+            <h1>Your photo. Your blanket.</h1>
+            <p>From $13 · Four sizes · Preview before you buy</p>
+          </div>
+          <Link className="btn" href="#blankets">
+            Choose your blanket →
+          </Link>
         </div>
       </section>
       <div className="studio-trust-strip">
@@ -73,8 +56,7 @@ export default async function Home() {
       <section id="blankets" className="shell py-14">
         <div className="flex items-end justify-between gap-4 mb-7">
           <div>
-            <p className="studio-label">PICK THEIR PERSONALITY</p>
-            <h2 className="mt-2">A little cozy. A lot of them.</h2>
+            <h2 className="studio-collection-title">Choose your design</h2>
           </div>
           <Link href="/shop" className="link text-sm">
             Shop all →
