@@ -156,12 +156,15 @@ export function PersonalizationEditor({
     if (modal && !d.open) d.showModal();
     else if (!modal && d.open) d.close();
     if (!modal) return;
+    // Reopening the same cached image does not fire another load event.
+    const image = d.querySelector('img');
+    if (image?.complete && image.naturalWidth > 0) setImageReady(true);
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = previous;
     };
-  }, [modal]);
+  }, [modal, selected?.id]);
   async function upload(files: FileList | null) {
     if (!files) return;
     setLoading(true);
