@@ -1,3 +1,4 @@
+import { siteUrl } from '@/lib/site-url';
 import { NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
@@ -21,9 +22,30 @@ import { PersonalizationError } from '@/lib/personalization/errors';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET() {
+  const {
+    data: { user },
+  } = await db().auth.getUser();
+  const hash = (await import('@/lib/personalization/server')).sessionHash();
+  const client = service();
+  let historyQuery = client
+    .from('illustration_jobs')
+    .select('id,status,stage,config,product_id,created_at')
+    .gte('created_at', new Date(Date.now() - 7 * 86400000).toISOString())
+    .neq('status', 'purging')
+    .order('created_at', { ascending: false })
+    .limit(30);
+  const history = user
+    ? await (hash
+        ? historyQuery.or(`user_id.eq.${user.id},session_hash.eq.${hash}`)
+        : historyQuery.eq('user_id', user.id))
+    : hash
+      ? await historyQuery.eq('session_hash', hash)
+      : { data: [], error: null };
+  check(history.error);
   const s = generationSettings();
   return NextResponse.json(
     {
+      history: history.data || [],
       ready: s.ready,
       hourLimit: s.hourLimit,
       reason: s.ready
@@ -164,7 +186,7 @@ export async function POST(req: Request) {
     );
     const expires = Date.now() + 10 * 60000;
     const response = await fetch(
-      `${process.env.SITE_URL}/.netlify/functions/generate-illustration-background`,
+      `${siteUrl()}/.netlify/functions/generate-illustration-background`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

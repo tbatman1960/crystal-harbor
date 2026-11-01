@@ -1,3 +1,4 @@
+import { couponDiscount } from './studio-commerce';
 import 'server-only';
 import { ownedCustomization } from './personalization/server';
 import {
@@ -12,7 +13,12 @@ import { db, check } from './supabase';
 import { settings } from './data';
 import { tax, productShipping } from './pricing';
 import type { CartItem, Address, Product } from './types';
-export async function quote(items: CartItem[], address: Address) {
+export async function quote(
+  items: CartItem[],
+  address: Address,
+  couponCode?: string,
+  couponEmail?: string,
+) {
   assertShippingDestination(address);
   await checkPostalState(address);
   const { data, error } = await db()
@@ -70,10 +76,12 @@ export async function quote(items: CartItem[], address: Address) {
   const s = await settings();
   // Validate the combined blanket limit even when free shipping applies.
   const fixedRate = productShipping(lines);
+  const discount = await couponDiscount(couponCode, couponEmail, subtotal);
   return {
+    discount,
     lines,
     subtotal,
-    tax: tax(subtotal, address, s),
+    tax: tax(subtotal - discount, address, s),
     rates:
       s.free_shipping_threshold_cents !== null &&
       subtotal >= s.free_shipping_threshold_cents

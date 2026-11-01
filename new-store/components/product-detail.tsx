@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from './cart-provider';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
+import { SizeSelector } from './size-selector';
 import { BLANKET_ORDER_LIMIT } from '@/lib/pricing';
 export function ProductDetail({
   product: p,
@@ -66,45 +67,46 @@ export function ProductDetail({
       </section>
       <section className="md:py-8">
         <p className="eyebrow mb-5 text-clay">
-          Ready for your next cozy moment
+          YOUR PHOTO. THEIR NEW FAVORITE.
         </p>
         <h1 className="text-4xl md:text-5xl">{p.name}</h1>
-        {sizes.length > 1 ? (
-          <label className="mt-6 max-w-sm">
-            Choose a size
-            <select
-              value={p.slug}
-              onChange={(e) => router.push(`/products/${e.target.value}`)}
-            >
-              {sizes.map((size) => (
-                <option key={size.id} value={size.slug}>
-                  {size.size_label || 'Standard'} — {money(size.price_cents)}
-                  {!hasStock(size) ? ' · Sold out' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : p.size_label ? (
-          <p className="mt-4 text-sm">Size: {p.size_label}</p>
-        ) : null}
+        <div className="mt-6">
+          <SizeSelector
+            sizes={sizes.length ? sizes : [p]}
+            selected={p.id}
+            onSelect={(id) => {
+              const size = sizes.find((x) => x.id === id);
+              if (size)
+                router.push(`/products/${size.slug}`, { scroll: false });
+            }}
+          />
+        </div>
         <p className="mt-5 text-xl">{money(p.price_cents)}</p>
-        <p className="mt-7 whitespace-pre-line text-ink/75">{p.description}</p>
-        {p.shipping_group === 'blankets' && (
-          <p className="notice mt-6">
-            Shipping: {money(p.shipping_first_unit_cents || 0)} for the first
-            blanket, plus {money(p.shipping_additional_unit_cents)} for each
-            additional blanket. Mix designs and sizes, up to{' '}
-            {BLANKET_ORDER_LIMIT} blankets per order.
+        <Link
+          href={`/customize?product=${p.slug}`}
+          className="btn w-full mt-6"
+          aria-label={`Customize ${p.name}`}
+        >
+          Customize with your photo ✦
+        </Link>
+        <p className="mt-3 text-xs text-center">
+          Create a preview. Approve it. Then add to your bag.
+        </p>
+        <details className="studio-product-description mt-6">
+          <summary>About this blanket</summary>
+          <p className="mt-3 whitespace-pre-line text-sm">{p.description}</p>
+        </details>
+        <details className="studio-product-description">
+          <summary>Shipping & ordering</summary>
+          <p className="mt-3 text-sm">
+            $7 for your first blanket, plus $1 each additional. Mix designs and
+            sizes, up to five blankets per order. Delivery outside Indiana.
+            Review and approve personalized artwork before ordering.
           </p>
-        )}
-        {p.shipping_group === 'blankets' && (
-          <Link
-            href={`/customize?product=${p.slug}`}
-            className="personalization-link"
-          >
-            ✦ Want a blanket starring you? Explore personalized designs →
-          </Link>
-        )}
+        </details>
+        <p className="mt-6 text-xs text-ink/60">
+          Prefer the original design without a photo? Add it below.
+        </p>
         <div className="mt-8 flex items-end gap-4">
           <label className="w-24">
             Quantity
@@ -140,7 +142,7 @@ export function ProductDetail({
               setAdded(true);
             }}
           >
-            {hasStock(p) ? 'Add to bag' : 'Sold out'}
+            {hasStock(p) ? 'Add original design to bag' : 'Sold out'}
           </button>
         </div>
         {added && (

@@ -31,10 +31,12 @@ export function CartPage({
   const [contact, setContact] = useState(email || '');
   const [quote, setQuote] = useState<{
     subtotal: number;
+    discount: number;
     tax: number;
     rates: Rate[];
   } | null>(null);
   const [method, setMethod] = useState('');
+  const [couponCode, setCouponCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [version, setVersion] = useState('');
@@ -54,14 +56,19 @@ export function CartPage({
         : 0),
     0,
   );
-  const current = JSON.stringify({ items, address });
+  const current = JSON.stringify({ items, address, couponCode, contact });
   const validQuote = version === current ? quote : null;
   const rate = validQuote?.rates.find((r) => r.id === method);
   async function getRates() {
     setError('');
     setPending(true);
     try {
-      const q = await api('/api/quote', { items, address });
+      const q = await api('/api/quote', {
+        items,
+        address,
+        coupon_code: couponCode,
+        coupon_email: contact || undefined,
+      });
       setQuote(q);
       setVersion(current);
       setMethod(q.rates[0].id);
@@ -81,6 +88,7 @@ export function CartPage({
         billing: same ? address : billing,
         email: contact,
         shipping_method: method,
+        coupon_code: couponCode,
       });
       window.location.assign(data.url);
     } catch (e) {
@@ -277,6 +285,20 @@ export function CartPage({
               onChange={(e) => setContact(e.target.value)}
             />
           </label>
+          <label>
+            Coupon code (optional)
+            <input
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              maxLength={60}
+              placeholder="Enter your coupon code"
+              autoComplete="off"
+            />
+            <span className="block text-xs mt-2">
+              Use the email the coupon was issued to. Discount is verified with
+              shipping and tax.
+            </span>
+          </label>
           <fieldset>
             <legend className="mb-4 font-semibold">Shipping address</legend>
             <AddressFields
@@ -339,6 +361,12 @@ export function CartPage({
               <dt>Subtotal</dt>
               <dd>{money(validQuote?.subtotal ?? subtotal)}</dd>
             </div>
+            {!!validQuote?.discount && (
+              <div className="flex justify-between text-[var(--party-pink)]">
+                <dt>Coupon discount</dt>
+                <dd>−{money(validQuote.discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt>Estimated shipping</dt>
               <dd>{rate ? money(rate.amount) : 'Enter address'}</dd>
@@ -351,7 +379,8 @@ export function CartPage({
               <dt>{validQuote ? 'Total' : 'Subtotal'}</dt>
               <dd>
                 {money(
-                  (validQuote?.subtotal ?? subtotal) +
+                  (validQuote?.subtotal ?? subtotal) -
+                    (validQuote?.discount || 0) +
                     (rate?.amount || 0) +
                     (validQuote?.tax || 0),
                 )}

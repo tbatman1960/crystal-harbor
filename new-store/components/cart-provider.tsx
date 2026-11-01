@@ -7,6 +7,8 @@ import { cartKey } from '@/lib/personalization/designs';
 type Context = {
   items: CartItem[];
   ready: boolean;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
   error: string;
   setItems: (items: CartItem[]) => void;
   add: (
@@ -18,6 +20,8 @@ type Context = {
 const CartContext = createContext<Context>({
   items: [],
   ready: false,
+  drawerOpen: false,
+  setDrawerOpen: () => {},
   error: '',
   setItems: () => {},
   add: () => {},
@@ -25,6 +29,7 @@ const CartContext = createContext<Context>({
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setState] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState('');
   const auth = useRef(false);
   const queue = useRef(Promise.resolve());
@@ -35,8 +40,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       try {
         local = cartSchema.parse(
           JSON.parse(
-            localStorage.getItem('snuggle-personalization-preview-cart') ||
-              '[]',
+            localStorage.getItem('snuggle-photo-gift-studio-cart') || '[]',
           ),
         );
       } catch {}
@@ -58,7 +62,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         const all = [...merged.values()].slice(0, 50);
         try {
           localStorage.setItem(
-            'snuggle-personalization-preview-cart',
+            'snuggle-photo-gift-studio-cart',
             JSON.stringify(all),
           );
         } catch {}
@@ -83,7 +87,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setState(next);
     try {
       localStorage.setItem(
-        'snuggle-personalization-preview-cart',
+        'snuggle-photo-gift-studio-cart',
         JSON.stringify(next),
       );
     } catch {
@@ -108,6 +112,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       'customization_id' | 'customization_label'
     > = {},
   ) {
+    setDrawerOpen(true);
     const key = cartKey({ product_id: id, ...customization });
     const existing = items.find((i) => cartKey(i) === key);
     setItems(
@@ -124,7 +129,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     );
   }
   return (
-    <CartContext.Provider value={{ items, ready, error, setItems, add }}>
+    <CartContext.Provider
+      value={{ items, ready, error, setItems, add, drawerOpen, setDrawerOpen }}
+    >
       {children}
     </CartContext.Provider>
   );

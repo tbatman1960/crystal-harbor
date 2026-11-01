@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 export const metadata = {
   title: 'Make a blanket starring you',
   description:
-    'Turn a favorite face into a coordinated illustration, add a name, and approve your personalized blanket.',
+    'Create a photo-personalized blanket, compare your previews, and choose the version you love.',
 };
 export default async function Customize({
   searchParams,
@@ -36,34 +36,6 @@ export default async function Customize({
           </p>
         </div>
       )}
-      <section className="custom-how">
-        <h2>A gift with their name written all over it.</h2>
-        <div>
-          {[
-            [
-              '01',
-              'Find their vibe',
-              'Choose from the same six blanket designs and four sizes in our store.',
-            ],
-            [
-              '02',
-              'Put them in the picture',
-              'Confirm photo permission and upload a clear portrait. Your personalized preview appears automatically after processing.',
-            ],
-            [
-              '03',
-              'Give a little happy',
-              'Approve the artwork. We save the exact design with your order.',
-            ],
-          ].map(([n, h, p]) => (
-            <article key={n}>
-              <span>{n}</span>
-              <h3>{h}</h3>
-              <p>{p}</p>
-            </article>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { siteUrl } from '@/lib/site-url';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { admin, service, check } from '@/lib/supabase';
@@ -67,7 +68,7 @@ export async function POST(req: Request) {
     if (job.status === 'queued') {
       const expires = Date.now() + 10 * 60000;
       const response = await fetch(
-        `${process.env.SITE_URL}/.netlify/functions/generate-print-background`,
+        `${siteUrl()}/.netlify/functions/generate-print-background`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

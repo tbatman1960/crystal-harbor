@@ -38,6 +38,7 @@ export async function GET(
     return NextResponse.json(
       {
         id: job.id,
+        stage: job.stage,
         status: job.status === 'purging' ? 'failed' : job.status,
         config: job.config,
         product_id: job.product_id,

@@ -1,84 +1,83 @@
+import { service, check } from '@/lib/supabase';
+import { money } from '@/lib/types';
 import Link from 'next/link';
 import Image from 'next/image';
-import { catalogImage } from '@/lib/personalization/catalog-reference';
 import { catalog } from '@/lib/data';
+import { catalogImage } from '@/lib/personalization/catalog-reference';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { ProductCard } from '@/components/product-card';
-import { collectionTheme as theme } from '@/lib/collection-theme';
 export const dynamic = 'force-dynamic';
 export default async function Home() {
-  const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
-  const designs = groupCatalog(products);
+  const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [],
+    designs = groupCatalog(products);
+  const { data: offers, error } = process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? await service().from('studio_settings').select('*').eq('id', 1).single()
+    : { data: null, error: null };
+  check(error);
   return (
-    <div className="collection-page">
-      <section
-        className="shell pt-6 pb-10 md:pt-10"
-        aria-labelledby="personalized-heading"
-      >
-        <div className="custom-hero">
-          <div className="self-center">
-            <p className="collection-label">
-              A LITTLE COZY. A WHOLE LOT OF YOU.
-            </p>
-            <h1 id="personalized-heading" className="mt-5">
-              Their face.
-              <br />
-              Their name.
-              <br />
-              <span>Their favorite gift.</span>
-            </h1>
-            <p className="mt-6 max-w-md text-ink/75">
-              Big smiles come wrapped in little moments. Make a blanket starring
-              someone you love, or find a ready-to-love print from our cozy
-              collection.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link className="btn party-button" href="/customize">
-                Make it personal ↗
-              </Link>
-              <Link className="btn party-outline" href="/shop">
-                Shop all blankets
-              </Link>
-            </div>
-            <p className="mt-6 text-sm">
-              ♡ Four sizes · From $13 · Preview before you buy
-            </p>
-          </div>
-          <div
-            className="custom-hero-art"
-            aria-label="Actual blanket designs from our store"
-          >
-            {designs.slice(0, 2).map(({ product: p }) => (
-              <div key={p.id}>
-                <Image
-                  src={catalogImage(p) || '/placeholder.svg'}
-                  alt={`${p.name} — original catalog product`}
-                  width={600}
-                  height={800}
-                  priority
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            ))}
+    <div>
+      <section className="studio-hero shell">
+        <div className="studio-hero-copy">
+          <span className="studio-label">
+            LITTLE GIFTS. BIG MAIN-CHARACTER ENERGY.
+          </span>
+          <h1>
+            Their face.
+            <br />
+            Their world.
+            <br />
+            <em>One happy blanket.</em>
+          </h1>
+          <p>Your favorite photo, made into their new favorite thing.</p>
+          <Link className="btn" href="#blankets">
+            Find your blanket <span aria-hidden="true">↗</span>
+          </Link>
+          <div className="studio-hero-facts">
+            <span>From $13</span>
+            <span>4 cozy sizes</span>
+            <span>Preview before you buy</span>
           </div>
         </div>
+        <div className="studio-hero-gallery">
+          {designs.slice(0, 2).map(({ product: p }, i) => (
+            <Link
+              href={`/products/${p.slug}`}
+              key={p.id}
+              className={`hero-blanket hero-blanket-${i}`}
+            >
+              <Image
+                src={catalogImage(p) || '/placeholder.svg'}
+                width={600}
+                height={750}
+                alt={p.name}
+                priority
+              />
+              <span>
+                {i ? 'Big personality.' : 'Your next cozy obsession.'} ↗
+              </span>
+            </Link>
+          ))}
+          <span className="hero-sticker" aria-hidden="true">
+            MADE
+            <br />
+            FOR YOU
+            <br />✦
+          </span>
+        </div>
       </section>
-      <section
-        className="shell pb-12"
-        aria-labelledby="custom-collection-heading"
-      >
-        <div className="collection-section-heading">
+      <div className="studio-trust-strip">
+        <span>✓ Personalized with your photo</span>
+        <span>♡ Approve your preview</span>
+        <span>✦ $7 shipping + $1 each extra</span>
+      </div>
+      <section id="blankets" className="shell py-14">
+        <div className="flex items-end justify-between gap-4 mb-7">
           <div>
-            <p className="collection-label">THE YOU COLLECTION</p>
-            <h2 id="custom-collection-heading">
-              Ordinary blanket? Not your style.
-            </h2>
-            <p className="mt-3 text-ink/75">
-              Your actual favorite prints. Your photo, drawn into the design.
-            </p>
+            <p className="studio-label">PICK THEIR PERSONALITY</p>
+            <h2 className="mt-2">A little cozy. A lot of them.</h2>
           </div>
-          <Link className="collection-text-link" href="/customize">
-            Create your blanket ↗
+          <Link href="/shop" className="link text-sm">
+            Shop all →
           </Link>
         </div>
         <div className="collection-grid">
@@ -88,83 +87,92 @@ export default async function Home() {
               product={product}
               sizeCount={sizeCount}
               accent={i}
-              personalize
             />
           ))}
         </div>
       </section>
-      <div className="collection-ribbon">
-        <div className="shell flex flex-wrap items-center justify-center gap-x-7 gap-y-2 py-4">
-          <span aria-hidden="true">✦</span>
-          <p>{theme.banner}</p>
-          <span aria-hidden="true">✦</span>
-          <span className="hidden text-sm sm:inline">
-            Movie-night energy, all day long.
-          </span>
-        </div>
-      </div>
-      <section className="shell pb-14" aria-labelledby="size-heading">
-        <div className="size-party">
-          <div>
-            <p className="collection-label">Little lap? Whole-couch mood?</p>
-            <h2 id="size-heading">Your cozy. Your size.</h2>
-            <p className="mt-3 max-w-md text-ink/75">
-              Every design comes in all four sizes. Same personality, just the
-              right amount of blanket.
+      {offers?.rewards_enabled && (
+        <aside className="shell mb-8">
+          <div className="studio-reward-banner">
+            <strong>A little thank-you for next time.</strong>
+            <p>
+              Spend {money(offers.reward_threshold_cents)} on blankets and earn{' '}
+              {offers.reward_percent}% off a future order of{' '}
+              {money(offers.reward_minimum_cents)} or more.
             </p>
-            <Link
-              className="collection-text-link mt-5 inline-flex"
-              href="/shop"
-            >
-              Pick your perfect fit <span aria-hidden="true">↗</span>
+            <small>
+              Qualifying subtotal after discounts, before shipping and tax.
+              Coupon sent after payment, valid {offers.reward_valid_days} days,
+              single use with the same email.
+            </small>
+          </div>
+        </aside>
+      )}
+      <section className="studio-steps shell">
+        <div>
+          <p className="studio-label">FROM PHOTO TO FAVORITE</p>
+          <h2>
+            Three little steps.
+            <br />
+            One big smile.
+          </h2>
+        </div>
+        {[
+          ['01', 'Pick a blanket', 'Choose a design and size.', '▧'],
+          [
+            '02',
+            'Make it theirs',
+            'Upload a photo. Compare your previews.',
+            '☺',
+          ],
+          [
+            '03',
+            'Love it? Order it.',
+            'Approve your favorite before checkout.',
+            '♡',
+          ],
+        ].map(([n, h, p, icon]) => (
+          <article key={n}>
+            <span className="step-graphic" aria-hidden="true">
+              {icon}
+            </span>
+            <small>{n}</small>
+            <h3>{h}</h3>
+            <p>{p}</p>
+          </article>
+        ))}
+      </section>
+      <section className="shell py-14">
+        <div className="studio-size-banner">
+          <div>
+            <p className="studio-label">LITTLE LAPS TO BIG LOUNGING</p>
+            <h2>Find their perfect fit.</h2>
+            <p className="mt-3">Four sizes. Every design. All personality.</p>
+            <Link className="btn mt-5" href="/shop">
+              Choose your size →
             </Link>
           </div>
-          <ul className="size-party-grid">
+          <div
+            className="size-silhouettes"
+            aria-label="Sizes 30 by 40, 40 by 50, 50 by 60, and 60 by 80 inches"
+          >
             {[
-              ['30 × 40', 'The little snuggle', '$13'],
-              ['40 × 50', 'The cozy companion', '$19'],
-              ['50 × 60', 'The couch favorite', '$25'],
-              ['60 × 80', 'The big cozy energy', '$32'],
-            ].map(([size, label, price]) => (
-              <li key={size}>
-                <span className="size-label">{label}</span>
-                <p>
-                  {size}
-                  <span className="text-sm"> in</span>
-                </p>
-                <span className="size-price">{price}</span>
-              </li>
+              [30, 40, 13],
+              [40, 50, 19],
+              [50, 60, 25],
+              [60, 80, 32],
+            ].map(([w, h, price]) => (
+              <div key={w}>
+                <div
+                  style={{ width: `${w * 1.4}px`, height: `${h * 1.4}px` }}
+                />
+                <strong>
+                  {w} × {h}
+                </strong>
+                <span>${price}</span>
+              </div>
             ))}
-          </ul>
-        </div>
-      </section>
-      <section className="shell pb-8" aria-label="The SnuggleBug way">
-        <div className="cozy-promises">
-          {[
-            [
-              '♡',
-              'Printed for you',
-              'Pick a design and size. We print your blanket after you order.',
-            ],
-            [
-              '✦',
-              'Mix your favorites',
-              'Shipping is $7 for the first blanket, then $1 each extra. Up to five blankets per order.',
-            ],
-            [
-              '✧',
-              'A new mood each season',
-              'Fresh collections, playful finds, and that same feel-good cozy.',
-            ],
-          ].map(([icon, title, text]) => (
-            <div key={title}>
-              <span className="promise-icon" aria-hidden="true">
-                {icon}
-              </span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </div>
-          ))}
+          </div>
         </div>
       </section>
     </div>

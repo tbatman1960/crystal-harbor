@@ -1,3 +1,4 @@
+import { siteUrl } from '@/lib/site-url';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { checkoutSchema } from '@/lib/validation';
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
   try {
     origin(req);
     const v = checkoutSchema.parse(await req.json());
-    const q = await quote(v.items, v.address);
+    const q = await quote(v.items, v.address, v.coupon_code, v.email);
     const rate = q.rates.find((r) => r.id === v.shipping_method);
     if (!rate)
       throw new Error('Shipping rate unavailable. Refresh shipping rates.');
@@ -34,6 +35,13 @@ export async function POST(req: Request) {
     });
     check(error);
     draft = id;
+    const { data: discount, error: couponError } = await client.rpc(
+      'attach_studio_coupon',
+      { p_draft: id, p_code: v.coupon_code || '' },
+    );
+    check(couponError);
+    if (discount !== q.discount)
+      throw new Error('Coupon changed. Please refresh your cart.');
     const st = stripe();
     let customer: string | undefined;
     if (user) {
@@ -56,6 +64,19 @@ export async function POST(req: Request) {
         check(error);
       }
     }
+    let stripeCoupon: string | undefined;
+    if (q.discount > 0) {
+      const coupon = await st.coupons.create(
+        {
+          amount_off: q.discount,
+          currency: 'usd',
+          duration: 'once',
+          name: 'SnuggleBug coupon',
+        },
+        { idempotencyKey: `discount-${id}` },
+      );
+      stripeCoupon = coupon.id;
+    }
     stripeAttempted = true;
     const session = await st.checkout.sessions.create(
       {
@@ -64,7 +85,8 @@ export async function POST(req: Request) {
         customer,
         customer_email: customer ? undefined : v.email,
         client_reference_id: id,
-        metadata: { draft_id: id },
+        metadata: { draft_id: id, studio: 'photo-gift' },
+        discounts: stripeCoupon ? [{ coupon: stripeCoupon }] : undefined,
         expires_at: Math.floor(Date.now() / 1000) + 1800,
         billing_address_collection: 'required',
         line_items: [
@@ -93,8 +115,8 @@ export async function POST(req: Request) {
             quantity: 1,
           },
         ],
-        success_url: `${process.env.SITE_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.SITE_URL}/cart?cancelled=1`,
+        success_url: `${siteUrl()}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${siteUrl()}/cart?cancelled=1`,
       },
       { idempotencyKey: id },
     );

@@ -19,7 +19,11 @@ export async function processIllustration(id: string) {
   // Claim exactly once. Netlify retries must never repeat a billable model request.
   const { data: job, error: claimError } = await client
     .from('illustration_jobs')
-    .update({ status: 'processing', started_at: new Date().toISOString() })
+    .update({
+      status: 'processing',
+      stage: 'preparing',
+      started_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .eq('status', 'queued')
     .select('*')
@@ -81,6 +85,10 @@ export async function processIllustration(id: string) {
         .png()
         .toBuffer();
     }
+    await client
+      .from('illustration_jobs')
+      .update({ stage: 'generating' })
+      .eq('id', id);
     const generated = await redrawPortrait(
       photo,
       reference,
@@ -88,6 +96,10 @@ export async function processIllustration(id: string) {
       process.env.OPENAI_API_KEY!,
       settings.model,
     );
+    await client
+      .from('illustration_jobs')
+      .update({ stage: 'finishing' })
+      .eq('id', id);
     const image = await sharp(generated, { limitInputPixels: 16000000 })
       .jpeg({ quality: 95, chromaSubsampling: '4:4:4' })
       .toBuffer();
@@ -114,6 +126,7 @@ export async function processIllustration(id: string) {
       .from('illustration_jobs')
       .update({
         status: 'ready',
+        stage: 'ready',
         artwork_path,
         width: metadata.width,
         height: metadata.height,
@@ -131,6 +144,7 @@ export async function processIllustration(id: string) {
       .from('illustration_jobs')
       .update({
         status: 'failed',
+        stage: 'failed',
         error_code: code,
         completed_at: new Date().toISOString(),
       })

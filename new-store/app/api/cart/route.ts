@@ -10,7 +10,7 @@ export async function GET() {
     } = await client.auth.getUser();
     if (!user) return NextResponse.json({ items: [], authenticated: false });
     const { data, error } = await client
-      .from('personalization_carts')
+      .from('studio_carts')
       .select('items')
       .eq('user_id', user.id)
       .maybeSingle();
@@ -34,7 +34,7 @@ export async function PUT(req: Request) {
     if (!user) throw new Error('Unauthorized');
     check(
       (
-        await client.from('personalization_carts').upsert({
+        await client.from('studio_carts').upsert({
           user_id: user.id,
           items,
           updated_at: new Date().toISOString(),

@@ -23,11 +23,16 @@ export async function POST(req: Request) {
         !s.metadata?.draft_id
       )
         throw new Error('Invalid paid session');
-      const { error } = await service().rpc('complete_personalized_checkout', {
-        p_id: s.metadata.draft_id,
-        p_session: s.id,
-        p_total: s.amount_total,
-      });
+      const { error } = await service().rpc(
+        s.metadata.studio === 'photo-gift'
+          ? 'complete_studio_checkout'
+          : 'complete_personalized_checkout',
+        {
+          p_id: s.metadata.draft_id,
+          p_session: s.id,
+          p_total: s.amount_total,
+        },
+      );
       check(error);
     } else if (event.type === 'checkout.session.expired') {
       const id = event.data.object.metadata?.draft_id;

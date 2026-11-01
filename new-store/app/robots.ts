@@ -1,6 +1,7 @@
+import { siteUrl } from '@/lib/site-url';
 import type { MetadataRoute } from 'next';
 export default function robots(): MetadataRoute.Robots {
-  if ((process.env.SITE_URL || '').includes('deploy-preview-'))
+  if (siteUrl().includes('deploy-preview-'))
     return { rules: { userAgent: '*', disallow: '/' } };
   return {
     rules: {
@@ -16,6 +17,6 @@ export default function robots(): MetadataRoute.Robots {
         '/auth',
       ],
     },
-    sitemap: `${process.env.SITE_URL || 'http://localhost:3000'}/sitemap.xml`,
+    sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }

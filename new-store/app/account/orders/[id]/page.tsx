@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { account } from '@/lib/account';
@@ -14,5 +15,23 @@ export default async function Order({ params }: { params: { id: string } }) {
     .maybeSingle();
   check(error);
   if (!data) notFound();
-  return <OrderView order={data} />;
+  return (
+    <>
+      <OrderView order={data} />
+      {['shipped', 'delivered'].includes(data.status) && (
+        <section className="mt-8">
+          <h2 className="text-2xl">Review your blankets</h2>
+          {data.order_items.map(
+            (i: { id: string; product_name_snapshot: string }) => (
+              <p key={i.id} className="mt-3">
+                <Link className="link" href={`/review?item=${i.id}`}>
+                  Review {i.product_name_snapshot}
+                </Link>
+              </p>
+            ),
+          )}
+        </section>
+      )}
+    </>
+  );
 }

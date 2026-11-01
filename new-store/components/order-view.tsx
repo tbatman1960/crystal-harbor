@@ -8,6 +8,7 @@ export type Order = {
   created_at: string;
   status: string;
   subtotal_cents: number;
+  discount_cents?: number;
   shipping_cents: number;
   tax_cents: number;
   total_cents: number;
@@ -74,6 +75,9 @@ export function OrderView({
           <dl className="ml-auto mt-5 max-w-sm space-y-2">
             {[
               ['Subtotal', o.subtotal_cents],
+              ...(o.discount_cents
+                ? [['Coupon discount', -o.discount_cents]]
+                : []),
               ['Shipping', o.shipping_cents],
               ['Tax', o.tax_cents],
               ['Total', o.total_cents],

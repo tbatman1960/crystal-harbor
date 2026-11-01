@@ -1,9 +1,10 @@
+import { siteUrl } from '@/lib/site-url';
 import { NextResponse } from 'next/server';
 import { PersonalizationError } from './personalization/errors';
 import { ZodError } from 'zod';
 import { ShippingDestinationError } from './shipping-policy';
 export function origin(request: Request) {
-  if (request.headers.get('origin') !== new URL(process.env.SITE_URL!).origin)
+  if (request.headers.get('origin') !== new URL(siteUrl()).origin)
     throw new Error('Invalid origin');
 }
 export function failure(e: unknown) {

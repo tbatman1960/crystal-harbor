@@ -27,6 +27,7 @@ export const templates = [
 ] as const;
 export const customizationConfig = z.object({
   template: z.enum(['disco', 'cosmic', 'garden', 'catalog']),
+  render_style: z.enum(['photo', 'illustrated']).optional(),
   reference_name: z.string().trim().max(150).optional(),
   reference_image: z.string().url().max(2000).optional(),
   face_mode: z.enum(['main', 'all']).optional(),

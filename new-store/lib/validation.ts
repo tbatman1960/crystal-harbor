@@ -27,6 +27,13 @@ export const cartSchema = z
     'Duplicate products',
   );
 export const quoteSchema = z.object({
+  coupon_code: z
+    .string()
+    .trim()
+    .max(60)
+    .regex(/^[A-Za-z0-9-]*$/)
+    .optional(),
+  coupon_email: z.string().email().max(254).optional(),
   items: cartSchema.refine((a) => a.length > 0, 'Your cart is empty'),
   address: addressSchema,
 });

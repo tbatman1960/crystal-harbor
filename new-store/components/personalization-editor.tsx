@@ -1,29 +1,33 @@
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useCart } from './cart-provider';
 import {
-  customizationLabel,
-  customizationConfig,
   defaultConfig,
   type CustomizationConfig,
 } from '@/lib/personalization/designs';
-import type { Product } from '@/lib/types';
-import { money } from '@/lib/types';
-import { hasStock } from '@/lib/availability';
-import { groupCatalog } from '@/lib/catalog-presentation';
 import { catalogImage } from '@/lib/personalization/catalog-reference';
-import { ArtworkDownload } from './artwork-download';
+import { money, type Product } from '@/lib/types';
+import { BlanketPreview } from './blanket-preview';
+import { SizeSelector } from './size-selector';
 type Job = {
   id: string;
   status: string;
+  stage?: string;
   config: CustomizationConfig;
   product_id: string;
   error?: string;
-  width?: number;
-  height?: number;
+  created_at?: string;
 };
-const DRAFT = 'snuggle-illustration-draft';
+type Photo = { id: string; url: string; file: Blob; name: string };
+const stages = ['queued', 'preparing', 'generating', 'finishing', 'ready'];
+const stageNames = [
+  'Queued',
+  'Preparing your photos',
+  'Personalizing the design',
+  'Preparing your blanket preview',
+  'Ready to review',
+];
 export function PersonalizationEditor({
   products,
   initialProductId,
@@ -32,115 +36,86 @@ export function PersonalizationEditor({
   initialProductId?: string;
 }) {
   const first = products.find((p) => p.id === initialProductId) || products[0];
-  const previewRef = useRef<HTMLElement>(null),
-    dialogRef = useRef<HTMLDialogElement>(null),
-    shown = useRef(''),
-    autoStarted = useRef(false);
-  const [autoRequested, setAutoRequested] = useState(false),
-    [previewOpen, setPreviewOpen] = useState(false),
-    [imageVersion, setImageVersion] = useState(0);
-  const { add, ready } = useCart();
-  const [config, setConfig] = useState<CustomizationConfig>({
-      ...defaultConfig,
-      template: 'catalog',
-      face_mode: 'main',
-      reference_name: first?.name,
-    }),
-    [productId, setProductId] = useState(first?.id || '');
-  const [photo, setPhoto] = useState(''),
-    [file, setFile] = useState<Blob | null>(null);
-  const [consent, setConsent] = useState(false),
-    [approved, setApproved] = useState(false),
-    [imageReady, setImageReady] = useState(false);
-  const [busy, setBusy] = useState(false),
-    [loadingPhoto, setLoadingPhoto] = useState(false),
-    [error, setError] = useState(''),
-    [message, setMessage] = useState('');
-  const [serviceReady, setServiceReady] = useState<boolean | null>(null),
+  const [productId, setProductId] = useState(first?.id || ''),
+    [name, setName] = useState(''),
+    [faceMode, setFaceMode] = useState<'main' | 'all'>('main');
+  const [photos, setPhotos] = useState<Photo[]>([]),
+    [photoId, setPhotoId] = useState(''),
+    [consent, setConsent] = useState(false),
+    [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<Job[]>([]),
     [job, setJob] = useState<Job | null>(null),
+    [selected, setSelected] = useState<Job | null>(null);
+  const [serviceReady, setServiceReady] = useState<boolean | null>(null),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(''),
+    [message, setMessage] = useState(''),
     [pollError, setPollError] = useState(''),
     [pollVersion, setPollVersion] = useState(0);
-  const product = products.find((p) => p.id === productId),
-    valid = customizationConfig.safeParse(config);
-  const generating =
-    busy || job?.status === 'queued' || job?.status === 'processing';
-  const drawable = job && ['ready', 'approved'].includes(job.status);
-  const designGroups = useMemo(() => groupCatalog(products), [products]);
-  const sizes = products
-    .filter((p) =>
-      product?.design_slug
-        ? p.design_slug === product.design_slug
-        : p.id === product?.id,
-    )
-    .sort((a, b) => a.price_cents - b.price_cents);
-  useEffect(() => {
-    if (
-      autoRequested &&
-      file &&
-      consent &&
-      serviceReady &&
-      !generating &&
-      valid.success &&
-      !autoStarted.current
-    ) {
-      autoStarted.current = true;
-      setAutoRequested(false);
-      void generate();
-    }
-  }, [autoRequested, file, consent, serviceReady, generating]);
-  useEffect(() => {
-    if (drawable && job && shown.current !== job.id) {
-      shown.current = job.id;
-      setPreviewOpen(true);
-      previewRef.current?.scrollIntoView({
-        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-          ? 'auto'
-          : 'smooth',
-        block: 'start',
-      });
-    }
-  }, [job?.id, job?.status]);
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (previewOpen && !dialog.open) dialog.showModal();
-    else if (!previewOpen && dialog.open) dialog.close();
-    if (!previewOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [previewOpen]);
+  const [modal, setModal] = useState(false),
+    [approved, setApproved] = useState(false),
+    [imageReady, setImageReady] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null),
+    photoRefs = useRef<Photo[]>([]),
+    shown = useRef('');
+  const { add, ready } = useCart();
+  const product = products.find((p) => p.id === productId) || first;
+  const active = !!job && ['queued', 'processing'].includes(job.status),
+    photo = photos.find((p) => p.id === photoId);
+  const family = products.filter((p) =>
+    product.design_slug
+      ? p.design_slug === product.design_slug
+      : p.id === product.id,
+  );
+  const selectedProduct = products.find((p) => p.id === selected?.product_id);
+  const selectedMatches = selected?.product_id === productId;
+  const stageIndex = Math.max(
+    0,
+    stages.indexOf(
+      job?.stage ||
+        (job?.status === 'processing' ? 'generating' : job?.status || 'queued'),
+    ),
+  );
+  function remember(j: Job) {
+    setHistory((h) => [j, ...h.filter((x) => x.id !== j.id)].slice(0, 30));
+  }
+  function open(j: Job) {
+    setSelected(j);
+    setApproved(false);
+    setImageReady(false);
+    setModal(true);
+    setError('');
+  }
   useEffect(() => {
     let alive = true;
-    fetch('/api/illustrations')
-      .then(async (r) => {
-        if (!r.ok) throw new Error();
-        const d = await r.json();
-        if (alive) setServiceReady(d.ready);
+    fetch('/api/illustrations', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive) {
+          setServiceReady(d.ready);
+          setHistory(d.history || []);
+          const running = (d.history || []).find((j: Job) =>
+            ['queued', 'processing'].includes(j.status),
+          );
+          if (running) setJob(running);
+        }
       })
       .catch(() => {
         if (alive) setServiceReady(false);
       });
-    try {
-      const stored = JSON.parse(localStorage.getItem(DRAFT) || 'null');
-      if (
-        stored &&
-        stored.config?.template === 'catalog' &&
-        customizationConfig.safeParse(stored.config).success &&
-        products.some((p) => p.id === stored.product_id) &&
-        /^[a-f0-9-]{36}$/.test(stored.id)
-      ) {
-        setConfig(customizationConfig.parse(stored.config));
-        setProductId(stored.product_id);
-        setJob({ ...stored, status: 'queued' });
-      }
-    } catch {}
     return () => {
       alive = false;
     };
-  }, [products]);
+  }, []);
+  useEffect(() => {
+    photoRefs.current = photos;
+  }, [photos]);
+  useEffect(
+    () => () => {
+      photoRefs.current.forEach((p) => URL.revokeObjectURL(p.url));
+    },
+    [],
+  );
   useEffect(() => {
     if (!job || !['queued', 'processing'].includes(job.status)) return;
     let alive = true;
@@ -151,13 +126,20 @@ export function PersonalizationEditor({
           cache: 'no-store',
         });
         const d = await r.json();
-        if (!r.ok)
-          throw new Error(d.error || 'Cannot check your illustration.');
+        if (!r.ok) throw Error(d.error || 'Cannot check progress');
         if (!alive) return;
         setJob(d);
+        remember(d);
         setPollError('');
         if (['queued', 'processing'].includes(d.status))
           timer = setTimeout(poll, 3000);
+        else if (
+          ['ready', 'approved'].includes(d.status) &&
+          shown.current !== d.id
+        ) {
+          shown.current = d.id;
+          open(d);
+        }
       } catch (e) {
         if (alive) setPollError((e as Error).message);
       }
@@ -168,138 +150,103 @@ export function PersonalizationEditor({
       clearTimeout(timer);
     };
   }, [job?.id, job?.status, pollVersion]);
-  function resetDesign() {
-    setPreviewOpen(false);
-    setApproved(false);
-    setImageReady(false);
-    setMessage('');
-    setJob(null);
-    setPollError('');
-    try {
-      localStorage.removeItem(DRAFT);
-    } catch {}
-  }
-  function startOver() {
-    resetDesign();
-    shown.current = '';
-    autoStarted.current = false;
-    setAutoRequested(false);
-    setPhoto('');
-    setFile(null);
-    setConsent(false);
+  useEffect(() => {
+    const d = dialog.current;
+    if (!d) return;
+    if (modal && !d.open) d.showModal();
+    else if (!modal && d.open) d.close();
+    if (!modal) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [modal]);
+  async function upload(files: FileList | null) {
+    if (!files) return;
+    setLoading(true);
     setError('');
-    setConfig({
-      ...defaultConfig,
-      template: 'catalog',
-      face_mode: 'main',
-      reference_name: product?.name,
-    });
-    // Allow choosing the same file again after discarding the preview.
-    const input = document.querySelector<HTMLInputElement>(
-      '.photo-upload input',
-    );
-    if (input) input.value = '';
-    setMessage(
-      'Preview declined. Choose your options and upload a photo to start again.',
-    );
-    document
-      .querySelector('.personalize-controls')
-      ?.scrollIntoView({ block: 'start' });
-  }
-  function selectProduct(p: Product) {
-    resetDesign();
-    setAutoRequested(false);
-    setProductId(p.id);
-    setConfig((c) => ({
-      ...c,
-      template: 'catalog',
-      reference_name: p.name,
-      reference_image: undefined,
-    }));
-  }
-  function change<K extends keyof CustomizationConfig>(
-    key: K,
-    value: CustomizationConfig[K],
-  ) {
-    resetDesign();
-    setConfig((c) => ({ ...c, [key]: value }));
-  }
-  async function upload(f?: File) {
-    if (!f) return;
-    resetDesign();
-    autoStarted.current = false;
-    setAutoRequested(false);
-    setPhoto('');
-    setFile(null);
-    setError('');
-    setLoadingPhoto(true);
+    const additions: Photo[] = [];
     try {
-      if (
-        !['image/jpeg', 'image/png', 'image/webp'].includes(f.type) ||
-        f.size > 12000000
-      )
-        throw new Error(
-          'Choose a JPG, PNG, or WebP photo smaller than 12 MB. Export HEIC photos as JPG first.',
+      const list = Array.from(files);
+      if (list.length + photos.length > 5)
+        throw Error(
+          'Keep up to five source photos at a time. Remove one before uploading more.',
         );
-      const bitmap = await createImageBitmap(f, {
-        imageOrientation: 'from-image',
-      });
-      if (
-        bitmap.width * bitmap.height > 40000000 ||
-        Math.min(bitmap.width, bitmap.height) < 300
-      ) {
+      for (const f of list) {
+        if (
+          !['image/jpeg', 'image/png', 'image/webp'].includes(f.type) ||
+          f.size > 12000000
+        )
+          throw Error(
+            'Use JPG, PNG or WebP photos under 12 MB. Convert HEIC to JPG first.',
+          );
+        const bitmap = await createImageBitmap(f, {
+          imageOrientation: 'from-image',
+        });
+        if (
+          Math.min(bitmap.width, bitmap.height) < 300 ||
+          bitmap.width * bitmap.height > 40000000
+        ) {
+          bitmap.close();
+          throw Error(
+            'Photos must be at least 300 pixels on each side and under 40 megapixels.',
+          );
+        }
+        const scale = Math.min(1, 2000 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw Error('Please try another browser.');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
         bitmap.close();
-        throw new Error(
-          'Choose a clear portrait at least 300 pixels on each side and under 40 megapixels.',
+        const file = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(Error('Cannot read photo'))),
+            'image/jpeg',
+            0.92,
+          ),
         );
+        if (file.size > 3500000) throw Error('Choose a smaller photo.');
+        additions.push({
+          id: crypto.randomUUID(),
+          url: URL.createObjectURL(file),
+          file,
+          name: f.name,
+        });
       }
-      const scale = Math.min(1, 2400 / Math.max(bitmap.width, bitmap.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(bitmap.width * scale);
-      canvas.height = Math.round(bitmap.height * scale);
-      const ctx = canvas.getContext('2d');
-      if (!ctx)
-        throw new Error(
-          'Your browser cannot prepare this photo. Please try Chrome or Safari.',
-        );
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      bitmap.close();
-      const jpeg = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob(
-          (b) =>
-            b ? resolve(b) : reject(new Error('Could not prepare this photo.')),
-          'image/jpeg',
-          0.92,
-        ),
-      );
-      if (jpeg.size > 3500000)
-        throw new Error('Please choose a smaller photo.');
-      setFile(jpeg);
-      setPhoto(canvas.toDataURL('image/jpeg', 0.92));
-      setAutoRequested(true);
+      setPhotos((p) => [...p, ...additions]);
+      setPhotoId(additions[0]?.id || photoId);
+      setSelected(null);
+      setApproved(false);
     } catch (e) {
+      additions.forEach((p) => URL.revokeObjectURL(p.url));
       setError((e as Error).message);
     } finally {
-      setLoadingPhoto(false);
+      setLoading(false);
     }
   }
   async function generate() {
-    if (generating) return;
+    if (active || busy) return;
+    setBusy(true);
     setError('');
     setMessage('');
-    setBusy(true);
-    setApproved(false);
-    setImageReady(false);
     try {
-      customizationConfig.parse(config);
-      if (!file || !consent || !product)
-        throw new Error(
-          'Upload a portrait and confirm photo permission first.',
-        );
+      if (!photo || !consent)
+        throw Error('Select a photo and confirm permission first.');
+      const config: CustomizationConfig = {
+        ...defaultConfig,
+        template: 'catalog',
+        name,
+        face_mode: faceMode,
+        render_style: 'photo',
+        reference_name: product.name,
+      };
       const form = new FormData();
-      form.set('photo', file, 'portrait.jpg');
+      form.set('photo', photo.file, 'portrait.jpg');
       form.set('config', JSON.stringify(config));
       form.set('product_id', productId);
       form.set('consent', 'true');
@@ -308,597 +255,444 @@ export function PersonalizationEditor({
         body: form,
       });
       const d = await r.json();
-      if (!r.ok)
-        throw new Error(d.error || 'Could not start the illustration.');
-      const next = {
-        id: d.id,
-        status: d.status,
-        config,
-        product_id: productId,
-      };
+      if (!r.ok) throw Error(d.error || 'Cannot start your preview');
+      const next = { ...d, config, product_id: productId };
       setJob(next);
-      try {
-        localStorage.setItem(DRAFT, JSON.stringify(next));
-      } catch {}
+      remember(next);
     } catch (e) {
       setError((e as Error).message);
-      setImageReady(!!drawable);
     } finally {
       setBusy(false);
     }
   }
   async function save() {
-    setError('');
+    if (busy) return;
     setBusy(true);
+    setError('');
     try {
-      if (!job || !drawable || !imageReady || !approved || !consent)
-        throw new Error(
-          'Review and approve the finished illustration before adding it to your bag.',
+      if (!selected || !approved || !imageReady || !consent || !selectedMatches)
+        throw Error(
+          'Review this preview and confirm photo permission before ordering.',
         );
-      const r = await fetch(`/api/illustrations/${job.id}`, {
+      const r = await fetch(`/api/illustrations/${selected.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approved: true }),
       });
       const d = await r.json();
-      if (!r.ok)
-        throw new Error(d.error || 'Could not save the approved illustration.');
+      if (!r.ok) throw Error(d.error || 'Cannot save preview');
       add(d.product_id, 1, {
         customization_id: d.id,
-        customization_label: `${customizationLabel(d.config)}${d.config.name ? ` · ${d.config.name}` : ''}`,
+        customization_label:
+          `${d.config.reference_name || 'Personalized blanket'}${d.config.name ? ` · ${d.config.name}` : ''}`.slice(
+            0,
+            120,
+          ),
       });
-      setJob({ ...job, status: 'approved' });
-      setPreviewOpen(false);
-      setMessage('Your approved illustration is saved and added to your bag.');
+      remember({ ...selected, status: 'approved' });
+      setModal(false);
+      setMessage('Your selected design is approved and in your bag.');
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setBusy(false);
     }
   }
+  function startOver() {
+    setModal(false);
+    setSelected(null);
+    setApproved(false);
+    setImageReady(false);
+    setConsent(false);
+    setName('');
+    setMessage(
+      'Preview declined. Choose a photo below to start again. Previous previews remain in your history.',
+    );
+    document
+      .querySelector('#studio-options')
+      ?.scrollIntoView({ block: 'start' });
+  }
+  const imageSrc = selected
+    ? `/api/illustrations/${selected.id}?image=1`
+    : catalogImage(product) || '/placeholder.svg';
   return (
-    <div className="personalize-layout">
+    <div className="studio-customizer">
       <dialog
-        ref={dialogRef}
-        aria-labelledby="personalized-preview-title"
-        className="m-auto w-[calc(100%-2rem)] max-w-3xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white p-5 text-ink shadow-xl backdrop:bg-black/60"
-        onCancel={() => setPreviewOpen(false)}
-        onClose={() => setPreviewOpen(false)}
+        ref={dialog}
+        className="studio-dialog"
+        aria-labelledby="preview-title"
+        onClose={() => setModal(false)}
+        onCancel={() => setModal(false)}
       >
-        <div className="flex items-start justify-between gap-4">
-          <h2 id="personalized-preview-title" className="text-2xl">
-            Your personalized preview
-          </h2>
+        <div className="flex justify-between gap-4">
+          <h2 id="preview-title">Your blanket preview</h2>
           <button
             type="button"
-            className="link p-2"
-            onClick={() => setPreviewOpen(false)}
+            className="link"
             autoFocus
+            onClick={() => setModal(false)}
           >
             Close
           </button>
         </div>
-        <p className="mt-2">
-          {product?.name} · {product?.size_label}
+        <p className="text-sm mt-2">
+          {selectedProduct?.name} · {selectedProduct?.size_label}
         </p>
-        {drawable && (
-          <img
-            className="mx-auto my-4 max-h-[55dvh] w-auto max-w-full object-contain"
-            src={`/api/illustrations/${job!.id}?image=1&v=${imageVersion}`}
-            alt={`Finished personalized blanket preview for ${config.name || 'you'}`}
+        {selected && (
+          <BlanketPreview
+            key={selected.id}
+            src={imageSrc}
+            alt="Your personalized blanket mockup"
             onLoad={() => setImageReady(true)}
             onError={() => {
               setImageReady(false);
               setError(
-                'Your preview could not load. Close this window and select Reload preview to try again.',
+                'Could not load this preview. Close and reopen it to try again.',
               );
             }}
           />
         )}
-        {!imageReady && <p role="status">Loading your finished preview…</p>}
+        {!imageReady && <p role="status">Loading preview…</p>}
         <p className="text-sm">
-          Check the likeness, artwork, spelling, and size. Screen colors may
-          differ from the printed blanket.
+          Check face likeness, details, spelling and size. This is a digital
+          mockup; print colors may vary.
         </p>
-        <label className="custom-checkbox my-4">
+        <label className="studio-check">
           <input
             type="checkbox"
             checked={approved}
-            disabled={!imageReady || !!generating}
+            disabled={!imageReady || busy}
             onChange={(e) => setApproved(e.target.checked)}
           />
-          <span>
-            I have reviewed this preview and approve the likeness, artwork,
-            spelling, and selected size.
-          </span>
+          <span>I approve this artwork and selected size.</span>
         </label>
+        {!consent && (
+          <label className="studio-check">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <span>I have permission to use the uploaded photo.</span>
+          </label>
+        )}
+        {!selectedMatches && (
+          <p className="notice">
+            This preview belongs to a different size.{' '}
+            <button
+              className="link"
+              onClick={() => setProductId(selected!.product_id)}
+            >
+              Select its original size
+            </button>{' '}
+            to order this exact version.
+          </p>
+        )}
         {error && (
-          <p role="alert" className="notice text-red-800">
+          <p className="notice" role="alert">
             {error}
           </p>
         )}
-        <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          className="btn w-full"
+          disabled={
+            !approved ||
+            !imageReady ||
+            busy ||
+            !consent ||
+            !selectedMatches ||
+            !ready
+          }
+          onClick={() => void save()}
+        >
+          {busy ? 'Saving…' : 'Approve this preview & add to bag'}
+        </button>
+        <div className="grid gap-3 mt-4">
           <button
             type="button"
-            className="btn party-button"
-            disabled={
-              !!generating ||
-              !drawable ||
-              !imageReady ||
-              !approved ||
-              !consent ||
-              !ready
-            }
-            onClick={() => void save()}
-          >
-            {busy ? 'Saving…' : 'Approve preview & add to bag →'}
-          </button>
-          <button
-            type="button"
-            className="link p-2"
-            onClick={() => {
-              setPreviewOpen(false);
-              document
-                .querySelector('.personalize-controls')
-                ?.scrollIntoView({ block: 'start' });
-            }}
-          >
-            Make changes
-          </button>
-        </div>
-        <div className="mt-5 border-t pt-4 space-y-3">
-          <button
-            type="button"
-            className="link block p-2"
+            className="link"
             disabled={busy}
             onClick={startOver}
           >
             Decline preview & start over
           </button>
-          <Link
-            className={`link block p-2 ${busy ? 'pointer-events-none' : ''}`}
-            href="/shop"
-            aria-disabled={busy}
-            onClick={(e) => {
-              if (busy) {
-                e.preventDefault();
-                return;
-              }
-              resetDesign();
-            }}
+          <button
+            type="button"
+            className="link"
+            onClick={() => setModal(false)}
           >
+            Compare other previews
+          </button>
+          <Link className="link text-center" href="/shop">
             Abandon this design & return to shop
           </Link>
-          <p className="text-xs text-ink/65">
-            Declining does not add this preview to your bag or place an order.
-            Starting over only creates another image when you upload a photo
-            with permission or request generation. Existing items in your bag
-            stay there.
-          </p>
         </div>
+        <p className="mt-4 text-xs text-ink/60">
+          Declining or leaving does not order this design. Existing bag items
+          remain.
+        </p>
       </dialog>
-      <section
-        ref={previewRef}
-        className="personalize-preview scroll-mt-5"
-        aria-live="polite"
-        aria-label="Personalized blanket preview"
-      >
-        <div className="preview-topline">
-          <span>✦ YOUR VERY OWN MAIN CHARACTER ✦</span>
-          <span className="preview-pill">
-            {drawable ? 'Your personalized preview' : 'Original product'}
-          </span>
-        </div>
-        <div className="blanket-mockup">
-          {drawable ? (
-            <img
-              className="block h-auto w-full"
-              src={`/api/illustrations/${job!.id}?image=1&v=${imageVersion}`}
-              alt={`Personalized ${customizationLabel(config)} blanket preview for ${config.name || 'you'}`}
-              onLoad={() => setImageReady(true)}
-              onError={() => {
-                setImageReady(false);
-                setError(
-                  'We could not load the finished artwork. Use Reload preview below to try again.',
-                );
+      <div>
+        <div className="studio-label">PERSONALIZE YOUR PICK</div>
+        {selected ? (
+          <BlanketPreview src={imageSrc} alt="Selected personalized design" />
+        ) : (
+          <img
+            className="studio-original"
+            src={imageSrc}
+            alt={`${product.name} original design`}
+          />
+        )}
+        <p className="text-sm text-center mt-3">
+          {selected
+            ? 'Your selected personalized preview'
+            : 'Original design · your photo comes next'}
+        </p>
+        {selected && (
+          <button className="btn w-full mt-4" onClick={() => open(selected)}>
+            View personalized preview
+          </button>
+        )}
+        <section className="mt-8" aria-labelledby="history-heading">
+          <h2 id="history-heading" className="text-2xl">
+            Your preview history
+          </h2>
+          <p className="text-sm my-3">
+            Compare versions and choose the one to order. Private to this
+            browser or account; previews expire after seven days.
+          </p>
+          {history.length ? (
+            <div className="history-grid">
+              {history.map((h, i) => (
+                <button
+                  type="button"
+                  key={h.id}
+                  disabled={!['ready', 'approved'].includes(h.status)}
+                  onClick={() => open(h)}
+                  aria-pressed={selected?.id === h.id}
+                  className="history-card"
+                >
+                  {['ready', 'approved'].includes(h.status) ? (
+                    <img
+                      src={`/api/illustrations/${h.id}?image=1`}
+                      alt={`Saved preview ${i + 1}`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span>
+                      {h.status === 'failed' ? 'Not completed' : 'Processing…'}
+                    </span>
+                  )}
+                  <strong>{h.config.name || 'Your design'}</strong>
+                  <small>
+                    {products.find((p) => p.id === h.product_id)?.size_label}
+                  </small>
+                  <span>
+                    {h.status === 'approved'
+                      ? 'Approved'
+                      : h.status === 'ready'
+                        ? 'View & choose'
+                        : h.status}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="notice">Your finished previews will appear here.</p>
+          )}
+        </section>
+      </div>
+      <section id="studio-options">
+        <Link href={`/products/${product.slug}`} className="link text-sm">
+          ← Product & sizes
+        </Link>
+        <h1 className="mt-5">
+          Make it
+          <br />
+          <span className="text-[var(--party-pink)]">unmistakably them.</span>
+        </h1>
+        <h2 className="text-xl mt-4">{product.name}</h2>
+        <p className="text-2xl font-bold mt-3">{money(product.price_cents)}</p>
+        <p className="text-sm mt-3 mb-6">
+          A familiar face, blended into your chosen design. Review before you
+          buy.
+        </p>
+        <fieldset disabled={active || busy}>
+          <SizeSelector
+            sizes={family}
+            selected={productId}
+            onSelect={(id) => {
+              setProductId(id);
+              setSelected(null);
+              setApproved(false);
+            }}
+          />
+          <label className="mt-6">
+            Name or nickname (optional)
+            <input
+              value={name}
+              maxLength={24}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Amelia"
+            />
+          </label>
+          <label className="mt-4">
+            Faces to personalize
+            <select
+              value={faceMode}
+              onChange={(e) => setFaceMode(e.target.value as 'main' | 'all')}
+            >
+              <option value="main">Main printed face</option>
+              <option value="all">
+                All prominent printed faces with the same person
+              </option>
+            </select>
+          </label>
+          <h3 className="mt-6">Your photos</h3>
+          <p className="text-sm mt-2">
+            Upload up to five clear portraits, then select one per preview.
+            Photos stay on this device until you request generation.
+          </p>
+          <label className="studio-upload mt-4">
+            {loading ? 'Preparing photos…' : '+ Upload photos'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              disabled={loading || photos.length >= 5}
+              onChange={(e) => {
+                void upload(e.target.files);
+                e.target.value = '';
               }}
             />
-          ) : (
-            <img
-              className="block h-auto w-full"
-              src={
-                product
-                  ? catalogImage(product) || '/placeholder.svg'
-                  : '/placeholder.svg'
-              }
-              alt={`${product?.name || 'Blanket'} — original production product`}
+            <span>JPG, PNG or WebP · up to 12 MB each</span>
+          </label>
+          <div className="photo-choices">
+            {photos.map((p) => (
+              <div key={p.id}>
+                <button
+                  className="photo-choice"
+                  aria-pressed={p.id === photoId}
+                  onClick={() => setPhotoId(p.id)}
+                >
+                  <img src={p.url} alt={`Select ${p.name}`} />
+                  {p.id === photoId && <span>Selected</span>}
+                </button>
+                <button
+                  type="button"
+                  className="link text-xs"
+                  onClick={() => {
+                    URL.revokeObjectURL(p.url);
+                    setPhotos((v) => v.filter((x) => x.id !== p.id));
+                    if (photoId === p.id)
+                      setPhotoId(photos.find((x) => x.id !== p.id)?.id || '');
+                  }}
+                >
+                  Remove photo
+                </button>
+              </div>
+            ))}
+          </div>
+          <label className="studio-check">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
             />
-          )}
-        </div>
-        {(job?.status === 'queued' || job?.status === 'processing') && (
-          <div className="illustration-progress" role="status">
-            <span className="illustration-spinner" aria-hidden="true" />
-            <strong>Drawing your cozy character…</strong>
-            <p>
-              We’re redrawing the face, hair, and scene together. This can take
-              a few minutes. You can leave this page and return in this browser.
+            <span>
+              I have permission to use these photos, including a guardian’s
+              permission for a child, and agree to send the selected photo to
+              OpenAI to personalize my blanket.
+            </span>
+          </label>
+          <button
+            type="button"
+            className="btn w-full"
+            disabled={!ready || !photo || !consent || loading || !serviceReady}
+            onClick={() => void generate()}
+          >
+            {busy
+              ? 'Uploading…'
+              : active
+                ? 'Personalizing…'
+                : history.length
+                  ? 'Create another preview'
+                  : 'Create my personalized preview'}
+          </button>
+        </fieldset>
+        {serviceReady === false && (
+          <p className="notice" role="status">
+            Image generation is temporarily unavailable. Please try later or
+            contact us.
+          </p>
+        )}
+        {(active || busy) && (
+          <div className="processing-card" role="status" aria-live="polite">
+            <h3>Your preview is on its way</h3>
+            <div
+              className="stage-track"
+              aria-label={`Step ${stageIndex + 1} of 5: ${stageNames[stageIndex]}`}
+            >
+              {stages.map((s, i) => (
+                <span key={s} data-complete={i <= stageIndex} />
+              ))}
+            </div>
+            <ol>
+              {stageNames.map((s, i) => (
+                <li
+                  key={s}
+                  aria-current={i === stageIndex ? 'step' : undefined}
+                >
+                  {i < stageIndex ? '✓' : i + 1} · {s}
+                  {i === stageIndex ? ' — in progress' : ''}
+                </li>
+              ))}
+            </ol>
+            <p className="text-xs mt-3">
+              Usually a few minutes. We show actual stages, not a percentage.
+              Your preview opens automatically when ready.
             </p>
           </div>
         )}
-        <p className="preview-caption">
-          {drawable
-            ? 'Drawn together. Made for you. ♡'
-            : generating
-              ? 'A little illustration magic is on its way.'
-              : 'Your selected blanket, before personalization.'}
-        </p>
-        <p className="text-xs text-ink/65 mt-3">
-          {drawable
-            ? 'Check likeness, details, spelling and size before approving. Screen colors may differ from the printed blanket.'
-            : 'This is the actual catalog product. After processing, your personalized version will appear here automatically.'}
-        </p>
-        {drawable && (
-          <div className="mt-4 space-y-3">
-            <p role="status" className="font-semibold">
-              Your personalized preview is ready.
-            </p>
+        {pollError && (
+          <p className="notice" role="alert">
+            {pollError}{' '}
             <button
-              type="button"
-              className="btn party-button w-full"
-              onClick={() => setPreviewOpen(true)}
+              className="link"
+              onClick={() => setPollVersion((v) => v + 1)}
             >
-              View personalized preview
+              Check progress again
             </button>
-            <button
-              type="button"
-              className="link text-sm"
-              onClick={() => {
-                setImageReady(false);
-                setImageVersion((v) => v + 1);
-              }}
-            >
-              Reload preview
-            </button>
-            <a
-              className="link text-sm block"
-              href={`/api/illustrations/${job!.id}?image=1`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open larger preview ↗
-            </a>
-            {job?.status === 'approved' && <ArtworkDownload id={job.id} />}
-          </div>
+          </p>
         )}
         {job?.status === 'failed' && (
-          <p className="notice text-red-800" role="alert">
+          <p className="notice" role="alert">
             {job.error ||
-              'Your photo could not be processed. Please try again.'}
+              'This preview could not be completed. Please try another photo.'}
           </p>
         )}
-      </section>
-      <section className="personalize-controls">
-        <p className="collection-label">THE YOU COLLECTION · ILLUSTRATED</p>
-        <h1>
-          Not just in
-          <br />
-          the picture.
-          <br />
-          <span className="text-[var(--party-pink)]">Part of the art.</span>
-        </h1>
-        <p className="mt-4 text-ink/75">
-          A favorite face, redrawn into a world of their own. Matching lines,
-          colors, and character—one illustration that belongs together.
+        {error && !modal && (
+          <p className="notice" role="alert">
+            {error}
+          </p>
+        )}
+        {message && (
+          <p className="notice" role="status">
+            {message}
+          </p>
+        )}
+        <p className="text-xs text-ink/65 mt-4">
+          Each request creates one preview using the selected photo. Up to three
+          attempts per hour, subject to store limits. Image results can vary.
+          Your chosen artwork is saved with your order.{' '}
+          <Link href="/policies" className="link">
+            Privacy & ordering
+          </Link>
         </p>
-        <h2 className="mt-5 text-xl">{product?.name}</h2>
-        <p className="mt-3 text-2xl font-bold">
-          {product ? money(product.price_cents) : 'Choose a size'}{' '}
-          <span className="text-sm font-normal">
-            · personalized just for you
-          </span>
-        </p>
-        {serviceReady === false && (
-          <div className="notice mt-5" role="status">
-            <strong>Illustration generation is being set up.</strong>
-            <p>
-              You can explore styles and sizes. Generating your personalized
-              artwork will be available once the store connects its image
-              service.
-            </p>
-          </div>
-        )}
-        {!ready && (
-          <p className="notice mt-4" role="status">
-            Preparing the customizer…
-          </p>
-        )}
-        <form
-          className="space-y-7 mt-7"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void save();
-          }}
-        >
-          <fieldset disabled={!!generating || !ready}>
-            <legend className="custom-step">
-              <span>1</span> Choose a blanket design
-            </legend>
-            <div className="catalog-design-options">
-              {designGroups.map(({ product: p }) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  aria-pressed={
-                    product?.design_slug
-                      ? p.design_slug === product.design_slug
-                      : p.id === product?.id
-                  }
-                  onClick={() =>
-                    selectProduct(
-                      products.find(
-                        (v) =>
-                          v.design_slug === p.design_slug &&
-                          v.size_label === product?.size_label,
-                      ) || p,
-                    )
-                  }
-                >
-                  <img src={catalogImage(p) || '/placeholder.svg'} alt="" />
-                  <span>{p.name}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset disabled={!!generating || !ready}>
-            <legend className="custom-step">
-              <span>2</span> Choose your cozy size
-            </legend>
-            <div className="custom-size-options">
-              {sizes.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  disabled={!hasStock(p)}
-                  aria-pressed={productId === p.id}
-                  className={productId === p.id ? 'selected' : ''}
-                  onClick={() => {
-                    selectProduct(p);
-                  }}
-                >
-                  <strong>{p.size_label}</strong>
-                  <span>{money(p.price_cents)}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-          <fieldset className="space-y-4" disabled={!!generating || !ready}>
-            <legend className="custom-step">
-              <span>3</span> Meet the main character
-            </legend>
-            <label>
-              Name or nickname <span className="font-normal">(optional)</span>
-              <input
-                value={config.name}
-                maxLength={24}
-                placeholder="e.g. Olivia"
-                onChange={(e) => change('name', e.target.value)}
-              />
-            </label>
-            <label>
-              Which printed faces should change?
-              <select
-                value={config.face_mode || 'main'}
-                onChange={(e) =>
-                  change('face_mode', e.target.value as 'main' | 'all')
-                }
-              >
-                <option value="main">Main character face</option>
-                <option value="all">All prominent printed faces</option>
-              </select>
-            </label>
-            <label className="custom-checkbox">
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => {
-                  setConsent(e.target.checked);
-                  setApproved(false);
-                }}
-              />
-              <span>
-                I have permission to use this photo, including a parent or
-                guardian’s permission for a child’s photo. I agree to send the
-                photo to OpenAI to create the illustration.
-              </span>
-            </label>
-            <label className="photo-upload">
-              {loadingPhoto
-                ? 'Preparing your photo…'
-                : photo
-                  ? '♡ Choose a different photo'
-                  : '↑ Upload a face photo'}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                disabled={loadingPhoto}
-                onChange={(e) => void upload(e.target.files?.[0])}
-              />
-              <span className="font-normal text-xs">
-                JPG, PNG, WebP · up to 12 MB · one clear face
-              </span>
-            </label>
-            {photo && (
-              <div className="illustration-source">
-                <img src={photo} alt="Your source portrait" />
-                <p>
-                  Use a clear, front-facing photo without sunglasses. The
-                  drawing will use this person’s face, hair, and features as its
-                  reference.
-                </p>
-              </div>
-            )}
-
-            <p className="text-xs text-ink/65">
-              Choose your design, size, and name first. With permission
-              confirmed, uploading a photo starts processing automatically.
-              Changes afterward require an updated preview.
-            </p>
-            {!valid.success && (
-              <p role="alert" className="text-red-800">
-                Use letters, numbers, spaces, or simple punctuation in the name.
-              </p>
-            )}
-
-            <button
-              type="button"
-              className="btn party-button w-full"
-              disabled={
-                !serviceReady ||
-                !file ||
-                !consent ||
-                loadingPhoto ||
-                !valid.success ||
-                !product
-              }
-              onClick={() => void generate()}
-            >
-              {generating
-                ? 'Processing your photo…'
-                : drawable
-                  ? 'Generate another version ↻'
-                  : 'Generate personalized preview ✦'}
-            </button>
-            {autoRequested && !consent && (
-              <p className="notice" role="status">
-                Your photo is ready. Confirm permission above and processing
-                will start automatically.
-              </p>
-            )}
-            <p className="text-xs text-ink/65">
-              AI drawings can vary. Review likeness and details carefully. Up to
-              three generation attempts per hour; availability also depends on
-              the store’s daily limit.
-            </p>
-          </fieldset>
-          {pollError && (
-            <p className="notice" role="alert">
-              {pollError}{' '}
-              <button
-                type="button"
-                className="link"
-                onClick={() => {
-                  setPollError('');
-                  setPollVersion((v) => v + 1);
-                }}
-              >
-                Check progress again
-              </button>
-            </p>
-          )}
-          {drawable && (
-            <div className="notice" role="status">
-              <strong>Your personalized image is ready!</strong>
-              <p className="my-2">
-                Open your preview, check the details, then approve it to add
-                your blanket to your bag.
-              </p>
-              <button
-                type="button"
-                className="btn party-button w-full"
-                onClick={() => setPreviewOpen(true)}
-              >
-                View personalized preview
-              </button>
-              <div className="mt-3 space-y-2">
-                <button
-                  type="button"
-                  className="link block"
-                  disabled={busy}
-                  onClick={startOver}
-                >
-                  Decline preview & start over
-                </button>
-                <Link
-                  className={`link block ${busy ? 'pointer-events-none' : ''}`}
-                  href="/shop"
-                  aria-disabled={busy}
-                  onClick={(e) => {
-                    if (busy) {
-                      e.preventDefault();
-                      return;
-                    }
-                    resetDesign();
-                  }}
-                >
-                  Abandon this design & return to shop
-                </Link>
-              </div>
-            </div>
-          )}
-          {job?.status === 'failed' && (
-            <p className="notice text-red-800" role="alert">
-              {job.error ||
-                'This illustration could not be completed. Please try again later.'}
-            </p>
-          )}
-          <fieldset disabled={!drawable || !imageReady || !!generating}>
-            <legend className="custom-step">
-              <span>4</span> Your preview. Your approval.
-            </legend>
-            <label className="custom-checkbox">
-              <input
-                type="checkbox"
-                checked={approved}
-                onChange={(e) => setApproved(e.target.checked)}
-              />
-              <span>
-                I have reviewed the personalized preview and approve the
-                likeness, artwork, spelling, and selected size.
-              </span>
-            </label>
-          </fieldset>
-          {error && (
-            <p className="notice text-red-800" role="alert">
-              {error}
-            </p>
-          )}
-          <button
-            className="btn party-button w-full"
-            disabled={
-              !!generating ||
-              !drawable ||
-              !imageReady ||
-              !approved ||
-              !consent ||
-              !ready
-            }
-          >
-            {busy ? 'Saving…' : 'Approve preview & add to bag →'}
-          </button>
-          {message && (
-            <p role="status" className="notice">
-              {message}{' '}
-              {job?.status === 'approved' && (
-                <Link className="link" href="/cart">
-                  View bag & checkout →
-                </Link>
-              )}
-            </p>
-          )}
-          <div className="custom-assurances">
-            <span>♡ Private photo storage</span>
-            <span>✦ $7 shipping + $1 each extra</span>
-            <span>✓ Approved artwork saved with your order</span>
-          </div>
-          <p className="text-xs text-ink/65">
-            Photos are sent to OpenAI only when you request a drawing.
-            Unapproved generations expire after seven days. Up to five blankets
-            per order; delivery available outside Indiana.{' '}
-            <Link className="link" href="/policies">
-              Photo privacy &amp; ordering details
-            </Link>
-          </p>
-        </form>
+        <Link href="/shop" className="link inline-block mt-5">
+          Abandon this design & return to shop
+        </Link>
       </section>
     </div>
   );

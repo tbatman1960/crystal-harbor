@@ -1,19 +1,22 @@
+import { siteUrl } from '@/lib/site-url';
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import { collectionTheme as theme } from '@/lib/collection-theme';
 import Link from 'next/link';
 import { settings } from '@/lib/data';
 import { Analytics } from '@/components/analytics';
-import { CartProvider, CartCount } from '@/components/cart-provider';
+import { CartProvider } from '@/components/cart-provider';
+import { CartDrawer } from '@/components/cart-drawer';
+import { catalog } from '@/lib/data';
 import './globals.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: 'SnuggleBug · A little comfort. A lot of character.',
     template: '%s · SnuggleBug',
   },
-  robots: (process.env.SITE_URL || '').includes('deploy-preview-')
+  robots: siteUrl().includes('deploy-preview-')
     ? { index: false, follow: false }
     : undefined,
   description:
@@ -25,9 +28,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const store = process.env.NEXT_PUBLIC_SUPABASE_URL ? await settings() : null;
+  const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
   return (
     <html lang="en">
       <body
+        className="photo-studio"
         style={
           {
             '--party-pink': theme.colors.pink,
@@ -48,7 +53,7 @@ export default async function RootLayout({
           <Analytics id={store?.ga4_id || null} />
           <div className="season-announcement">
             <span aria-hidden="true">✦ </span>
-            Your favorite face. A cozy place. Personalized blankets from $13.
+            Your photo. Their favorite gift. Blankets from $13.
             <span aria-hidden="true"> ✦</span>
           </div>
           <header className="border-b border-ink/10">
@@ -74,9 +79,7 @@ export default async function RootLayout({
                   Our story
                 </Link>
                 <Link href="/account">Account</Link>
-                <Link href="/cart" className="party-bag">
-                  Bag (<CartCount />)
-                </Link>
+                <CartDrawer products={products} />
               </nav>
             </div>
           </header>

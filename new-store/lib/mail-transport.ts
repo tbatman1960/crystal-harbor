@@ -1,3 +1,4 @@
+import { siteUrl } from './site-url';
 import 'server-only';
 import { createHash } from 'node:crypto';
 import nodemailer from 'nodemailer';
@@ -14,7 +15,7 @@ type Message = {
 export async function sendTransactionalEmail(message: Message) {
   if (process.env.SMTP_HOST?.trim()) {
     const transport = nodemailer.createTransport(smtpConfig(process.env));
-    const domain = new URL(process.env.SITE_URL!).hostname;
+    const domain = new URL(siteUrl()).hostname;
     const result = await transport.sendMail({
       from: process.env.SMTP_FROM || message.defaultFrom,
       to: message.to,

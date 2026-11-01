@@ -19,12 +19,7 @@ export function ProductCard({
   )[0];
   return (
     <article className={`party-product party-product-${accent % 4}`}>
-      <Link
-        href={
-          personalize ? `/customize?product=${p.slug}` : `/products/${p.slug}`
-        }
-        className="group block h-full"
-      >
+      <Link href={`/products/${p.slug}`} className="group block h-full">
         <div className="party-product-image relative aspect-[4/5] overflow-hidden">
           <Image
             src={image?.url || '/placeholder.svg'}
