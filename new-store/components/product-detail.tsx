@@ -33,8 +33,8 @@ export function ProductDetail({
   const [added, setAdded] = useState(false);
   const { add, ready } = useCart();
   return (
-    <div className="collection-page grid gap-10 md:grid-cols-2 md:gap-16">
-      <section aria-label="Product images">
+    <div className="collection-page grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
+      <section aria-label="Product images" className="min-w-0">
         <div className="relative aspect-square overflow-hidden rounded-2xl bg-sage">
           <Image
             src={images[selected]?.url || '/placeholder.svg'}
@@ -45,10 +45,13 @@ export function ProductDetail({
             className="object-cover"
           />
         </div>
-        <div className="mt-4 flex gap-3">
+        <div
+          className="mt-4 flex gap-3 overflow-x-auto pb-2"
+          aria-label="Image thumbnails"
+        >
           {images.map((image, i) => (
             <button
-              className={`relative h-20 w-20 overflow-hidden rounded-lg ${i === selected ? 'ring-2 ring-ink ring-offset-2' : ''}`}
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg ${i === selected ? 'ring-2 ring-ink ring-offset-2' : ''}`}
               key={image.url}
               onClick={() => choose(i)}
               aria-label={`View image ${i + 1}`}
@@ -65,7 +68,7 @@ export function ProductDetail({
           ))}
         </div>
       </section>
-      <section className="md:py-8">
+      <section className="min-w-0 md:py-8">
         <p className="eyebrow mb-5 text-clay">
           YOUR PHOTO. THEIR NEW FAVORITE.
         </p>
