@@ -55,7 +55,7 @@ export function designCss(d:SiteDesign){
  .photo-studio .landing-photo{aspect-ratio:${d.image_shape==='portrait'?'4/5':'1/1'}!important;border-radius:${Math.max(0,radius-2)}px ${Math.max(0,radius-2)}px 0 0!important}
  .photo-studio .landing-photo img{object-fit:${d.image_fit}!important}
  .photo-studio .landing-product,.photo-studio .panel,.photo-studio .studio-dialog,.photo-studio .history-card{border-radius:${radius}px!important}
- .photo-studio .landing-product{background:${d.secondary}!important;border-color:${d.primary}35!important}
+ .photo-studio .landing-product{background:${d.secondary===defaultDesign.secondary?'var(--card-tint)':d.secondary}!important;border-color:${d.primary===defaultDesign.primary?'var(--card-line)':d.primary+'35'}!important}
  @media(max-width:600px){.photo-studio .landing-gallery{grid-template-columns:repeat(${d.mobile_columns},minmax(0,1fr))!important;gap:${Math.max(10,gap-6)}px!important}${d.mobile_columns===2?'.photo-studio .landing-product-caption{padding:10px!important}.photo-studio .landing-product-caption h2{font-size:15px!important}.photo-studio .fun-card-bottom{flex-wrap:wrap!important}':''}}
  @media(max-width:767px){.photo-studio .studio-customizer>div{order:${d.customizer_order==='preview_first'?1:2}}.photo-studio .studio-customizer>section{order:${d.customizer_order==='preview_first'?2:1}}}
  `;

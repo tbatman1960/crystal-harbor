@@ -24,6 +24,7 @@ export async function POST(req:Request){try{
  if(v.action==='save'&&!v.config)throw new PersonalizationError('Provide a complete design before saving.');
  const {data,error}=await service().rpc('website_design_action',{p_action:v.action,p_expected:v.version,p_config:v.config||{},p_actor:a.user.id,p_email:a.user.email!,p_note:v.note});
  if(error?.message.includes('Design changed'))return NextResponse.json({error:'Another editor changed the draft. Reload before saving so their work is preserved.',code:'DESIGN_CONFLICT'},{status:409});check(error);
+ if(v.action==='publish')cookies().delete('snuggle-design-preview');
  return NextResponse.json({version:data.version,published_version:data.published_version,draft:designSchema.parse(data.draft_config),published:designSchema.parse(data.published_config)},{headers:{'Cache-Control':'private,no-store'}});
 }catch(e){return failure(e)}}
 export async function DELETE(req:Request){try{origin(req);cookies().delete('snuggle-design-preview');return NextResponse.json({ok:true})}catch(e){return failure(e)}}
