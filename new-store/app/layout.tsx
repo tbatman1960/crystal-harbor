@@ -1,5 +1,5 @@
 import {readWebsiteDesign} from '@/lib/website-editor-server';
-import {designCss} from '@/lib/site-design';
+import {designCss,contrast} from '@/lib/site-design';
 import {SiteDesignProvider} from '@/components/site-design-provider';
 import {DesignPreviewBanner} from '@/components/design-preview-banner';
 import { BrandWordmark } from '@/components/brand-wordmark';
@@ -58,7 +58,7 @@ export default async function RootLayout({
         className="photo-studio"
         style={
           {
-            '--party-pink': design.active?design.config.primary:theme.colors.pink,
+            '--party-pink': design.active?(contrast(design.config.primary,design.config.background)>=4.5?design.config.primary:design.config.ink):theme.colors.pink,
             '--party-pink-light': theme.colors.pinkLight,
             '--party-lilac': theme.colors.lilac,
             '--party-yellow': theme.colors.yellow,
