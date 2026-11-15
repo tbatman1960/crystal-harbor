@@ -1,3 +1,7 @@
+import {readWebsiteDesign} from '@/lib/website-editor-server';
+import {designCss} from '@/lib/site-design';
+import {SiteDesignProvider} from '@/components/site-design-provider';
+import {DesignPreviewBanner} from '@/components/design-preview-banner';
 import { BrandWordmark } from '@/components/brand-wordmark';
 import { siteUrl } from '@/lib/site-url';
 import type { Metadata } from 'next';
@@ -28,6 +32,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const design=await readWebsiteDesign();
   const store = process.env.NEXT_PUBLIC_SUPABASE_URL ? await settings() : null;
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
   return (
@@ -47,12 +52,13 @@ export default async function RootLayout({
           type="font/woff2"
           crossOrigin="anonymous"
         />
+        {design.active&&<style dangerouslySetInnerHTML={{__html:designCss(design.config)}}/>}
       </head>
       <body
         className="photo-studio"
         style={
           {
-            '--party-pink': theme.colors.pink,
+            '--party-pink': design.active?design.config.primary:theme.colors.pink,
             '--party-pink-light': theme.colors.pinkLight,
             '--party-lilac': theme.colors.lilac,
             '--party-yellow': theme.colors.yellow,
@@ -60,7 +66,8 @@ export default async function RootLayout({
           } as CSSProperties
         }
       >
-        <CartProvider>
+        <SiteDesignProvider value={design.config}><CartProvider>
+          {design.preview&&<DesignPreviewBanner/>}
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4"
@@ -68,15 +75,15 @@ export default async function RootLayout({
             Skip to content
           </a>
           <Analytics id={store?.ga4_id || null} />
-          <div className="season-announcement">
+          {design.config.announcement_enabled&&<div className="season-announcement">
             <span aria-hidden="true">✦ </span>
-            Big smiles. Bigger snuggles. Made with your photo.
+            {design.config.announcement}
             <span aria-hidden="true"> ✦</span>
-          </div>
+          </div>}
           <header className="border-b border-ink/10">
             <div className="shell fun-header-inner">
               <Link className="snuggle-wordmark" href="/">
-                <BrandWordmark name={store?.store_name || 'SnuggleBug'} />
+                <BrandWordmark name={design.config.brand_name} />
               </Link>
               <nav aria-label="Main navigation" className="fun-main-nav">
                 <Link href="/shop">Shop</Link>
@@ -103,7 +110,7 @@ export default async function RootLayout({
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
                 <Link href="/" className="fun-footer-brand">
-                  <BrandWordmark name={store?.store_name || 'SnuggleBug'} />
+                  <BrandWordmark name={design.config.brand_name} />
                 </Link>
                 <p className="mt-3 text-sm">
                   Made for happy dances & movie-night snuggles.
@@ -129,7 +136,7 @@ export default async function RootLayout({
               </div>
             </div>
           </footer>
-        </CartProvider>
+        </CartProvider></SiteDesignProvider>
       </body>
     </html>
   );

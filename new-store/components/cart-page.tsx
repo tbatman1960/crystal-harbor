@@ -1,4 +1,5 @@
 'use client';
+import {useSiteDesign} from './site-design-provider';
 import { cartKey } from '@/lib/personalization/designs';
 import { ArtworkDownload } from './artwork-download';
 import { hasStock, quantityLimit } from '@/lib/availability';
@@ -25,6 +26,8 @@ export function CartPage({
   email?: string;
 }) {
   const { items, setItems, ready, error: cartError } = useCart();
+  const design=useSiteDesign();
+  const [checkoutStep,setCheckoutStep]=useState(1);
   const [address, setAddress] = useState(defaultAddress || emptyAddress);
   const [billing, setBilling] = useState(emptyAddress);
   const [same, setSame] = useState(true);
@@ -72,6 +75,7 @@ export function CartPage({
       setQuote(q);
       setVersion(current);
       setMethod(q.rates[0].id);
+      if(design.checkout_layout==='guided')setCheckoutStep(2);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -270,11 +274,14 @@ export function CartPage({
           className="panel space-y-6"
           onSubmit={(e) => {
             e.preventDefault();
-            if (validQuote && rate) void checkout();
+            if(design.checkout_layout==='guided'&&checkoutStep===1&&validQuote&&rate)setCheckoutStep(2);
+            else if (validQuote && rate) void checkout();
             else void getRates();
           }}
         >
-          <h2 className="text-2xl">Make it yours</h2>
+          <h2 className="text-2xl">{design.checkout_layout==='guided'?(checkoutStep===1?'1. Delivery details':'2. Review your order'):'Make it yours'}</h2>
+          {design.checkout_layout==='guided'&&<p className="text-xs">Delivery → Review → Secure Stripe payment</p>}
+          <div hidden={design.checkout_layout==='guided'&&checkoutStep===2} className="space-y-6">
           <label>
             Contact email
             <input
@@ -326,6 +333,9 @@ export function CartPage({
               />
             </fieldset>
           )}
+          </div>
+          <div hidden={design.checkout_layout==='guided'&&checkoutStep===1}>
+          {design.checkout_layout==='guided'&&checkoutStep===2&&<p className="notice">Ship to: {address.name}, {address.line1}, {address.city}, {address.state} {address.postal_code}. Contact: {contact}</p>}
           {validQuote && (
             <fieldset className="space-y-3">
               <legend className="mb-3 font-semibold">Shipping options</legend>
@@ -387,6 +397,8 @@ export function CartPage({
               </dd>
             </div>
           </dl>
+          </div>
+          {design.checkout_layout==='guided'&&checkoutStep===2&&<button type="button" className="link" onClick={()=>setCheckoutStep(1)}>← Edit delivery details or coupon</button>}
           <Notice error={error} />
           <button
             className="btn w-full"
@@ -394,7 +406,9 @@ export function CartPage({
           >
             {pending
               ? 'Please wait…'
-              : validQuote && rate
+              : design.checkout_layout==='guided'&&checkoutStep===1
+                ? 'Review order →'
+                : validQuote && rate
                 ? 'Continue to secure payment →'
                 : 'Calculate shipping & tax'}
           </button>

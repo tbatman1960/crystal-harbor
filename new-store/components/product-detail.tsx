@@ -1,4 +1,5 @@
 'use client';
+import {useSiteDesign} from './site-design-provider';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,6 +25,7 @@ export function ProductDetail({
     | 'track_inventory'
   >[];
 }) {
+  const design=useSiteDesign();
   const router = useRouter();
   const images = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
@@ -73,6 +75,7 @@ export function ProductDetail({
           YOUR PHOTO. THEIR NEW FAVORITE.
         </p>
         <h1 className="text-4xl md:text-5xl">{p.name}</h1>
+        {design.size_selection==='on_product' ? <>
         <div className="mt-6">
           <SizeSelector
             sizes={sizes.length ? sizes : [p]}
@@ -84,6 +87,7 @@ export function ProductDetail({
             }}
           />
         </div>
+        </> : <p className="mt-5 text-sm">Choose your blanket size in the customizer.</p>}
         <p className="mt-5 text-xl">{money(p.price_cents)}</p>
         <Link
           href={`/customize?product=${p.slug}`}

@@ -1,0 +1,1 @@
+export default function Loading(){return <p role="status" className="shell py-12">Loading website editor…</p>}
