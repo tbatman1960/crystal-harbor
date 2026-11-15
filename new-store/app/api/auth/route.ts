@@ -1,3 +1,4 @@
+import { siteUrl } from '@/lib/site-url';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db, check } from '@/lib/supabase';
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
       if (!v.email) throw new Error('Email required');
       if (v.mode === 'reset')
         ({ error } = await client.auth.resetPasswordForEmail(v.email, {
-          redirectTo: `${process.env.SITE_URL}/auth/callback?next=/auth?mode=update`,
+          redirectTo: `${siteUrl()}/auth/callback?next=/auth?mode=update`,
         }));
       else {
         if (!v.password) throw new Error('Password required');
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
             email: v.email,
             password: v.password,
             options: {
-              emailRedirectTo: `${process.env.SITE_URL}/auth/callback`,
+              emailRedirectTo: `${siteUrl()}/auth/callback`,
             },
           }));
       }

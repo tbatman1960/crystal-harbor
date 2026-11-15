@@ -3,16 +3,25 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { CartItem } from '@/lib/types';
 import { cartSchema } from '@/lib/validation';
 import { api } from './ui';
+import { cartKey } from '@/lib/personalization/designs';
 type Context = {
   items: CartItem[];
   ready: boolean;
+  drawerOpen: boolean;
+  setDrawerOpen: (open: boolean) => void;
   error: string;
   setItems: (items: CartItem[]) => void;
-  add: (id: string, qty: number) => void;
+  add: (
+    id: string,
+    qty: number,
+    customization?: Pick<CartItem, 'customization_id' | 'customization_label'>,
+  ) => void;
 };
 const CartContext = createContext<Context>({
   items: [],
   ready: false,
+  drawerOpen: false,
+  setDrawerOpen: () => {},
   error: '',
   setItems: () => {},
   add: () => {},
@@ -20,6 +29,7 @@ const CartContext = createContext<Context>({
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setState] = useState<CartItem[]>([]);
   const [ready, setReady] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [error, setError] = useState('');
   const auth = useRef(false);
   const queue = useRef(Promise.resolve());
@@ -29,7 +39,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       let local: CartItem[] = [];
       try {
         local = cartSchema.parse(
-          JSON.parse(localStorage.getItem('earth-cart') || '[]'),
+          JSON.parse(
+            localStorage.getItem('snuggle-photo-gift-studio-cart') ?? localStorage.getItem('earth-cart') ?? '[]',
+          ),
         );
       } catch {}
       try {
@@ -37,18 +49,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (!r.ok) throw new Error('Cannot load saved cart');
         const d = await r.json();
         auth.current = d.authenticated;
-        const merged = new Map<string, number>(
-          (d.items || []).map((i: CartItem) => [i.product_id, i.quantity]),
+        const merged = new Map<string, CartItem>(
+          (d.items || []).map((i: CartItem) => [cartKey(i), i]),
         );
-        local.forEach((i) =>
-          merged.set(
-            i.product_id,
-            Math.max(i.quantity, merged.get(i.product_id) || 0),
-          ),
-        );
-        const all = [...merged]
-          .slice(0, 50)
-          .map(([product_id, quantity]) => ({ product_id, quantity }));
+        local.forEach((i) => {
+          const old = merged.get(cartKey(i));
+          merged.set(cartKey(i), {
+            ...i,
+            quantity: Math.max(i.quantity, old?.quantity || 0),
+          });
+        });
+        const all = [...merged.values()].slice(0, 50);
+        try {
+          localStorage.setItem(
+            'snuggle-photo-gift-studio-cart',
+            JSON.stringify(all),
+          );
+        } catch {}
         if (alive) {
           setState(all);
           if (d.authenticated) await api('/api/cart', all, 'PUT');
@@ -69,7 +86,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   function setItems(next: CartItem[]) {
     setState(next);
     try {
-      localStorage.setItem('earth-cart', JSON.stringify(next));
+      localStorage.setItem(
+        'snuggle-photo-gift-studio-cart',
+        JSON.stringify(next),
+      );
     } catch {
       setError('Your browser could not save this cart.');
     }
@@ -84,20 +104,34 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }
-  function add(id: string, quantity: number) {
-    const existing = items.find((i) => i.product_id === id);
+  function add(
+    id: string,
+    quantity: number,
+    customization: Pick<
+      CartItem,
+      'customization_id' | 'customization_label'
+    > = {},
+  ) {
+    setDrawerOpen(true);
+    const key = cartKey({ product_id: id, ...customization });
+    const existing = items.find((i) => cartKey(i) === key);
     setItems(
       existing
         ? items.map((i) =>
-            i.product_id === id
+            cartKey(i) === key
               ? { ...i, quantity: Math.min(99, i.quantity + quantity) }
               : i,
           )
-        : [...items, { product_id: id, quantity }].slice(0, 50),
+        : [...items, { product_id: id, quantity, ...customization }].slice(
+            0,
+            50,
+          ),
     );
   }
   return (
-    <CartContext.Provider value={{ items, ready, error, setItems, add }}>
+    <CartContext.Provider
+      value={{ items, ready, error, setItems, add, drawerOpen, setDrawerOpen }}
+    >
       {children}
     </CartContext.Provider>
   );

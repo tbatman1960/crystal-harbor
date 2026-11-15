@@ -425,6 +425,308 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       );
     },
   );
+  await t.test(
+    'personalized artwork snapshots survive payment replay and cannot be deleted during checkout',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777';
+      const did = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+      const art = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+      await pg.query(
+        'update products set track_inventory=false,inventory_count=0 where id=$1',
+        [pid],
+      );
+      await pg.query(
+        "insert into personalizations(id,user_id,product_id,session_hash,request_hash,config,source_path,artwork_path,approved_at) values($1,$2,$3,repeat('a',64),repeat('b',64),$4,'photo','art',now())",
+        [
+          art,
+          owner,
+          pid,
+          JSON.stringify({ name: 'Olivia', template: 'disco' }),
+        ],
+      );
+      await role(other, async () => {
+        await assert.rejects(
+          pg.query('select * from personalizations'),
+          /permission denied/,
+        );
+        await assert.rejects(
+          pg.query('select prepare_personalization_delete($1)', [art]),
+          /permission denied/,
+        );
+      });
+      const snapshots = JSON.stringify([
+        {
+          product_id: pid,
+          name: 'Custom Olivia',
+          sku: 'CUSTOM',
+          unit_price_cents: 1000,
+          quantity: 1,
+          shipping_first_unit_cents: 700,
+          shipping_additional_unit_cents: 100,
+          personalization_id: art,
+          personalization_snapshot: { name: 'Olivia', template: 'disco' },
+        },
+      ]);
+      await pg.query(
+        'select reserve_personalized_checkout($1,$2,$3,$4,$4,$5,1000,700,0,$6)',
+        [did, owner, 'one@example.com', address, snapshots, 'Standard'],
+      );
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        false,
+      );
+      await pg.query(
+        "select complete_personalized_checkout($1,'cs_personalized',1700)",
+        [did],
+      );
+      await pg.query(
+        "select complete_personalized_checkout($1,'cs_personalized',1700)",
+        [did],
+      );
+      const line = await pg.query<{
+        personalization_id: string;
+        personalization_snapshot: { name: string };
+      }>(
+        'select personalization_id,personalization_snapshot from order_items where personalization_id=$1',
+        [art],
+      );
+      assert.equal(line.rows.length, 1);
+      assert.equal(line.rows[0].personalization_snapshot.name, 'Olivia');
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        false,
+      );
+      const unused = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+      await pg.query(
+        "insert into personalizations(id,product_id,session_hash,request_hash,config,source_path,artwork_path,approved_at) values($1,$2,repeat('a',64),repeat('b',64),'{}','photo','art',now())",
+        [unused, pid],
+      );
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [unused],
+          )
+        ).rows[0].prepare_personalization_delete,
+        true,
+      );
+      await assert.rejects(
+        pg.query(
+          'select reserve_personalized_checkout($1,$2,$3,$4,$4,$5,1000,700,0,$6)',
+          [
+            'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+            owner,
+            'one@example.com',
+            address,
+            snapshots.replace(art, unused),
+            'Standard',
+          ],
+        ),
+        /artwork unavailable/,
+      );
+    },
+  );
+  await t.test(
+    'preview carts stay private and do not overwrite the existing live cart',
+    async () => {
+      await role(owner, async () => {
+        await pg.query(
+          "insert into personalization_carts(user_id,items) values($1,'[]')",
+          [owner],
+        );
+      });
+      await role(other, async () => {
+        assert.equal(
+          (await pg.query('select * from personalization_carts')).rows.length,
+          0,
+        );
+        await assert.rejects(
+          pg.query(
+            "insert into personalization_carts(user_id,items) values($1,'[]')",
+            [admin],
+          ),
+          /row-level security/,
+        );
+      });
+    },
+  );
+  await t.test(
+    'illustration budgets, service-only access, approval and cleanup are atomic',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777';
+      const ids = [
+        '01010101-0101-4101-8101-010101010101',
+        '02020202-0202-4202-8202-020202020202',
+        '03030303-0303-4303-8303-030303030303',
+        '04040404-0404-4404-8404-040404040404',
+      ];
+      const reserve = (id: string) =>
+        pg.query('select reserve_illustration($1,$2,$3,$4,$5,$6,$7,3,25)', [
+          id,
+          owner,
+          'a'.repeat(64),
+          'b'.repeat(64),
+          pid,
+          JSON.stringify({ name: 'Illustrated Jane', template: 'disco' }),
+          `illustrations/${id}/portrait.jpg`,
+        ]);
+      await role(other, async () => {
+        await assert.rejects(
+          pg.query('select * from illustration_jobs'),
+          /permission denied/,
+        );
+        await assert.rejects(
+          pg.query('select approve_illustration($1)', [ids[0]]),
+          /permission denied/,
+        );
+      });
+      await reserve(ids[0]);
+      await reserve(ids[1]);
+      await reserve(ids[2]);
+      await assert.rejects(reserve(ids[3]), /Illustration limit/);
+      await assert.rejects(
+        pg.query('select approve_illustration($1)', [ids[0]]),
+        /unavailable/,
+      );
+      const claim = await pg.query(
+        "update illustration_jobs set status='processing' where id=$1 and status='queued' returning id",
+        [ids[0]],
+      );
+      assert.equal(claim.rows.length, 1);
+      assert.equal(
+        (
+          await pg.query(
+            "update illustration_jobs set status='processing' where id=$1 and status='queued' returning id",
+            [ids[0]],
+          )
+        ).rows.length,
+        0,
+      );
+      await pg.query(
+        "update illustration_jobs set status='ready',artwork_path='drawn.svg',width=1024,height=1536 where id=$1",
+        [ids[0]],
+      );
+      await pg.query('select approve_illustration($1)', [ids[0]]);
+      await pg.query('select approve_illustration($1)', [ids[0]]);
+      const proof = await pg.query<{
+        artwork_kind: string;
+        generation_id: string;
+        config: { name: string };
+      }>(
+        'select artwork_kind,generation_id,config from personalizations where id=$1',
+        [ids[0]],
+      );
+      assert.equal(proof.rows.length, 1);
+      assert.equal(proof.rows[0].artwork_kind, 'ai');
+      assert.equal(proof.rows[0].config.name, 'Illustrated Jane');
+      await pg.query(
+        "update illustration_jobs set created_at=now()-interval '8 days' where id=$1",
+        [ids[0]],
+      );
+      assert.equal(
+        (
+          await pg.query<{ prepare_illustration_delete: boolean }>(
+            'select prepare_illustration_delete($1)',
+            [ids[0]],
+          )
+        ).rows[0].prepare_illustration_delete,
+        false,
+      );
+      await pg.query('select prepare_personalization_delete($1)', [ids[0]]);
+      await assert.rejects(
+        pg.query('select approve_illustration($1)', [ids[0]]),
+        /unavailable/,
+      );
+      await pg.query('delete from personalizations where id=$1', [ids[0]]);
+      assert.equal(
+        (
+          await pg.query<{ prepare_illustration_delete: boolean }>(
+            'select prepare_illustration_delete($1)',
+            [ids[0]],
+          )
+        ).rows[0].prepare_illustration_delete,
+        true,
+      );
+    },
+  );
+  await t.test(
+    'production exports are service-only, idempotent, block source deletion and require admin ownership',
+    async () => {
+      const pid = '77777777-7777-4777-8777-777777777777',
+        art = 'abababab-abab-4bab-8bab-abababababab';
+      await pg.query(
+        "insert into personalizations(id,product_id,session_hash,request_hash,config,source_path,artwork_path,approved_at) values($1,$2,repeat('c',64),repeat('d',64),'{}','source','art',now())",
+        [art, pid],
+      );
+      await role(other, async () => {
+        await assert.rejects(
+          pg.query('select * from print_exports'),
+          /permission denied/,
+        );
+        await assert.rejects(
+          pg.query("select reserve_print_export($1,'{}',repeat('a',64),$2)", [
+            art,
+            other,
+          ]),
+          /permission denied/,
+        );
+      });
+      await assert.rejects(
+        pg.query("select reserve_print_export($1,'{}',repeat('a',64),$2)", [
+          art,
+          other,
+        ]),
+        /Forbidden/,
+      );
+      const first = await pg.query<{ id: string }>(
+        "select reserve_print_export($1,$2,repeat('a',64),$3) as id",
+        [art, JSON.stringify({ size: '60x80', format: 'svg' }), admin],
+      );
+      const id = first.rows[0].id;
+      const again = await pg.query<{ id: string }>(
+        "select reserve_print_export($1,$2,repeat('a',64),$3) as id",
+        [art, JSON.stringify({ size: '60x80', format: 'svg' }), admin],
+      );
+      assert.equal(again.rows[0].id, id);
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        false,
+      );
+      await assert.rejects(
+        pg.query('select prepare_print_export_delete($1)', [id]),
+        /still processing/,
+      );
+      await pg.query("update print_exports set status='ready' where id=$1", [
+        id,
+      ]);
+      await pg.query('select prepare_print_export_delete($1)', [id]);
+      await pg.query('delete from print_exports where id=$1', [id]);
+      assert.equal(
+        (
+          await pg.query<{ prepare_personalization_delete: boolean }>(
+            'select prepare_personalization_delete($1)',
+            [art],
+          )
+        ).rows[0].prepare_personalization_delete,
+        true,
+      );
+    },
+  );
   await t.test('production design edits are isolated, versioned and permission checked',async()=>{
     const rpc=async(action:string,version:number,actor:string,email:string)=>{
       await pg.exec('set role service_role');

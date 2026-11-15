@@ -1,4 +1,5 @@
 'use client';
+import {useSiteDesign} from './site-design-provider';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -7,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useCart } from './cart-provider';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
+import { SizeSelector } from './size-selector';
 import { BLANKET_ORDER_LIMIT } from '@/lib/pricing';
 export function ProductDetail({
   product: p,
@@ -23,6 +25,7 @@ export function ProductDetail({
     | 'track_inventory'
   >[];
 }) {
+  const design=useSiteDesign();
   const router = useRouter();
   const images = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
@@ -32,9 +35,9 @@ export function ProductDetail({
   const [added, setAdded] = useState(false);
   const { add, ready } = useCart();
   return (
-    <div className="grid gap-10 md:grid-cols-2 md:gap-16">
-      <section aria-label="Product images">
-        <div className="detail-photo relative aspect-square overflow-hidden rounded-2xl bg-sage">
+    <div className="collection-page grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-16">
+      <section aria-label="Product images" className="min-w-0">
+        <div className="relative aspect-square overflow-hidden rounded-2xl bg-sage">
           <Image
             src={images[selected]?.url || '/placeholder.svg'}
             alt={`${p.name} — view ${selected + 1}`}
@@ -44,10 +47,13 @@ export function ProductDetail({
             className="object-cover"
           />
         </div>
-        <div className="mt-4 flex gap-3">
+        <div
+          className="mt-4 flex gap-3 overflow-x-auto pb-2"
+          aria-label="Image thumbnails"
+        >
           {images.map((image, i) => (
             <button
-              className={`relative h-20 w-20 overflow-hidden rounded-lg ${i === selected ? 'ring-2 ring-ink ring-offset-2' : ''}`}
+              className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg ${i === selected ? 'ring-2 ring-ink ring-offset-2' : ''}`}
               key={image.url}
               onClick={() => choose(i)}
               aria-label={`View image ${i + 1}`}
@@ -64,39 +70,50 @@ export function ProductDetail({
           ))}
         </div>
       </section>
-      <section className="md:py-8">
+      <section className="min-w-0 md:py-8">
         <p className="eyebrow mb-5 text-clay">
-          Ready for your next cozy moment
+          YOUR PHOTO. THEIR NEW FAVORITE.
         </p>
         <h1 className="text-4xl md:text-5xl">{p.name}</h1>
-        {sizes.length > 1 ? (
-          <label id="choose-size" className="mt-6 max-w-sm scroll-mt-6">
-            Choose a size
-            <select
-              value={p.slug}
-              onChange={(e) => router.push(`/products/${e.target.value}`)}
-            >
-              {sizes.map((size) => (
-                <option key={size.id} value={size.slug}>
-                  {size.size_label || 'Standard'} — {money(size.price_cents)}
-                  {!hasStock(size) ? ' · Sold out' : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : p.size_label ? (
-          <p className="mt-4 text-sm">Size: {p.size_label}</p>
-        ) : null}
+        {design.size_selection==='on_product' ? <>
+        <div className="mt-6">
+          <SizeSelector
+            sizes={sizes.length ? sizes : [p]}
+            selected={p.id}
+            onSelect={(id) => {
+              const size = sizes.find((x) => x.id === id);
+              if (size)
+                router.push(`/products/${size.slug}`, { scroll: false });
+            }}
+          />
+        </div>
+        </> : <p className="mt-5 text-sm">Choose your blanket size in the customizer.</p>}
         <p className="mt-5 text-xl">{money(p.price_cents)}</p>
-        <p className="mt-7 whitespace-pre-line text-ink/75">{p.description}</p>
-        {p.shipping_group === 'blankets' && (
-          <p className="notice mt-6">
-            Shipping: {money(p.shipping_first_unit_cents || 0)} for the first
-            blanket, plus {money(p.shipping_additional_unit_cents)} for each
-            additional blanket. Mix designs and sizes, up to{' '}
-            {BLANKET_ORDER_LIMIT} blankets per order.
+        <Link
+          href={`/customize?product=${p.slug}`}
+          className="btn w-full mt-6"
+          aria-label={`Customize ${p.name}`}
+        >
+          Customize with your photo ✦
+        </Link>
+        <p className="mt-3 text-xs text-center">
+          Create a preview. Approve it. Then add to your bag.
+        </p>
+        <details className="studio-product-description mt-6">
+          <summary>About this blanket</summary>
+          <p className="mt-3 whitespace-pre-line text-sm">{p.description}</p>
+        </details>
+        <details className="studio-product-description">
+          <summary>Shipping & ordering</summary>
+          <p className="mt-3 text-sm">
+            $7 for your first blanket, plus $1 each additional. Mix designs and
+            sizes, up to five blankets per order. Delivery outside Indiana.
+            Review and approve personalized artwork before ordering.
           </p>
-        )}
+        </details>
+        <p className="mt-6 text-xs text-ink/60">
+          Prefer the original design without a photo? Add it below.
+        </p>
         <div className="mt-8 flex items-end gap-4">
           <label className="w-24">
             Quantity
@@ -125,14 +142,14 @@ export function ProductDetail({
             />
           </label>
           <button
-            className="btn flex-1"
+            className="btn party-button flex-1"
             disabled={!ready || !hasStock(p)}
             onClick={() => {
               add(p.id, quantity);
               setAdded(true);
             }}
           >
-            {hasStock(p) ? 'Add to bag' : 'Sold out'}
+            {hasStock(p) ? 'Add original design to bag' : 'Sold out'}
           </button>
         </div>
         {added && (
@@ -151,7 +168,8 @@ export function ProductDetail({
               ? 'Shipping rate awaiting setup'
               : `Shipping: ${money(p.shipping_first_unit_cents)} for the first unit + ${money(p.shipping_additional_unit_cents)} for each additional unit`}
             <br />
-            SKU: {p.sku} · Weight: {p.weight_lbs} lb
+            SKU: {p.sku}
+            {p.weight_lbs !== null ? ` · Weight: ${p.weight_lbs} lb` : ''}
           </p>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { validState } from './us-states';
+import { cartKey } from './personalization/designs';
 export const addressSchema = z.object({
   name: z.string().trim().min(2).max(100),
   line1: z.string().trim().min(3).max(150),
@@ -16,14 +17,23 @@ export const cartSchema = z
     z.object({
       product_id: z.string().uuid(),
       quantity: z.number().int().min(1).max(99),
+      customization_id: z.string().uuid().optional(),
+      customization_label: z.string().max(120).optional(),
     }),
   )
   .max(50)
   .refine(
-    (a) => new Set(a.map((i) => i.product_id)).size === a.length,
+    (a) => new Set(a.map(cartKey)).size === a.length,
     'Duplicate products',
   );
 export const quoteSchema = z.object({
+  coupon_code: z
+    .string()
+    .trim()
+    .max(60)
+    .regex(/^[A-Za-z0-9-]*$/)
+    .optional(),
+  coupon_email: z.string().email().max(254).optional(),
   items: cartSchema.refine((a) => a.length > 0, 'Your cart is empty'),
   address: addressSchema,
 });

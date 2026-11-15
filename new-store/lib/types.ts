@@ -38,7 +38,12 @@ export type Category = {
   parent_id: string | null;
   sort_order: number;
 };
-export type CartItem = { product_id: string; quantity: number };
+export type CartItem = {
+  product_id: string;
+  quantity: number;
+  customization_id?: string;
+  customization_label?: string;
+};
 export type Settings = {
   id: number;
   store_name: string;

@@ -171,3 +171,15 @@ Optional street autocomplete and USPS delivery-point checks use Google Places AP
 The new storefront also supports the original SMTP environment variables: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`, and `SMTP_FROM`. Keep their working Production values in Netlify. SMTP takes priority when SMTP_HOST is set, so no Resend account or key is needed. Port 587 uses required STARTTLS; port 465 uses implicit TLS by default. Certificates are verified. Mark SMTP_PASS as secret and use the provider's authorized sender in SMTP_FROM. Missing sender defaults to the store name/store email in settings.
 
 The order email outbox and manual retry remain in use with either provider. SMTP messages use a stable Message-ID per job, but SMTP has no provider idempotency guarantee: concurrent retries or a crash after SMTP acceptance can cause duplicate messages. Resend's idempotency behavior applies only when using Resend. End-to-end SMTP delivery must be verified after configuring Production; a successful build does not establish email delivery.
+
+## Personalized blanket preview
+
+See [PERSONALIZATION-PREVIEW.md](PERSONALIZATION-PREVIEW.md) for AI illustration activation, the separate review branch, private-photo handling, background processing, test-payment requirements, and print-production limitations.
+
+## Production print files
+
+See [PRODUCTION-PRINT.md](PRODUCTION-PRINT.md) for scalable SVG conversion, full-size PNG/JPEG/TIFF exports up to 60 × 80 inches, private background processing and the operator review workflow.
+
+## Photo-gift production release
+
+The previously previewed image-first design, photo customization and preview history, reviews, reward coupons, cart drawer and administrator print tools are included in this release. Production Website Editor access remains at `/studio`, with isolated production design settings and the existing collaborator grants. Print generation runs only when requested by an administrator. Enable `AI_ILLUSTRATION_ENABLED=true` and the existing server OpenAI key in the Production context to offer paid image generation. Existing live Stripe keys and the production webhook endpoint are retained. The rollout imports older guest and account carts only when a photo-gift cart has not yet been created.

@@ -1,5 +1,3 @@
-import { readWebsiteDesign } from '@/lib/website-editor-server';
-import { orderDesigns } from '@/lib/site-design';
 import Link from 'next/link';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { catalog, categories } from '@/lib/data';
@@ -21,14 +19,21 @@ export default async function Shop({
         categories(),
       ])
     : [[], []];
-  const {config} = await readWebsiteDesign();
-  const groups = orderDesigns(groupCatalog(products),config.design_order);
   return (
-    <div className="shell py-12">
-      <p className="eyebrow mb-4 text-clay">
-        A little comfort, a lot of character
+    <div className="collection-page collection-shop shell py-10 md:py-14">
+      <p className="eyebrow mb-4 text-clay">The retro sleepover collection</p>
+      <h1 className="shop-party-title">
+        Pick your cozy. <span>Make it you.</span>
+      </h1>
+      <p className="mt-4 max-w-2xl text-ink/75">
+        Big characters, bold prints, and four ways to get comfortable. Your next
+        favorite blanket is right here.
       </p>
-      <h1>The collection</h1>
+      <p className="mt-5">
+        <Link href="/customize" className="personalization-link">
+          ✦ Put your face in the picture — create a personalized blanket →
+        </Link>
+      </p>
       <div className="my-8 flex flex-col justify-between gap-5 md:flex-row">
         <nav
           aria-label="Categories"
@@ -77,12 +82,13 @@ export default async function Shop({
         {products.length} available sizes &amp; options
       </p>
       {products.length ? (
-        <div className="product-gallery grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
-          {groups.map(({ product, sizeCount }) => (
+        <div className="collection-grid">
+          {groupCatalog(products).map(({ product, sizeCount }, index) => (
             <ProductCard
               key={product.id}
               product={product}
               sizeCount={sizeCount}
+              accent={index}
             />
           ))}
         </div>

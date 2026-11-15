@@ -1,11 +1,23 @@
+import { siteUrl } from '@/lib/site-url';
 import type { MetadataRoute } from 'next';
 export default function robots(): MetadataRoute.Robots {
+  if (siteUrl().includes('deploy-preview-'))
+    return { rules: { userAgent: '*', disallow: '/' } };
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/studio', '/admin', '/account', '/api', '/checkout', '/cart', '/auth'],
+      disallow: [
+        '/studio',
+        '/admin',
+        '/designs',
+        '/account',
+        '/api',
+        '/checkout',
+        '/cart',
+        '/auth',
+      ],
     },
-    sitemap: `${process.env.SITE_URL || 'http://localhost:3000'}/sitemap.xml`,
+    sitemap: `${siteUrl()}/sitemap.xml`,
   };
 }

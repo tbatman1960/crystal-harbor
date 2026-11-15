@@ -6,7 +6,7 @@ import {websiteAccess} from '@/lib/website-editor-server';
 import {designSchema,defaultDesign} from '@/lib/site-design';
 import {service,check} from '@/lib/supabase';
 import {origin,failure} from '@/lib/http';
-import {WebsiteEditorError} from '@/lib/editor-error';
+import {PersonalizationError} from '@/lib/personalization/errors';
 export const dynamic='force-dynamic';
 export async function GET(){try{
  const a=await websiteAccess();const client=service();
@@ -21,7 +21,7 @@ export async function POST(req:Request){try{
  const v=z.object({action:z.enum(['save','publish','preview']),version:z.number().int().nonnegative(),config:designSchema.optional(),note:z.string().trim().max(300).default('')}).strict().parse(await req.json());
  if(v.action==='preview'){cookies().set('snuggle-live-design-preview','1',{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:3600});return NextResponse.json({ok:true});}
  if(v.action==='publish'&&!a.canPublish)throw Error('Forbidden');
- if(v.action==='save'&&!v.config)throw new WebsiteEditorError('Provide a complete design before saving.');
+ if(v.action==='save'&&!v.config)throw new PersonalizationError('Provide a complete design before saving.');
  const {data,error}=await service().rpc('production_website_design_action',{p_action:v.action,p_expected:v.version,p_config:v.config||{},p_actor:a.user.id,p_email:a.user.email!,p_note:v.note});
  if(error?.message.includes('Design changed'))return NextResponse.json({error:'Another editor changed the draft. Reload before saving so their work is preserved.',code:'DESIGN_CONFLICT'},{status:409});check(error);
  if(v.action==='publish')cookies().delete('snuggle-live-design-preview');

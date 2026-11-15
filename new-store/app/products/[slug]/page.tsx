@@ -1,3 +1,4 @@
+import { ProductReviews } from '@/components/product-reviews';
 import { notFound } from 'next/navigation';
 import { db, check } from '@/lib/supabase';
 import { ProductDetail } from '@/components/product-detail';
@@ -29,6 +30,7 @@ export default async function Product({
   return (
     <div className="shell py-10">
       <ProductDetail key={data.id} product={data} sizes={sizes || []} />
+      <ProductReviews productId={data.id} />
     </div>
   );
 }

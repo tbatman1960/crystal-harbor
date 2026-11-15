@@ -1,3 +1,4 @@
+import { ArtworkDownload } from './artwork-download';
 import { money } from '@/lib/types';
 import type { Address } from '@/lib/types';
 export type Order = {
@@ -7,6 +8,7 @@ export type Order = {
   created_at: string;
   status: string;
   subtotal_cents: number;
+  discount_cents?: number;
   shipping_cents: number;
   tax_cents: number;
   total_cents: number;
@@ -20,6 +22,8 @@ export type Order = {
     product_sku_snapshot: string;
     unit_price_cents: number;
     quantity: number;
+    personalization_id?: string | null;
+    personalization_snapshot?: { template: string; name: string } | null;
   }[];
 };
 export function OrderView({
@@ -53,6 +57,16 @@ export function OrderView({
                 {i.product_name_snapshot} × {i.quantity}
               </p>
               <p className="text-xs text-ink/60">{i.product_sku_snapshot}</p>
+              {i.personalization_id && (
+                <div className="personalization-summary">
+                  <p>
+                    Approved personalized artwork ·{' '}
+                    {i.personalization_snapshot?.name ||
+                      i.personalization_snapshot?.template}
+                  </p>
+                  <ArtworkDownload id={i.personalization_id} />
+                </div>
+              )}
             </div>
             {!packing && <p>{money(i.unit_price_cents * i.quantity)}</p>}
           </div>
@@ -61,6 +75,9 @@ export function OrderView({
           <dl className="ml-auto mt-5 max-w-sm space-y-2">
             {[
               ['Subtotal', o.subtotal_cents],
+              ...(o.discount_cents
+                ? [['Coupon discount', -o.discount_cents]]
+                : []),
               ['Shipping', o.shipping_cents],
               ['Tax', o.tax_cents],
               ['Total', o.total_cents],

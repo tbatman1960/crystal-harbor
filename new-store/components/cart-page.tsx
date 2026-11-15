@@ -1,4 +1,7 @@
 'use client';
+import {useSiteDesign} from './site-design-provider';
+import { cartKey } from '@/lib/personalization/designs';
+import { ArtworkDownload } from './artwork-download';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import { useCart } from './cart-provider';
 import type { Product, Address, Rate } from '@/lib/types';
@@ -11,7 +14,6 @@ import {
 import { productTitle } from '@/lib/catalog-presentation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useSiteDesign } from './site-design-provider';
 import { api, Notice } from './ui';
 import { AddressFields, emptyAddress } from './address-fields';
 export function CartPage({
@@ -24,19 +26,20 @@ export function CartPage({
   email?: string;
 }) {
   const { items, setItems, ready, error: cartError } = useCart();
-  const design = useSiteDesign();
-  const [reviewStep,setReviewStep] = useState(false);
-  const guided = design.checkout_layout === 'guided';
+  const design=useSiteDesign();
+  const [checkoutStep,setCheckoutStep]=useState(1);
   const [address, setAddress] = useState(defaultAddress || emptyAddress);
   const [billing, setBilling] = useState(emptyAddress);
   const [same, setSame] = useState(true);
   const [contact, setContact] = useState(email || '');
   const [quote, setQuote] = useState<{
     subtotal: number;
+    discount: number;
     tax: number;
     rates: Rate[];
   } | null>(null);
   const [method, setMethod] = useState('');
+  const [couponCode, setCouponCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [version, setVersion] = useState('');
@@ -56,19 +59,23 @@ export function CartPage({
         : 0),
     0,
   );
-  const current = JSON.stringify({ items, address });
+  const current = JSON.stringify({ items, address, couponCode, contact });
   const validQuote = version === current ? quote : null;
   const rate = validQuote?.rates.find((r) => r.id === method);
-  const reviewing = guided && reviewStep && !!validQuote && !!rate;
   async function getRates() {
     setError('');
     setPending(true);
     try {
-      const q = await api('/api/quote', { items, address });
+      const q = await api('/api/quote', {
+        items,
+        address,
+        coupon_code: couponCode,
+        coupon_email: contact || undefined,
+      });
       setQuote(q);
       setVersion(current);
       setMethod(q.rates[0].id);
-      if(guided)setReviewStep(true);
+      if(design.checkout_layout==='guided')setCheckoutStep(2);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -85,6 +92,7 @@ export function CartPage({
         billing: same ? address : billing,
         email: contact,
         shipping_method: method,
+        coupon_code: couponCode,
       });
       window.location.assign(data.url);
     } catch (e) {
@@ -153,17 +161,38 @@ export function CartPage({
             {items.map((i) => {
               const p = products.find((p) => p.id === i.product_id);
               return (
-                <article key={i.product_id} className="flex gap-4 py-6">
+                <article key={cartKey(i)} className="flex gap-4 py-6">
                   <div className="flex-1">
                     <h2 className="text-xl">
                       {p ? (
-                        <Link href={`/products/${p.slug}`}>
-                          {productTitle(p)}
+                        <Link
+                          href={
+                            i.customization_id
+                              ? '/customize'
+                              : `/products/${p.slug}`
+                          }
+                        >
+                          {i.customization_id
+                            ? `${i.customization_label || 'Personalized blanket'} — ${p.size_label || 'Selected size'}`
+                            : productTitle(p)}
                         </Link>
                       ) : (
                         'Product unavailable'
                       )}
                     </h2>
+                    {i.customization_id && (
+                      <div className="personalization-summary">
+                        <strong>Personalized blanket</strong>
+                        <p>
+                          {i.customization_label || 'Your approved artwork'}
+                        </p>
+                        <ArtworkDownload id={i.customization_id} />
+                        <p className="mt-1">
+                          Quantity uses this same photo and design. To use
+                          another face, create another personalized blanket.
+                        </p>
+                      </div>
+                    )}
                     <p className="my-2 text-sm">
                       {p
                         ? money(p.price_cents)
@@ -186,9 +215,7 @@ export function CartPage({
                     <button
                       className="link text-sm"
                       onClick={() =>
-                        setItems(
-                          items.filter((j) => j.product_id !== i.product_id),
-                        )
+                        setItems(items.filter((j) => cartKey(j) !== cartKey(i)))
                       }
                     >
                       Remove
@@ -209,7 +236,7 @@ export function CartPage({
                       onChange={(e) =>
                         setItems(
                           items.map((j) =>
-                            j.product_id === i.product_id
+                            cartKey(j) === cartKey(i)
                               ? {
                                   ...j,
                                   quantity: Math.max(
@@ -247,16 +274,14 @@ export function CartPage({
           className="panel space-y-6"
           onSubmit={(e) => {
             e.preventDefault();
-            if (validQuote && rate) {
-              if(guided && !reviewing)setReviewStep(true);
-              else void checkout();
-            }
+            if(design.checkout_layout==='guided'&&checkoutStep===1&&validQuote&&rate)setCheckoutStep(2);
+            else if (validQuote && rate) void checkout();
             else void getRates();
           }}
         >
-          <h2 className="text-2xl">{guided ? reviewing ? '2. Review your order' : '1. Delivery details' : 'Make it yours'}</h2>
-          {reviewing && <section aria-label="Delivery summary"><p>{contact}</p><p>{Object.values(address).filter(Boolean).join(', ')}</p><p>{same ? 'Billing matches shipping.' : 'Separate billing address provided.'}</p><button type="button" className="link mt-3" onClick={()=>setReviewStep(false)}>Change delivery details</button></section>}
-          <div hidden={reviewing} className="space-y-6">
+          <h2 className="text-2xl">{design.checkout_layout==='guided'?(checkoutStep===1?'1. Delivery details':'2. Review your order'):'Make it yours'}</h2>
+          {design.checkout_layout==='guided'&&<p className="text-xs">Delivery → Review → Secure Stripe payment</p>}
+          <div hidden={design.checkout_layout==='guided'&&checkoutStep===2} className="space-y-6">
           <label>
             Contact email
             <input
@@ -266,6 +291,20 @@ export function CartPage({
               value={contact}
               onChange={(e) => setContact(e.target.value)}
             />
+          </label>
+          <label>
+            Coupon code (optional)
+            <input
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              maxLength={60}
+              placeholder="Enter your coupon code"
+              autoComplete="off"
+            />
+            <span className="block text-xs mt-2">
+              Use the email the coupon was issued to. Discount is verified with
+              shipping and tax.
+            </span>
           </label>
           <fieldset>
             <legend className="mb-4 font-semibold">Shipping address</legend>
@@ -295,6 +334,8 @@ export function CartPage({
             </fieldset>
           )}
           </div>
+          <div hidden={design.checkout_layout==='guided'&&checkoutStep===1}>
+          {design.checkout_layout==='guided'&&checkoutStep===2&&<p className="notice">Ship to: {address.name}, {address.line1}, {address.city}, {address.state} {address.postal_code}. Contact: {contact}</p>}
           {validQuote && (
             <fieldset className="space-y-3">
               <legend className="mb-3 font-semibold">Shipping options</legend>
@@ -330,6 +371,12 @@ export function CartPage({
               <dt>Subtotal</dt>
               <dd>{money(validQuote?.subtotal ?? subtotal)}</dd>
             </div>
+            {!!validQuote?.discount && (
+              <div className="flex justify-between text-[var(--party-pink)]">
+                <dt>Coupon discount</dt>
+                <dd>−{money(validQuote.discount)}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt>Estimated shipping</dt>
               <dd>{rate ? money(rate.amount) : 'Enter address'}</dd>
@@ -342,13 +389,16 @@ export function CartPage({
               <dt>{validQuote ? 'Total' : 'Subtotal'}</dt>
               <dd>
                 {money(
-                  (validQuote?.subtotal ?? subtotal) +
+                  (validQuote?.subtotal ?? subtotal) -
+                    (validQuote?.discount || 0) +
                     (rate?.amount || 0) +
                     (validQuote?.tax || 0),
                 )}
               </dd>
             </div>
           </dl>
+          </div>
+          {design.checkout_layout==='guided'&&checkoutStep===2&&<button type="button" className="link" onClick={()=>setCheckoutStep(1)}>← Edit delivery details or coupon</button>}
           <Notice error={error} />
           <button
             className="btn w-full"
@@ -356,8 +406,10 @@ export function CartPage({
           >
             {pending
               ? 'Please wait…'
-              : validQuote && rate
-                ? guided && !reviewing ? 'Review order →' : 'Continue to secure payment →'
+              : design.checkout_layout==='guided'&&checkoutStep===1
+                ? 'Review order →'
+                : validQuote && rate
+                ? 'Continue to secure payment →'
                 : 'Calculate shipping & tax'}
           </button>
           <p className="text-xs text-ink/65">

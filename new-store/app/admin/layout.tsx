@@ -20,7 +20,10 @@ export default async function AdminLayout({
             ['products', 'Products'],
             ['categories', 'Categories'],
             ['orders', 'Orders'],
+            ['personalizations', 'Artwork'],
             ['customers', 'Customers'],
+            ['reviews', 'Reviews'],
+            ['offers', 'Offers'],
             ['settings', 'Settings'],
           ].map(([path, name]) => (
             <Link key={path} className="link" href={`/admin/${path}`}>

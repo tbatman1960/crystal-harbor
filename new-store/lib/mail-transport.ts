@@ -1,4 +1,4 @@
-import {siteUrl} from './site-url';
+import { siteUrl } from './site-url';
 import 'server-only';
 import { createHash } from 'node:crypto';
 import nodemailer from 'nodemailer';

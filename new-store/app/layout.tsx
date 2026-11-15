@@ -1,20 +1,29 @@
-import { readWebsiteDesign } from '@/lib/website-editor-server';
-import { SiteDesignProvider } from '@/components/site-design-provider';
-import { DesignPreviewBanner } from '@/components/design-preview-banner';
-import { designCss } from '@/lib/site-design';
+import {readWebsiteDesign} from '@/lib/website-editor-server';
+import {designCss,contrast} from '@/lib/site-design';
+import {SiteDesignProvider} from '@/components/site-design-provider';
+import {DesignPreviewBanner} from '@/components/design-preview-banner';
+import { BrandWordmark } from '@/components/brand-wordmark';
+import { siteUrl } from '@/lib/site-url';
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
+import { collectionTheme as theme } from '@/lib/collection-theme';
 import Link from 'next/link';
 import { settings } from '@/lib/data';
 import { Analytics } from '@/components/analytics';
-import { CartProvider, CartCount } from '@/components/cart-provider';
+import { CartProvider } from '@/components/cart-provider';
+import { CartDrawer } from '@/components/cart-drawer';
+import { catalog } from '@/lib/data';
 import './globals.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: 'SnuggleBug · A little comfort. A lot of character.',
     template: '%s · SnuggleBug',
   },
+  robots: siteUrl().includes('deploy-preview-')
+    ? { index: false, follow: false }
+    : undefined,
   description:
     'Printed blankets in cozy sizes, playful character designs, and seasonal finds. Find your next favorite at SnuggleBug.',
 };
@@ -23,16 +32,42 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const design=await readWebsiteDesign();
   const store = process.env.NEXT_PUBLIC_SUPABASE_URL ? await settings() : null;
-  const design = await readWebsiteDesign();
-  const name = design.active ? design.config.brand_name : store?.store_name || 'SnuggleBug';
+  const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
   return (
     <html lang="en">
-      <body className="storefront">
-        {design.active && <style>{designCss(design.config)}</style>}
-        {design.preview && <DesignPreviewBanner/>}
-        <SiteDesignProvider value={design.config}>
-        <CartProvider>
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/fredoka-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/nunito-latin.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        {design.active&&<style dangerouslySetInnerHTML={{__html:designCss(design.config)}}/>}
+      </head>
+      <body
+        className="photo-studio"
+        style={
+          {
+            '--party-pink': design.active?(contrast(design.config.primary,design.config.background)>=4.5?design.config.primary:design.config.ink):theme.colors.pink,
+            '--party-pink-light': theme.colors.pinkLight,
+            '--party-lilac': theme.colors.lilac,
+            '--party-yellow': theme.colors.yellow,
+            '--party-green': theme.colors.green,
+          } as CSSProperties
+        }
+      >
+        <SiteDesignProvider value={design.config}><CartProvider>
+          {design.preview&&<DesignPreviewBanner/>}
           <a
             href="#main"
             className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-4"
@@ -40,31 +75,32 @@ export default async function RootLayout({
             Skip to content
           </a>
           <Analytics id={store?.ga4_id || null} />
-          <>{design.config.announcement_enabled && <div className="season-announcement bg-ink px-4 py-2 text-center text-xs tracking-widest text-white">{design.config.announcement}</div>}</>
+          {design.config.announcement_enabled&&<div className="season-announcement">
+            <span aria-hidden="true">✦ </span>
+            {design.config.announcement}
+            <span aria-hidden="true"> ✦</span>
+          </div>}
           <header className="border-b border-ink/10">
-            <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
-              <Link className="font-serif text-2xl tracking-tight" href="/">
-                {name}{design.config.show_mascot && <span className="ml-2" aria-hidden="true">🐞</span>}
-                <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
-                  a little comfort, a lot of character
-                </span>
+            <div className="shell fun-header-inner">
+              <Link className="snuggle-wordmark" href="/">
+                <BrandWordmark name={design.config.brand_name} />
               </Link>
-              <nav
-                aria-label="Main navigation"
-                className="flex items-center gap-5 text-sm"
-              >
+              <nav aria-label="Main navigation" className="fun-main-nav">
                 <Link href="/shop">Shop</Link>
+                <Link
+                  href="/customize"
+                  className="font-semibold text-[var(--party-pink)]"
+                >
+                  Personalize
+                </Link>
                 <Link href="/about" className="hidden sm:block">
                   Our story
                 </Link>
                 <Link href="/account">Account</Link>
-                <Link
-                  href="/cart"
-                  className="rounded-full border border-ink/20 px-4 py-2"
-                >
-                  Bag (<CartCount />)
-                </Link>
               </nav>
+              <div className="fun-header-bag">
+                <CartDrawer products={products} />
+              </div>
             </div>
           </header>
           <main id="main" className="min-h-[65vh]">
@@ -73,11 +109,11 @@ export default async function RootLayout({
           <footer className="mt-20 border-t border-ink/15 bg-sage/40 py-12">
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
-                <p className="font-serif text-2xl">
-                  {name}
-                </p>
+                <Link href="/" className="fun-footer-brand">
+                  <BrandWordmark name={design.config.brand_name} />
+                </Link>
                 <p className="mt-3 text-sm">
-                  For big imaginations and little everyday comforts.
+                  Made for happy dances & movie-night snuggles.
                 </p>
               </div>
               <nav
@@ -88,19 +124,19 @@ export default async function RootLayout({
                 <Link href="/about">Our story</Link>
                 <Link href="/contact">Contact & shipping</Link>
                 <Link href="/policies">Returns & privacy</Link>
+                <Link href="/designs">My saved designs</Link>
               </nav>
               <div className="text-sm">
                 <p>Secure checkout with Stripe</p>
                 <p className="mt-2">Carefully packed. Shipped with USPS.</p>
                 <p className="mt-5 text-ink/70">
                   © {new Date().getFullYear()}{' '}
-                  {name}
+                  {store?.store_name || 'SnuggleBug'}
                 </p>
               </div>
             </div>
           </footer>
-        </CartProvider>
-        </SiteDesignProvider>
+        </CartProvider></SiteDesignProvider>
       </body>
     </html>
   );

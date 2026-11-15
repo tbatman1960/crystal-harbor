@@ -13,12 +13,14 @@
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
+    "imagetracerjs": "1.2.6",
     "next": "^14.2.35",
     "nodemailer": "10.2.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^4.1.2",
     "server-only": "^0.0.1",
+    "sharp": "0.34.5",
     "stripe": "^17.7.0",
     "zod": "^3.24.2"
   },

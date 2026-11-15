@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { admin, service, check } from '@/lib/supabase';
 import { OrderView } from '@/components/order-view';
 import { OrderEditor } from '@/components/order-editor';
+import { ProductionExport } from '@/components/production-export';
 import { RetryEmails } from '@/components/admin-actions';
 export default async function Order({ params }: { params: { id: string } }) {
   if (!z.string().uuid().safeParse(params.id).success) notFound();
@@ -29,6 +30,25 @@ export default async function Order({ params }: { params: { id: string } }) {
         Printable packing slip
       </Link>
       <OrderView order={data} />
+      {data.order_items
+        .filter(
+          (i: { personalization_id?: string | null }) => i.personalization_id,
+        )
+        .map(
+          (i: {
+            id: string;
+            personalization_id: string;
+            product_name_snapshot: string;
+          }) => (
+            <section key={i.id} className="panel mt-6">
+              <h2 className="text-xl">{i.product_name_snapshot}</h2>
+              <ProductionExport
+                id={i.personalization_id}
+                initialSize={i.product_name_snapshot}
+              />
+            </section>
+          ),
+        )}
       <OrderEditor
         id={data.id}
         status={data.status}
