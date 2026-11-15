@@ -1,3 +1,5 @@
+import { readWebsiteDesign } from '@/lib/website-editor-server';
+import { orderDesigns } from '@/lib/site-design';
 import Link from 'next/link';
 import { groupCatalog } from '@/lib/catalog-presentation';
 import { catalog, categories } from '@/lib/data';
@@ -19,6 +21,8 @@ export default async function Shop({
         categories(),
       ])
     : [[], []];
+  const {config} = await readWebsiteDesign();
+  const groups = orderDesigns(groupCatalog(products),config.design_order);
   return (
     <div className="shell py-12">
       <p className="eyebrow mb-4 text-clay">
@@ -73,8 +77,8 @@ export default async function Shop({
         {products.length} available sizes &amp; options
       </p>
       {products.length ? (
-        <div className="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
-          {groupCatalog(products).map(({ product, sizeCount }) => (
+        <div className="product-gallery grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 lg:grid-cols-4">
+          {groups.map(({ product, sizeCount }) => (
             <ProductCard
               key={product.id}
               product={product}

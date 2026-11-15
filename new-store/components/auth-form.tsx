@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { api, Notice, Submit } from './ui';
 export function AuthForm({
   mode,
+  next,
   error: initial,
 }: {
   mode: string;
+  next?: string;
   error?: string;
 }) {
   const [email, setEmail] = useState('');
@@ -39,7 +41,7 @@ export function AuthForm({
               password: mode === 'reset' ? undefined : password,
             });
             if (mode === 'login' || mode === 'update')
-              window.location.href = '/account';
+              window.location.href = next==='/studio'?'/studio':'/account';
             else
               setMessage(
                 mode === 'register'
@@ -96,13 +98,13 @@ export function AuthForm({
         </Submit>
       </form>
       <div className="mt-8 flex flex-wrap gap-5 text-sm">
-        <Link className="link" href="/auth?mode=login">
+        <Link className="link" href={'/auth?mode=login'+(next==='/studio'?'&next=/studio':'')}>
           Sign in
         </Link>
-        <Link className="link" href="/auth?mode=register">
+        <Link className="link" href={'/auth?mode=register'+(next==='/studio'?'&next=/studio':'')}>
           Create an account
         </Link>
-        <Link className="link" href="/auth?mode=reset">
+        <Link className="link" href={'/auth?mode=reset'+(next==='/studio'?'&next=/studio':'')}>
           Forgot password?
         </Link>
       </div>

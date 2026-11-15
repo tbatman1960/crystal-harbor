@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { api, Notice, Submit } from '@/components/ui';
+import { activationDestination, activationTokenPattern } from '@/lib/editor-invitation';
 export default function Activate() {
   const [token, setToken] = useState('');
   const [type, setType] = useState('invite');
@@ -8,13 +9,15 @@ export default function Activate() {
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [next, setNext] = useState('/admin');
   useEffect(() => {
     const params = new URLSearchParams(window.location.hash.slice(1));
     const value = params.get('token');
     setType(params.get('type') === 'recovery' ? 'recovery' : 'invite');
+    setNext(activationDestination(params.get('next')));
     window.history.replaceState(null, '', window.location.pathname);
-    if (value) setToken(value);
-    else setError('Open your complete invitation link to set up your account.');
+    if (value && activationTokenPattern.test(value)) setToken(value);
+    else setError('This setup link is incomplete or has expired. Ask the store owner to send a new invitation.');
   }, []);
   return <section className="mx-auto max-w-md space-y-6 py-12">
     <h1 className="text-3xl font-semibold">Set up your account</h1>
@@ -24,7 +27,7 @@ export default function Activate() {
       e.preventDefault(); setError('');
       if (password !== confirmation) { setError('Passwords must match.'); return; }
       setPending(true);
-      try { await api('/api/auth/activate', { token, password, type }); window.location.replace('/admin'); }
+      try { await api('/api/auth/activate', { token, password, type }); window.location.replace(next); }
       catch (e) { setError((e as Error).message); setPending(false); }
     }}>
       <label className="block">New password<input className="mt-1 block w-full" type="password" autoComplete="new-password" minLength={12} maxLength={100} required value={password} onChange={e => setPassword(e.target.value)} /></label>

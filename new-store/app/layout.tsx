@@ -1,3 +1,7 @@
+import { readWebsiteDesign } from '@/lib/website-editor-server';
+import { SiteDesignProvider } from '@/components/site-design-provider';
+import { DesignPreviewBanner } from '@/components/design-preview-banner';
+import { designCss } from '@/lib/site-design';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { settings } from '@/lib/data';
@@ -20,9 +24,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const store = process.env.NEXT_PUBLIC_SUPABASE_URL ? await settings() : null;
+  const design = await readWebsiteDesign();
+  const name = design.active ? design.config.brand_name : store?.store_name || 'SnuggleBug';
   return (
     <html lang="en">
-      <body>
+      <body className="storefront">
+        {design.active && <style>{designCss(design.config)}</style>}
+        {design.preview && <DesignPreviewBanner/>}
+        <SiteDesignProvider value={design.config}>
         <CartProvider>
           <a
             href="#main"
@@ -31,13 +40,11 @@ export default async function RootLayout({
             Skip to content
           </a>
           <Analytics id={store?.ga4_id || null} />
-          <div className="bg-ink px-4 py-2 text-center text-xs tracking-widest text-white">
-            READY-TO-SHIP FINDS FOR YOUR COZIEST DAYS.
-          </div>
+          <>{design.config.announcement_enabled && <div className="season-announcement bg-ink px-4 py-2 text-center text-xs tracking-widest text-white">{design.config.announcement}</div>}</>
           <header className="border-b border-ink/10">
             <div className="shell flex min-h-24 flex-wrap items-center justify-between gap-4 py-5">
               <Link className="font-serif text-2xl tracking-tight" href="/">
-                {store?.store_name || 'SnuggleBug'}
+                {name}{design.config.show_mascot && <span className="ml-2" aria-hidden="true">🐞</span>}
                 <span className="block text-[9px] font-sans uppercase tracking-[.3em]">
                   a little comfort, a lot of character
                 </span>
@@ -67,7 +74,7 @@ export default async function RootLayout({
             <div className="shell grid gap-8 sm:grid-cols-3">
               <div>
                 <p className="font-serif text-2xl">
-                  {store?.store_name || 'SnuggleBug'}
+                  {name}
                 </p>
                 <p className="mt-3 text-sm">
                   For big imaginations and little everyday comforts.
@@ -87,12 +94,13 @@ export default async function RootLayout({
                 <p className="mt-2">Carefully packed. Shipped with USPS.</p>
                 <p className="mt-5 text-ink/70">
                   © {new Date().getFullYear()}{' '}
-                  {store?.store_name || 'SnuggleBug'}
+                  {name}
                 </p>
               </div>
             </div>
           </footer>
         </CartProvider>
+        </SiteDesignProvider>
       </body>
     </html>
   );

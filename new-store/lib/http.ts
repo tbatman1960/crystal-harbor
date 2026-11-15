@@ -1,11 +1,14 @@
+import { siteUrl } from './site-url';
+import { WebsiteEditorError } from './editor-error';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ShippingDestinationError } from './shipping-policy';
 export function origin(request: Request) {
-  if (request.headers.get('origin') !== new URL(process.env.SITE_URL!).origin)
+  if (request.headers.get('origin') !== new URL(siteUrl()).origin)
     throw new Error('Invalid origin');
 }
 export function failure(e: unknown) {
+  if(e instanceof WebsiteEditorError) return NextResponse.json({error:e.message},{status:400});
   if (e instanceof ShippingDestinationError)
     return NextResponse.json(
       { error: e.message, code: 'SHIPPING_DESTINATION_RESTRICTED' },

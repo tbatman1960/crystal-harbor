@@ -27,6 +27,7 @@ export default async function AdminLayout({
               {name}
             </Link>
           ))}
+          <Link className="link" href="/studio">Website editor</Link>
         </nav>
       </div>
       {children}

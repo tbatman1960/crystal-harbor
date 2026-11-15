@@ -425,5 +425,31 @@ test('migration, RLS, and transactional order invariants', async (t) => {
       );
     },
   );
+  await t.test('production design edits are isolated, versioned and permission checked',async()=>{
+    const rpc=async(action:string,version:number,actor:string,email:string)=>{
+      await pg.exec('set role service_role');
+      try{return await pg.query<{result:{version:number}}>('select production_website_design_action($1,$2,$3,$4,$5,$6) as result',[action,version,JSON.stringify({brand_name:'Test draft'}),actor,email,'Test only']);}
+      finally{await pg.exec('reset role');}
+    };
+    await pg.query("insert into website_collaborators(email,active,can_publish) values('two@example.com',true,false)");
+    const saved=await rpc('save',0,other,'two@example.com');
+    assert.equal(saved.rows[0].result.version,1);
+    assert.equal((await pg.query<{version:number}>("select version from website_design where channel='photo-gift-studio'")).rows[0].version,0);
+    assert.deepEqual((await pg.query<{published_config:unknown}>("select published_config from website_design where channel='storefront-production'")).rows[0].published_config,{});
+    await assert.rejects(rpc('publish',1,other,'two@example.com'),/Publishing requires/);
+    await assert.rejects(rpc('save',0,admin,'admin@example.com'),/Design changed/);
+    await rpc('publish',1,admin,'admin@example.com');
+    assert.deepEqual((await pg.query<{published_config:unknown}>("select published_config from website_design where channel='storefront-production'")).rows[0].published_config,{brand_name:'Test draft'});
+    await pg.query("update website_collaborators set active=false where email='two@example.com'");
+    await assert.rejects(rpc('save',2,other,'two@example.com'),/Forbidden/);
+    await role(other,async()=>{
+      await assert.rejects(pg.query('select * from website_design'),/permission denied/);
+      await assert.rejects(pg.query('select * from website_collaborators'),/permission denied/);
+      await assert.rejects(pg.query("select production_website_design_action('save',2,'{}',$1,'two@example.com','')",[other]),/permission denied/);
+    });
+    await pg.exec('set role anon');
+    try{await assert.rejects(pg.query('select * from website_design'),/permission denied/);}
+    finally{await pg.exec('reset role');}
+  });
   await pg.close();
 });

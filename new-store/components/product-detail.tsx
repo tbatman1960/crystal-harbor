@@ -34,7 +34,7 @@ export function ProductDetail({
   return (
     <div className="grid gap-10 md:grid-cols-2 md:gap-16">
       <section aria-label="Product images">
-        <div className="relative aspect-square overflow-hidden rounded-2xl bg-sage">
+        <div className="detail-photo relative aspect-square overflow-hidden rounded-2xl bg-sage">
           <Image
             src={images[selected]?.url || '/placeholder.svg'}
             alt={`${p.name} — view ${selected + 1}`}
@@ -70,7 +70,7 @@ export function ProductDetail({
         </p>
         <h1 className="text-4xl md:text-5xl">{p.name}</h1>
         {sizes.length > 1 ? (
-          <label className="mt-6 max-w-sm">
+          <label id="choose-size" className="mt-6 max-w-sm scroll-mt-6">
             Choose a size
             <select
               value={p.slug}

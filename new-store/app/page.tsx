@@ -1,3 +1,6 @@
+import { readWebsiteDesign } from '@/lib/website-editor-server';
+import { orderDesigns } from '@/lib/site-design';
+import { SHIPPING_AREA_MESSAGE } from '@/lib/shipping-policy';
 import Link from 'next/link';
 import Image from 'next/image';
 import { catalog } from '@/lib/data';
@@ -6,11 +9,11 @@ import { ProductCard } from '@/components/product-card';
 export const dynamic = 'force-dynamic';
 export default async function Home() {
   const products = process.env.NEXT_PUBLIC_SUPABASE_URL ? await catalog() : [];
-  const featured = groupCatalog(products).slice(0, 4);
-  return (
-    <>
-      <section className="shell py-8 md:py-12">
-        <div className="relative grid overflow-hidden rounded-2xl bg-[#efe5df] md:min-h-[550px] md:grid-cols-2">
+  const {config} = await readWebsiteDesign();
+  const featured = orderDesigns(groupCatalog(products), config.design_order).slice(0, 4);
+  const sections: Record<string, React.ReactNode> = {
+hero: <section className="shell py-8 md:py-12">
+        <div className="hero-panel relative grid overflow-hidden rounded-2xl bg-[#efe5df] md:min-h-[550px] md:grid-cols-2">
           <div className="z-10 px-7 py-14 md:px-14 md:py-20">
             <p className="eyebrow text-clay">This season at SnuggleBug</p>
             <h1 className="mt-6 max-w-lg">
@@ -43,8 +46,8 @@ export default async function Home() {
             </span>
           </div>
         </div>
-      </section>
-      <section className="shell grid gap-4 py-4 sm:grid-cols-3">
+      </section>,
+      sizes: <section className="shell grid gap-4 py-4 sm:grid-cols-3">
         {[
           ['kids-lap-blankets', 'Little laps', '30 × 40 in'],
           ['everyday-throws', 'Everyday snuggles', '50 × 60 in'],
@@ -62,8 +65,8 @@ export default async function Home() {
             <span aria-hidden="true">↗</span>
           </Link>
         ))}
-      </section>
-      <section className="shell py-10">
+      </section>,
+      gallery: <section className="shell py-10">
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <p className="eyebrow mb-3 text-clay">The cozy season collection</p>
@@ -74,7 +77,7 @@ export default async function Home() {
           </Link>
         </div>
         {featured.length ? (
-          <div className="grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-4">
+          <div className="product-gallery grid grid-cols-2 gap-x-5 gap-y-9 md:grid-cols-4">
             {featured.map(({ product, sizeCount }) => (
               <ProductCard
                 key={product.id}
@@ -94,8 +97,8 @@ export default async function Home() {
             </Link>
           </div>
         )}
-      </section>
-      <section className="shell mt-10 grid gap-8 border-y border-ink/15 py-10 sm:grid-cols-3">
+      </section>,
+      how: <section className="shell mt-10 grid gap-8 border-y border-ink/15 py-10 sm:grid-cols-3">
         {[
           [
             'A size for your snuggle',
@@ -115,7 +118,8 @@ export default async function Home() {
             <p className="mt-3 text-sm text-ink/70">{text}</p>
           </div>
         ))}
-      </section>
-    </>
-  );
+      </section>,
+      shipping: <section className="shell py-8"><h2>Shipping</h2><p className="mt-4">{SHIPPING_AREA_MESSAGE}</p><Link className="link mt-4 inline-block" href="/contact">Shipping & contact details</Link></section>
+  };
+  return <>{config.home_sections.map(key=><div key={key}>{sections[key]}</div>)}</>;
 }

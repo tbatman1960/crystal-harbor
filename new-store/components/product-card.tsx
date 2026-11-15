@@ -1,22 +1,25 @@
+import { readWebsiteDesign } from '@/lib/website-editor-server';
 import { hasStock, quantityLimit } from '@/lib/availability';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@/lib/types';
 import { money } from '@/lib/types';
-export function ProductCard({
+export async function ProductCard({
   product: p,
   sizeCount = 1,
 }: {
   product: Product;
   sizeCount?: number;
 }) {
+  const {config} = await readWebsiteDesign();
+  const href = `/products/${p.slug}${config.product_entry==='size_first'?'#choose-size':''}`;
   const image = [...p.product_images].sort(
     (a, b) => a.sort_order - b.sort_order,
   )[0];
   return (
     <article>
-      <Link href={`/products/${p.slug}`} className="group block">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-sage">
+      <Link href={href} className="group block">
+        <div className="product-photo relative aspect-[4/5] overflow-hidden rounded-xl bg-sage">
           <Image
             src={image?.url || '/placeholder.svg'}
             alt={p.name}

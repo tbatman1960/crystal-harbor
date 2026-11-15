@@ -11,6 +11,7 @@ import {
 import { productTitle } from '@/lib/catalog-presentation';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useSiteDesign } from './site-design-provider';
 import { api, Notice } from './ui';
 import { AddressFields, emptyAddress } from './address-fields';
 export function CartPage({
@@ -23,6 +24,9 @@ export function CartPage({
   email?: string;
 }) {
   const { items, setItems, ready, error: cartError } = useCart();
+  const design = useSiteDesign();
+  const [reviewStep,setReviewStep] = useState(false);
+  const guided = design.checkout_layout === 'guided';
   const [address, setAddress] = useState(defaultAddress || emptyAddress);
   const [billing, setBilling] = useState(emptyAddress);
   const [same, setSame] = useState(true);
@@ -55,6 +59,7 @@ export function CartPage({
   const current = JSON.stringify({ items, address });
   const validQuote = version === current ? quote : null;
   const rate = validQuote?.rates.find((r) => r.id === method);
+  const reviewing = guided && reviewStep && !!validQuote && !!rate;
   async function getRates() {
     setError('');
     setPending(true);
@@ -63,6 +68,7 @@ export function CartPage({
       setQuote(q);
       setVersion(current);
       setMethod(q.rates[0].id);
+      if(guided)setReviewStep(true);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -241,11 +247,16 @@ export function CartPage({
           className="panel space-y-6"
           onSubmit={(e) => {
             e.preventDefault();
-            if (validQuote && rate) void checkout();
+            if (validQuote && rate) {
+              if(guided && !reviewing)setReviewStep(true);
+              else void checkout();
+            }
             else void getRates();
           }}
         >
-          <h2 className="text-2xl">Make it yours</h2>
+          <h2 className="text-2xl">{guided ? reviewing ? '2. Review your order' : '1. Delivery details' : 'Make it yours'}</h2>
+          {reviewing && <section aria-label="Delivery summary"><p>{contact}</p><p>{Object.values(address).filter(Boolean).join(', ')}</p><p>{same ? 'Billing matches shipping.' : 'Separate billing address provided.'}</p><button type="button" className="link mt-3" onClick={()=>setReviewStep(false)}>Change delivery details</button></section>}
+          <div hidden={reviewing} className="space-y-6">
           <label>
             Contact email
             <input
@@ -283,6 +294,7 @@ export function CartPage({
               />
             </fieldset>
           )}
+          </div>
           {validQuote && (
             <fieldset className="space-y-3">
               <legend className="mb-3 font-semibold">Shipping options</legend>
@@ -345,7 +357,7 @@ export function CartPage({
             {pending
               ? 'Please wait…'
               : validQuote && rate
-                ? 'Continue to secure payment →'
+                ? guided && !reviewing ? 'Review order →' : 'Continue to secure payment →'
                 : 'Calculate shipping & tax'}
           </button>
           <p className="text-xs text-ink/65">

@@ -1,0 +1,1 @@
+'use client';export default function EditorError({reset}:{reset:()=>void}){return <div className="shell py-12"><h1>Could not load the editor</h1><p className="my-4">Please try again. Your published design has not changed.</p><button className="btn" onClick={reset}>Try again</button></div>}
