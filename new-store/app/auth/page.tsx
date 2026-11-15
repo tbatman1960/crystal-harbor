@@ -9,5 +9,5 @@ export default function Auth({
   )
     ? searchParams.mode!
     : 'login';
-  return <AuthForm mode={mode} error={searchParams.error} next={searchParams.next==='/studio'?'/studio':undefined} />;
+  return <AuthForm mode={mode} error={searchParams.error} next={searchParams.next==='/studio'||searchParams.next==='/catalog'?searchParams.next:undefined} />;
 }

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { admin, check } from '@/lib/supabase';
+import { check } from '@/lib/supabase';
+import {catalogClient} from '@/lib/catalog-access';
 import { origin, failure } from '@/lib/http';
 export async function POST(req: Request) {
   try {
     origin(req);
-    const client = await admin();
+    const client = await catalogClient();
     const form = await req.formData();
     const file = form.get('file');
     if (

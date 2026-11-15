@@ -10,7 +10,7 @@ const blank = {
   parent_id: null as string | null,
   sort_order: 0,
 };
-export function CategoryManager({ categories }: { categories: Category[] }) {
+export function CategoryManager({ categories, endpoint='/api/admin' }: { categories: Category[]; endpoint?:'/api/admin'|'/api/catalog' }) {
   const [value, setValue] = useState<typeof blank & { id?: string }>(blank);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -35,7 +35,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
             <button className="link" onClick={() => setValue(c)}>
               Edit
             </button>
-            <DeleteButton table="categories" id={c.id} />
+            <DeleteButton endpoint={endpoint} table="categories" id={c.id} />
           </div>
         ))}
       </section>
@@ -46,7 +46,7 @@ export function CategoryManager({ categories }: { categories: Category[] }) {
           setPending(true);
           setError('');
           try {
-            await api('/api/admin', { kind: 'category', value });
+            await api(endpoint, { kind: 'category', value });
             setValue(blank);
             router.refresh();
           } catch (e) {

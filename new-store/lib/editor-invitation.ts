@@ -4,17 +4,17 @@ export type ActivationType = 'invite' | 'recovery';
 export const activationTokenPattern = /^[a-f0-9]{56,64}$/i;
 
 export function activationDestination(value: string | null | undefined) {
-  return value === '/studio' ? '/studio' : '/admin';
+  return value === '/studio' || value === '/catalog' ? value : '/admin';
 }
 
 /** Keep the one-time credential in the fragment, out of HTTP logs and referrers.
  * The activation POST verifies it with Supabase before creating a session.
  */
-export function editorActivationUrl(base: string, token: string, type: ActivationType) {
+export function editorActivationUrl(base: string, token: string, type: ActivationType, destination: '/studio' | '/catalog' = '/studio') {
   const url = new URL('/auth/activate', base);
   if (url.protocol !== 'https:' || !activationTokenPattern.test(token))
     throw new Error('Invitation link configuration is invalid.');
-  url.hash = new URLSearchParams({ token, type, next: '/studio' }).toString();
+  url.hash = new URLSearchParams({ token, type, next: destination }).toString();
   return url.toString();
 }
 
@@ -26,6 +26,7 @@ export async function createEditorInvitation(
   admin: Pick<SupabaseClient['auth']['admin'], 'generateLink'>,
   email: string,
   base: string,
+  destination: '/studio' | '/catalog' = '/studio',
 ) {
   let type: ActivationType = 'invite';
   let result = await admin.generateLink({ type, email });
@@ -35,5 +36,5 @@ export async function createEditorInvitation(
   }
   if (result.error || !result.data.properties?.hashed_token)
     throw new Error('Invitation could not be created.');
-  return editorActivationUrl(base, result.data.properties.hashed_token, type);
+  return editorActivationUrl(base, result.data.properties.hashed_token, type, destination);
 }

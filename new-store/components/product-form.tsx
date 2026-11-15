@@ -24,9 +24,11 @@ const blank = {
 export function ProductForm({
   product,
   categories,
+  managementPath = '/admin',
 }: {
   product?: Product;
   categories: Category[];
+  managementPath?: '/admin' | '/catalog';
 }) {
   const [value, setValue] = useState(
     product
@@ -72,11 +74,11 @@ export function ProductForm({
         setPending(true);
         setError('');
         try {
-          await api('/api/admin', {
+          await api(managementPath==='/catalog'?'/api/catalog':'/api/admin', {
             kind: 'product',
             value: { ...value, images },
           });
-          router.push('/admin/products');
+          router.push(managementPath+'/products');
           router.refresh();
         } catch (e) {
           setError((e as Error).message);

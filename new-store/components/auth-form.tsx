@@ -41,7 +41,7 @@ export function AuthForm({
               password: mode === 'reset' ? undefined : password,
             });
             if (mode === 'login' || mode === 'update')
-              window.location.href = next==='/studio'?'/studio':'/account';
+              window.location.href = next==='/studio'||next==='/catalog'?next:'/account';
             else
               setMessage(
                 mode === 'register'
@@ -98,13 +98,13 @@ export function AuthForm({
         </Submit>
       </form>
       <div className="mt-8 flex flex-wrap gap-5 text-sm">
-        <Link className="link" href={'/auth?mode=login'+(next==='/studio'?'&next=/studio':'')}>
+        <Link className="link" href={'/auth?mode=login'+(next==='/studio'||next==='/catalog'?'&next='+next:'')}>
           Sign in
         </Link>
-        <Link className="link" href={'/auth?mode=register'+(next==='/studio'?'&next=/studio':'')}>
+        <Link className="link" href={'/auth?mode=register'+(next==='/studio'||next==='/catalog'?'&next='+next:'')}>
           Create an account
         </Link>
-        <Link className="link" href={'/auth?mode=reset'+(next==='/studio'?'&next=/studio':'')}>
+        <Link className="link" href={'/auth?mode=reset'+(next==='/studio'||next==='/catalog'?'&next='+next:'')}>
           Forgot password?
         </Link>
       </div>

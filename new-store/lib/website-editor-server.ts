@@ -10,8 +10,8 @@ export async function websiteAccess(){
  const {data:p,error:pe}=await db().from('profiles').select('is_admin').eq('id',user.id).single();check(pe);
  if(p?.is_admin)return {user,owner:true,canPublish:true};
  if(!user.email||!user.email_confirmed_at)throw Error('Forbidden');
- const {data:m,error:me}=await service().from('website_collaborators').select('active,can_publish').eq('email',user.email.toLowerCase()).maybeSingle();check(me);
- if(!m?.active)throw Error('Forbidden');
+ const {data:m,error:me}=await service().from('website_collaborators').select('active,can_publish,role').eq('email',user.email.toLowerCase()).maybeSingle();check(me);
+ if(!m?.active||m.role!=='collaborator')throw Error('Forbidden');
  return {user,owner:false,canPublish:!!m.can_publish};
 }
 export const readWebsiteDesign=cache(async():Promise<{config:SiteDesign;preview:boolean;active:boolean}>=>{

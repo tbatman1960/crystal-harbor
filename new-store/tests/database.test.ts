@@ -10,11 +10,11 @@ test('migration, RLS, and transactional order invariants', async (t) => {
   await pg.exec(`
  create role anon;create role authenticated;create role service_role bypassrls;
  create schema auth;create schema storage;
- create table auth.users(id uuid primary key,email text not null);
+ create table auth.users(id uuid primary key,email text not null,email_confirmed_at timestamptz default now());
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text);
- alter table storage.objects enable row level security;
+ alter table storage.objects enable row level security;grant select,insert,update,delete on storage.objects to authenticated;
  grant usage on schema public,auth,storage to anon,authenticated,service_role;
  grant execute on function auth.uid() to anon,authenticated,service_role;
  alter default privileges in schema public grant select,insert,update,delete on tables to anon,authenticated,service_role;
@@ -752,6 +752,40 @@ test('migration, RLS, and transactional order invariants', async (t) => {
     await pg.exec('set role anon');
     try{await assert.rejects(pg.query('select * from website_design'),/permission denied/);}
     finally{await pg.exec('reset role');}
+  });
+  await t.test('catalog roles manage products and photos without gaining administrator or website rights',async()=>{
+    const pid='ac000000-0000-4000-8000-000000000001';
+    const product={id:pid,name:'Catalog role fixture',slug:'catalog-role-fixture',description:'Updated by a product manager',price_cents:1300,sku:'CATALOG-ROLE-TEST',weight_lbs:null,inventory_count:0,track_inventory:false,is_active:false,shipping_group:'blankets',shipping_first_unit_cents:700,shipping_additional_unit_cents:100,design_slug:'catalog-role',size_label:'30 × 40 in',category_id:null};
+    const save=()=>pg.query('select save_product($1,$2)',[JSON.stringify(product),JSON.stringify(['https://example.com/first.png','https://example.com/second.png'])]);
+    await pg.query("update website_collaborators set role='products',active=false,catalog_active=true,can_publish=false where email='two@example.com'");
+    await role(other,async()=>{
+      await save();
+      assert.equal((await pg.query('select name from products where id=$1',[pid])).rows.length,1);
+      const images=await pg.query<{is_primary:boolean}>('select is_primary from product_images where product_id=$1 order by sort_order',[pid]);
+      assert.deepEqual(images.rows.map(x=>x.is_primary),[true,false]);
+      await pg.query("insert into categories(name,slug) values('Role category','role-category')");
+      await pg.query("insert into storage.objects(bucket_id) values('products')");
+      assert.equal((await pg.query('select * from settings')).rows.length,0);
+      assert.equal((await pg.query('select * from orders')).rows.length,0);
+      await assert.rejects(pg.query('update profiles set is_admin=true where id=$1',[other]),/permission denied/);
+      await assert.rejects(pg.query('select * from website_collaborators'),/permission denied/);
+      await assert.rejects(pg.query("insert into storage.objects(bucket_id) values('personalization-private')"),/row-level security/);
+    });
+    // Old server deployments check active: product-only accounts must fail that predicate too.
+    assert.equal((await pg.query<{active:boolean}>("select active from website_collaborators where email='two@example.com'")).rows[0].active,false);
+    await assert.rejects(pg.query("select production_website_design_action('save',2,'{}',$1,'two@example.com','')",[other]),/Forbidden/);
+    await assert.rejects(pg.query("update website_collaborators set active=true where email='two@example.com'"),/collaborator_role_access/);
+    await pg.query("update website_collaborators set role='collaborator',active=true,catalog_active=false where email='two@example.com'");
+    await role(other,async()=>{await save()});
+    await pg.query("update website_collaborators set active=false where email='two@example.com'");
+    await role(other,async()=>{
+      await assert.rejects(save(),/Forbidden/);
+      assert.equal((await pg.query('select id from products where id=$1',[pid])).rows.length,0);
+      await assert.rejects(pg.query("insert into storage.objects(bucket_id) values('products')"),/row-level security/);
+    });
+    await pg.query("update website_collaborators set active=true where email='two@example.com'");
+    await pg.query('update auth.users set email_confirmed_at=null where id=$1',[other]);
+    await role(other,async()=>{await assert.rejects(save(),/Forbidden/)});
   });
   await pg.close();
 });

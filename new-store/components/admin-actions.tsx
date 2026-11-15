@@ -5,9 +5,11 @@ import { api, Notice } from './ui';
 export function DeleteButton({
   table,
   id,
+  endpoint = '/api/admin',
 }: {
   table: 'products' | 'categories';
   id: string;
+  endpoint?: '/api/admin' | '/api/catalog';
 }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -26,7 +28,7 @@ export function DeleteButton({
             return;
           setPending(true);
           try {
-            await api('/api/admin', { kind: 'delete', value: { table, id } });
+            await api(endpoint, { kind: 'delete', value: { table, id } });
             router.refresh();
           } catch (e) {
             setError((e as Error).message);

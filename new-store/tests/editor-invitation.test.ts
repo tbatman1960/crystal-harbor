@@ -47,3 +47,9 @@ test('activation destinations cannot become open redirects and preserve legacy a
   for (const next of [null, '/admin', 'https://evil.example', '//evil.example', '/studio/../admin'])
     assert.equal(activationDestination(next), '/admin');
 });
+
+test('product-only invitations open their product workspace',()=>{
+ const link=new URL(editorActivationUrl(base,token,'invite','/catalog'));
+ assert.equal(new URLSearchParams(link.hash.slice(1)).get('next'),'/catalog');
+ assert.equal(activationDestination('/catalog'),'/catalog');
+});

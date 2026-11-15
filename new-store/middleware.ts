@@ -24,6 +24,7 @@ export async function middleware(request: NextRequest) {
   const {
     data: { user },
   } = await client.auth.getUser();
+  if ((request.nextUrl.pathname==='/catalog'||request.nextUrl.pathname.startsWith('/catalog/'))&&!user) return NextResponse.redirect(new URL('/auth?next=/catalog',request.url));
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!user)
       return NextResponse.redirect(new URL('/auth?mode=login', request.url));
